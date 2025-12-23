@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       // Log hash format for debugging (first 50 chars only)
       const hashPreview = passwordHash.substring(0, 50);
       console.error(`Stored hash format: ${hashPreview}... (length: ${passwordHash.length})`);
-      console.error(`Password length provided: ${password.length}`);
+      console.error(`Password length provided: ${passwordTrimmed.length}`);
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
     
