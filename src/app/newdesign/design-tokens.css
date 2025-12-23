@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Dubba Dubba NF';
+  src: url('/fonts/dubba-dubba-nf/DubbaDubbaNF.otf') format('opentype'),
+       url('/fonts/dubba-dubba-nf/DubbaDubbaNF.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block; /* Block rendering until font loads to prevent FOUT */
+}
+
+@font-face {
+  font-family: 'LEMON MILK';
+  src: url('/fonts/lemonmilk-cufonfonts/LemonMilk.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LEMON MILK';
+  src: url('/fonts/lemonmilk-cufonfonts/LemonMilkbold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Didot Bold';
+  src: url('/fonts/didot-2/Didot Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Broadway BT';
+  src: url('/fonts/Broadway.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Kabel Black';
+  src: url('/fonts/Kabel Black Regular/Kabel Black Regular.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: block; /* Block rendering until font loads to prevent FOUT */
+}
+
+/* ========================================
+   GLAMOUR GIRLS - NEW DESIGN TOKENS
+   ======================================== */
+
+:root {
+  /* Semantic Background Colors */
+  --bg-page: #F8F1DE;
+  --bg-page-alt: #F2E6C9;
+  --bg-surface: #FFFDF7;
+  --bg-surface-alt: #FAF6EC;
+  --bg-hero: #121212;
+  --bg-hero-overlay: rgba(0, 0, 0, 0.35);
+
+  /* Semantic Text Colors */
+  --text-primary: #1E1E1E;
+  --text-secondary: #4B4B4B;
+  --text-muted: #6B6B6B;
+  --text-inverse: #FFFDF7;
+
+  /* Semantic Border Colors */
+  --border-subtle: rgba(30, 30, 30, 0.12);
+  --border-strong: rgba(30, 30, 30, 0.18);
+  --border-inverse: rgba(255, 253, 247, 0.24);
+
+  /* Accent Colors */
+  --accent-gold: #C8A45D;
+  --accent-gold-soft: #EAD9AC;
+
+  /* State Colors */
+  --state-focus-ring: rgba(200, 164, 93, 0.45);
+  --state-hover-wash: rgba(200, 164, 93, 0.10);
+
+  /* Typography - Font Families */
+  --font-logo-primary: 'Great Vibes', cursive;
+  --font-logo-secondary: 'Alex Brush', cursive;
+  --font-logo-hero: 'Dubba Dubba NF', 'Great Vibes', cursive;
+  --font-headline: 'LEMON MILK', 'Didot', 'Bodoni Moda', 'Playfair Display', serif;
+  --font-ui: 'Inter', 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-name: 'Didot Bold', 'Didot', 'Times New Roman', serif;
+
+  /* Typography - Logo Sizes */
+  --logo-desktop: 86px;
+  --logo-tablet: 64px;
+  --logo-mobile: 48px;
+  --logo-line-height: 1.05;
+  --logo-letter-spacing: -0.01em;
+
+  /* Typography - Heading Sizes */
+  --h1-size: 28px;
+  --h1-line-height: 1.2;
+  --h1-letter-spacing: 0.05em;
+
+  --h2-size: 20px;
+  --h2-line-height: 1.25;
+  --h2-letter-spacing: 0.08em;
+
+  --h3-size: 16px;
+  --h3-line-height: 1.3;
+  --h3-letter-spacing: 0.1em;
+  --heading-gap: 20px;
+
+  /* Typography - Body Sizes */
+  --body-lg-size: 18px;
+  --body-lg-line-height: 1.7;
+  --body-size: 16px;
+  --body-line-height: 1.7;
+  --meta-size: 13px;
+  --meta-line-height: 1.4;
+  --meta-letter-spacing: 0.08em;
+
+  /* Shadows */
+  --shadow-subtle: 0 6px 22px rgba(18, 18, 18, 0.10);
+  --shadow-lift: 0 10px 32px rgba(18, 18, 18, 0.14);
+  --shadow-input: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 0 0 1px rgba(30, 30, 30, 0.12);
+}
+
+/* Base Styles for New Design */
+body.new-design {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--body-size);
+  line-height: var(--body-line-height);
+}
+
+/* Responsive section grid for /newdesign layout */
+.columns-desktop,
+.columns-tablet,
+.columns-mobile {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.columns-mobile {
+  flex-direction: column;
+}
+
+.columns-tablet,
+.columns-desktop {
+  flex-direction: row;
+}
+
+.content-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  flex: 1;
+}

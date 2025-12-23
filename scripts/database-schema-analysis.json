@@ -1,0 +1,2652 @@
+{
+  "anon_stats": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('anon_stats_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "imgid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "dt",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "timestamptz"
+      },
+      {
+        "column_name": "ip",
+        "data_type": "character varying",
+        "character_maximum_length": 32,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16655_imgid",
+        "indexdef": "CREATE INDEX idx_16655_imgid ON public.anon_stats USING btree (imgid)"
+      },
+      {
+        "indexname": "idx_16655_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16655_primary ON public.anon_stats USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16655_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "anon_stats",
+        "column_name": "id",
+        "foreign_table_name": "anon_stats",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "country": {
+    "columns": [
+      {
+        "column_name": "iso",
+        "data_type": "character",
+        "character_maximum_length": 2,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "bpchar"
+      },
+      {
+        "column_name": "name",
+        "data_type": "character varying",
+        "character_maximum_length": 80,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "printable_name",
+        "data_type": "character varying",
+        "character_maximum_length": 80,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "numcode",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "order_desc",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "int4"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16661_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16661_primary ON public.country USING btree (iso)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16661_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "country",
+        "column_name": "iso",
+        "foreign_table_name": "country",
+        "foreign_column_name": "iso"
+      }
+    ],
+    "rowCount": 239
+  },
+  "credits": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('credits_id_seq'::regclass)",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "user_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "credits",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "data_buying",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "country",
+        "data_type": "character varying",
+        "character_maximum_length": 64,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16665_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16665_primary ON public.credits USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16665_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "credits",
+        "column_name": "id",
+        "foreign_table_name": "credits",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "credits_buying": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('credits_buying_id_seq'::regclass)",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "user_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "credits",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "total_price",
+        "data_type": "numeric",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "numeric"
+      },
+      {
+        "column_name": "data_buying",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16670_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16670_primary ON public.credits_buying USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16670_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "credits_buying",
+        "column_name": "id",
+        "foreign_table_name": "credits_buying",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "favorites": {
+    "columns": [
+      {
+        "column_name": "member_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "img_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      }
+    ],
+    "indexes": [],
+    "constraints": [],
+    "rowCount": 0
+  },
+  "girl_favorites": {
+    "columns": [
+      {
+        "column_name": "member_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "girl_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16677_girl_id",
+        "indexdef": "CREATE UNIQUE INDEX idx_16677_girl_id ON public.girl_favorites USING btree (girl_id, member_id)"
+      }
+    ],
+    "constraints": [],
+    "rowCount": 0
+  },
+  "girlinfos": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('girlinfos_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "girlid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "shrttext",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "lngtext",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "text"
+      },
+      {
+        "column_name": "ord",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16681_girlid",
+        "indexdef": "CREATE INDEX idx_16681_girlid ON public.girlinfos USING btree (girlid)"
+      },
+      {
+        "indexname": "idx_16681_ord",
+        "indexdef": "CREATE INDEX idx_16681_ord ON public.girlinfos USING btree (ord)"
+      },
+      {
+        "indexname": "idx_16681_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16681_primary ON public.girlinfos USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16681_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "girlinfos",
+        "column_name": "id",
+        "foreign_table_name": "girlinfos",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 31381
+  },
+  "girlinfos2": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('girlinfos2_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "girlid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "shrttext",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "lngtext",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "text"
+      },
+      {
+        "column_name": "ord",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16691_girlid",
+        "indexdef": "CREATE INDEX idx_16691_girlid ON public.girlinfos2 USING btree (girlid)"
+      },
+      {
+        "indexname": "idx_16691_ord",
+        "indexdef": "CREATE INDEX idx_16691_ord ON public.girlinfos2 USING btree (ord)"
+      },
+      {
+        "indexname": "idx_16691_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16691_primary ON public.girlinfos2 USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16691_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "girlinfos2",
+        "column_name": "id",
+        "foreign_table_name": "girlinfos2",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 27450
+  },
+  "girllinks": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('girllinks_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "girlid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "ord",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "caption",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "lnk",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "tp",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::smallint",
+        "udt_name": "int2"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16701_girlid",
+        "indexdef": "CREATE INDEX idx_16701_girlid ON public.girllinks USING btree (girlid)"
+      },
+      {
+        "indexname": "idx_16701_ord",
+        "indexdef": "CREATE INDEX idx_16701_ord ON public.girllinks USING btree (ord)"
+      },
+      {
+        "indexname": "idx_16701_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16701_primary ON public.girllinks USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16701_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "girllinks",
+        "column_name": "id",
+        "foreign_table_name": "girllinks",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 1563
+  },
+  "girls": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('girls_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "nm",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "fnu",
+        "data_type": "character",
+        "character_maximum_length": 1,
+        "is_nullable": "NO",
+        "column_default": "''::bpchar",
+        "udt_name": "bpchar"
+      },
+      {
+        "column_name": "fmu",
+        "data_type": "character",
+        "character_maximum_length": 1,
+        "is_nullable": "NO",
+        "column_default": "''::bpchar",
+        "udt_name": "bpchar"
+      },
+      {
+        "column_name": "firstname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "middlenames",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "familiq",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "godini",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'1'::smallint",
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "membersonly",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'1'::smallint",
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "sources",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "text"
+      },
+      {
+        "column_name": "isnew",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'1'::smallint",
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "published",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'1'::smallint",
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "isnewpix",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'1'::smallint",
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "theirman",
+        "data_type": "boolean",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "bool"
+      },
+      {
+        "column_name": "seotitle",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "metadescription",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "text"
+      },
+      {
+        "column_name": "metakeywords",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "text"
+      },
+      {
+        "column_name": "ogtitle",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "ogdescription",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "text"
+      },
+      {
+        "column_name": "ogimage",
+        "data_type": "character varying",
+        "character_maximum_length": 500,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "canonicalurl",
+        "data_type": "character varying",
+        "character_maximum_length": 500,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "h1title",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "h2title",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "slug",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "introtext",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "text"
+      },
+      {
+        "column_name": "views",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": "0",
+        "udt_name": "int4"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16713_fmu",
+        "indexdef": "CREATE INDEX idx_16713_fmu ON public.girls USING btree (fmu)"
+      },
+      {
+        "indexname": "idx_16713_fnu",
+        "indexdef": "CREATE INDEX idx_16713_fnu ON public.girls USING btree (fnu)"
+      },
+      {
+        "indexname": "idx_16713_godini",
+        "indexdef": "CREATE INDEX idx_16713_godini ON public.girls USING btree (godini)"
+      },
+      {
+        "indexname": "idx_16713_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16713_primary ON public.girls USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16713_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "girls",
+        "column_name": "id",
+        "foreign_table_name": "girls",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 818
+  },
+  "images": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('images_id_seq'::regclass)",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "path",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "imgtype",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::smallint",
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "mytp",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::smallint",
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "width",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "0",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "height",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "0",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "mimetype",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "girlid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "thumbid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "sz",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16732_girlid",
+        "indexdef": "CREATE INDEX idx_16732_girlid ON public.images USING btree (girlid)"
+      },
+      {
+        "indexname": "idx_16732_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16732_primary ON public.images USING btree (id)"
+      },
+      {
+        "indexname": "idx_16732_thumbid",
+        "indexdef": "CREATE INDEX idx_16732_thumbid ON public.images USING btree (thumbid)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "fk_images_girlid",
+        "constraint_type": "FOREIGN KEY",
+        "table_name": "images",
+        "column_name": "girlid",
+        "foreign_table_name": "girls",
+        "foreign_column_name": "id"
+      },
+      {
+        "constraint_name": "idx_16732_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "images",
+        "column_name": "id",
+        "foreign_table_name": "images",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 11389
+  },
+  "images2": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('images2_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "nm",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "createdate",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "timestamptz"
+      },
+      {
+        "column_name": "modifydate",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "timestamptz"
+      },
+      {
+        "column_name": "createdby",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "lastmodifiedby",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16747_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16747_primary ON public.images2 USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16747_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "images2",
+        "column_name": "id",
+        "foreign_table_name": "images2",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 20
+  },
+  "img_downloads": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('img_downloads_id_seq'::regclass)",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "email",
+        "data_type": "character varying",
+        "character_maximum_length": 64,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "img_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "rand_string",
+        "data_type": "character varying",
+        "character_maximum_length": 32,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "validity_link",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "ip_download",
+        "data_type": "character varying",
+        "character_maximum_length": 20,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "num_download",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "0",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "transaction_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "time_download",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16754_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16754_primary ON public.img_downloads USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16754_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "img_downloads",
+        "column_name": "id",
+        "foreign_table_name": "img_downloads",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "info_transaction": {
+    "columns": [
+      {
+        "column_name": "transaction_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('info_transaction_transaction_id_seq'::regclass)",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "member_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "count_pictures",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "total_price",
+        "data_type": "numeric",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "numeric"
+      },
+      {
+        "column_name": "data_transaction",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16760_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16760_primary ON public.info_transaction USING btree (transaction_id)"
+      },
+      {
+        "indexname": "idx_16760_transaction_id",
+        "indexdef": "CREATE INDEX idx_16760_transaction_id ON public.info_transaction USING btree (transaction_id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16760_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "info_transaction",
+        "column_name": "transaction_id",
+        "foreign_table_name": "info_transaction",
+        "foreign_column_name": "transaction_id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "members": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('members_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "uname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "email",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "pass",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "fname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "lname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "active",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'2'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "activation_key",
+        "data_type": "character varying",
+        "character_maximum_length": 32,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "ticket",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "is_old_user",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "0",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "membership_status",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "picture_credits",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "country",
+        "data_type": "character varying",
+        "character_maximum_length": 65,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "old_uname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "date_registered",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "1301608800",
+        "udt_name": "int4"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16765_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16765_primary ON public.members USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16765_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "members",
+        "column_name": "id",
+        "foreign_table_name": "members",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 14946
+  },
+  "members_2009": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('members_2009_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "uname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "email",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "pass",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "fname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "lname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "active",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'2'::bigint",
+        "udt_name": "int8"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16780_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16780_primary ON public.members_2009 USING btree (id)"
+      },
+      {
+        "indexname": "idx_16780_uname",
+        "indexdef": "CREATE UNIQUE INDEX idx_16780_uname ON public.members_2009 USING btree (uname)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16780_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "members_2009",
+        "column_name": "id",
+        "foreign_table_name": "members_2009",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "members_2011": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('members_2011_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "uname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "email",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "pass",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "fname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "lname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "active",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'2'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "activation_key",
+        "data_type": "character varying",
+        "character_maximum_length": 32,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "ticket",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "is_old_user",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "0",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "membership_status",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "picture_credits",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "country",
+        "data_type": "character varying",
+        "character_maximum_length": 65,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "old_uname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16793_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16793_primary ON public.members_2011 USING btree (id)"
+      },
+      {
+        "indexname": "idx_16793_uname",
+        "indexdef": "CREATE UNIQUE INDEX idx_16793_uname ON public.members_2011 USING btree (uname)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16793_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "members_2011",
+        "column_name": "id",
+        "foreign_table_name": "members_2011",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "newsletter": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('newsletter_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "subject",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "txt",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "text"
+      },
+      {
+        "column_name": "tstamp",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "CURRENT_TIMESTAMP",
+        "udt_name": "timestamptz"
+      },
+      {
+        "column_name": "pic",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16807_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16807_primary ON public.newsletter USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16807_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newsletter",
+        "column_name": "id",
+        "foreign_table_name": "newsletter",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "newsletter2": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('newsletter2_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "fromemail",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "fromname",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "subject",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "body",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "text"
+      },
+      {
+        "column_name": "altbody",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "text"
+      },
+      {
+        "column_name": "st",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::smallint",
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "dtsended",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "timestamptz"
+      },
+      {
+        "column_name": "createdate",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "timestamptz"
+      },
+      {
+        "column_name": "modifydate",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "timestamptz"
+      },
+      {
+        "column_name": "createdby",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "lastmodifiedby",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16816_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16816_primary ON public.newsletter2 USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16816_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newsletter2",
+        "column_name": "id",
+        "foreign_table_name": "newsletter2",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "newsletter2_filter": {
+    "columns": [
+      {
+        "column_name": "nid",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "chk",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "text"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16828_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16828_primary ON public.newsletter2_filter USING btree (nid)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16828_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newsletter2_filter",
+        "column_name": "nid",
+        "foreign_table_name": "newsletter2_filter",
+        "foreign_column_name": "nid"
+      }
+    ],
+    "rowCount": 0
+  },
+  "newsletter2_images": {
+    "columns": [
+      {
+        "column_name": "nid",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "image_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16833_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16833_primary ON public.newsletter2_images USING btree (nid, image_id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16833_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newsletter2_images",
+        "column_name": "nid",
+        "foreign_table_name": "newsletter2_images",
+        "foreign_column_name": "nid"
+      },
+      {
+        "constraint_name": "idx_16833_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newsletter2_images",
+        "column_name": "nid",
+        "foreign_table_name": "newsletter2_images",
+        "foreign_column_name": "image_id"
+      },
+      {
+        "constraint_name": "idx_16833_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newsletter2_images",
+        "column_name": "image_id",
+        "foreign_table_name": "newsletter2_images",
+        "foreign_column_name": "nid"
+      },
+      {
+        "constraint_name": "idx_16833_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newsletter2_images",
+        "column_name": "image_id",
+        "foreign_table_name": "newsletter2_images",
+        "foreign_column_name": "image_id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "newsletter2_running": {
+    "columns": [
+      {
+        "column_name": "st",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "0",
+        "udt_name": "int4"
+      }
+    ],
+    "indexes": [],
+    "constraints": [],
+    "rowCount": 0
+  },
+  "newsletter2_states": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('newsletter2_states_id_seq'::regclass)",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "nm",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "ord",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "int4"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16841_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16841_primary ON public.newsletter2_states USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16841_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newsletter2_states",
+        "column_name": "id",
+        "foreign_table_name": "newsletter2_states",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "newslettermembers": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('newslettermembers_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "nid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "uid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "email",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "nm",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16846_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16846_primary ON public.newslettermembers USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16846_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newslettermembers",
+        "column_name": "id",
+        "foreign_table_name": "newslettermembers",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "newsletters2_sended": {
+    "columns": [
+      {
+        "column_name": "nid",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "memberid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "tp",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "st",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "0",
+        "udt_name": "int4"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16856_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16856_primary ON public.newsletters2_sended USING btree (nid, memberid)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16856_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newsletters2_sended",
+        "column_name": "nid",
+        "foreign_table_name": "newsletters2_sended",
+        "foreign_column_name": "nid"
+      },
+      {
+        "constraint_name": "idx_16856_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newsletters2_sended",
+        "column_name": "nid",
+        "foreign_table_name": "newsletters2_sended",
+        "foreign_column_name": "memberid"
+      },
+      {
+        "constraint_name": "idx_16856_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newsletters2_sended",
+        "column_name": "memberid",
+        "foreign_table_name": "newsletters2_sended",
+        "foreign_column_name": "nid"
+      },
+      {
+        "constraint_name": "idx_16856_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "newsletters2_sended",
+        "column_name": "memberid",
+        "foreign_table_name": "newsletters2_sended",
+        "foreign_column_name": "memberid"
+      }
+    ],
+    "rowCount": 17873
+  },
+  "prava": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('prava_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "crdate",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "CURRENT_TIMESTAMP",
+        "udt_name": "timestamptz"
+      },
+      {
+        "column_name": "otdate",
+        "data_type": "date",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "date"
+      },
+      {
+        "column_name": "dodate",
+        "data_type": "date",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "date"
+      },
+      {
+        "column_name": "typ",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::smallint",
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "girlid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "mid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "zid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "mn",
+        "data_type": "numeric",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "0.00",
+        "udt_name": "numeric"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16862_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16862_primary ON public.prava USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16862_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "prava",
+        "column_name": "id",
+        "foreign_table_name": "prava",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 707
+  },
+  "related_actresses": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('related_actresses_id_seq'::regclass)",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "actress_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "related_id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "reason",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "text"
+      },
+      {
+        "column_name": "score",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": "1",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "created_at",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": "CURRENT_TIMESTAMP",
+        "udt_name": "timestamptz"
+      },
+      {
+        "column_name": "updated_at",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": "CURRENT_TIMESTAMP",
+        "udt_name": "timestamptz"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16873_idx_actress_id",
+        "indexdef": "CREATE INDEX idx_16873_idx_actress_id ON public.related_actresses USING btree (actress_id)"
+      },
+      {
+        "indexname": "idx_16873_idx_related_id",
+        "indexdef": "CREATE INDEX idx_16873_idx_related_id ON public.related_actresses USING btree (related_id)"
+      },
+      {
+        "indexname": "idx_16873_idx_score",
+        "indexdef": "CREATE INDEX idx_16873_idx_score ON public.related_actresses USING btree (score)"
+      },
+      {
+        "indexname": "idx_16873_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16873_primary ON public.related_actresses USING btree (id)"
+      },
+      {
+        "indexname": "idx_16873_unique_relation",
+        "indexdef": "CREATE UNIQUE INDEX idx_16873_unique_relation ON public.related_actresses USING btree (actress_id, related_id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16873_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "related_actresses",
+        "column_name": "id",
+        "foreign_table_name": "related_actresses",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "stats": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('stats_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "mid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "imgid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "dt",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "timestamptz"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16883_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16883_primary ON public.stats USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16883_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "stats",
+        "column_name": "id",
+        "foreign_table_name": "stats",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "subimages2": {
+    "columns": [
+      {
+        "column_name": "image_format",
+        "data_type": "character varying",
+        "character_maximum_length": 32,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "image_id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "uripath",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "width",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "height",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "tp",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "sz",
+        "data_type": "character varying",
+        "character_maximum_length": 32,
+        "is_nullable": "YES",
+        "column_default": null,
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "tsmp",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "CURRENT_TIMESTAMP",
+        "udt_name": "timestamptz"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16889_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16889_primary ON public.subimages2 USING btree (image_id, tp)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16889_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "subimages2",
+        "column_name": "image_id",
+        "foreign_table_name": "subimages2",
+        "foreign_column_name": "image_id"
+      },
+      {
+        "constraint_name": "idx_16889_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "subimages2",
+        "column_name": "image_id",
+        "foreign_table_name": "subimages2",
+        "foreign_column_name": "tp"
+      },
+      {
+        "constraint_name": "idx_16889_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "subimages2",
+        "column_name": "tp",
+        "foreign_table_name": "subimages2",
+        "foreign_column_name": "image_id"
+      },
+      {
+        "constraint_name": "idx_16889_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "subimages2",
+        "column_name": "tp",
+        "foreign_table_name": "subimages2",
+        "foreign_column_name": "tp"
+      }
+    ],
+    "rowCount": 36
+  },
+  "subs": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('subs_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "typ",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'1'::smallint",
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "custom",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "dni",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::smallint",
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "mm",
+        "data_type": "smallint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::smallint",
+        "udt_name": "int2"
+      },
+      {
+        "column_name": "pr",
+        "data_type": "numeric",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "0.00",
+        "udt_name": "numeric"
+      },
+      {
+        "column_name": "shdesc",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16894_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16894_primary ON public.subs USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16894_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "subs",
+        "column_name": "id",
+        "foreign_table_name": "subs",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 0
+  },
+  "test": {
+    "columns": [
+      {
+        "column_name": "post_method",
+        "data_type": "text",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "text"
+      }
+    ],
+    "indexes": [],
+    "constraints": [],
+    "rowCount": 0
+  },
+  "types": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('types_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "nm",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16910_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16910_primary ON public.types USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16910_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "types",
+        "column_name": "id",
+        "foreign_table_name": "types",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 2
+  },
+  "views_log": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('views_log_id_seq'::regclass)",
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "girlid",
+        "data_type": "integer",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": null,
+        "udt_name": "int4"
+      },
+      {
+        "column_name": "viewed_at",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "CURRENT_TIMESTAMP",
+        "udt_name": "timestamptz"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16916_idx_girlid",
+        "indexdef": "CREATE INDEX idx_16916_idx_girlid ON public.views_log USING btree (girlid)"
+      },
+      {
+        "indexname": "idx_16916_idx_viewed_at",
+        "indexdef": "CREATE INDEX idx_16916_idx_viewed_at ON public.views_log USING btree (viewed_at)"
+      },
+      {
+        "indexname": "idx_16916_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16916_primary ON public.views_log USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16916_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "views_log",
+        "column_name": "id",
+        "foreign_table_name": "views_log",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 252
+  },
+  "zaiavki": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('zaiavki_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "tst",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "CURRENT_TIMESTAMP",
+        "udt_name": "timestamptz"
+      },
+      {
+        "column_name": "mn",
+        "data_type": "numeric",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "0.00",
+        "udt_name": "numeric"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16922_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16922_primary ON public.zaiavki USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16922_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "zaiavki",
+        "column_name": "id",
+        "foreign_table_name": "zaiavki",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 660
+  },
+  "zaiavki_copy": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('zaiavki_copy_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "tst",
+        "data_type": "timestamp with time zone",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "CURRENT_TIMESTAMP",
+        "udt_name": "timestamptz"
+      },
+      {
+        "column_name": "mn",
+        "data_type": "numeric",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "0.00",
+        "udt_name": "numeric"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16929_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16929_primary ON public.zaiavki_copy USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16929_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "zaiavki_copy",
+        "column_name": "id",
+        "foreign_table_name": "zaiavki_copy",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 265
+  },
+  "zaiavkidet": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('zaiavkidet_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "zid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "key",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "val",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16936_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16936_primary ON public.zaiavkidet USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16936_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "zaiavkidet",
+        "column_name": "id",
+        "foreign_table_name": "zaiavkidet",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 1435
+  },
+  "zaiavkidet_copy": {
+    "columns": [
+      {
+        "column_name": "id",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "nextval('zaiavkidet_copy_id_seq'::regclass)",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "zid",
+        "data_type": "bigint",
+        "character_maximum_length": null,
+        "is_nullable": "NO",
+        "column_default": "'0'::bigint",
+        "udt_name": "int8"
+      },
+      {
+        "column_name": "key",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      },
+      {
+        "column_name": "val",
+        "data_type": "character varying",
+        "character_maximum_length": 255,
+        "is_nullable": "NO",
+        "column_default": "''::character varying",
+        "udt_name": "varchar"
+      }
+    ],
+    "indexes": [
+      {
+        "indexname": "idx_16946_primary",
+        "indexdef": "CREATE UNIQUE INDEX idx_16946_primary ON public.zaiavkidet_copy USING btree (id)"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_name": "idx_16946_primary",
+        "constraint_type": "PRIMARY KEY",
+        "table_name": "zaiavkidet_copy",
+        "column_name": "id",
+        "foreign_table_name": "zaiavkidet_copy",
+        "foreign_column_name": "id"
+      }
+    ],
+    "rowCount": 44
+  }
+}

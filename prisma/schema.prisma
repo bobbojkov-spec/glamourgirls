@@ -1,0 +1,220 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Girls Database Model
+model Girl {
+  id                String   @id @default(cuid())
+  name              String
+  firstName         String?
+  lastName          String?
+  birthdate         String?  // Can be date string or "?" for unknown
+  birthplace        String?
+  height            String?  // e.g., "5'4\""
+  weight            String?  // e.g., "120 lbs"
+  biography         String?  @default("")
+  alternativeNames  String?  // JSON array of alternative names
+  categories        String?  // JSON array of tags/categories
+  socialLinks       String?  // JSON object of social/external links
+  
+  // SEO & Meta Fields
+  seoTitle          String?
+  metaDescription  String?
+  metaKeywords     String?
+  ogTitle          String?
+  ogDescription    String?
+  ogImage          String?
+  canonicalUrl     String?
+  slug              String   @unique // SEO-friendly URL slug
+  
+  // H1/H2 Patterns
+  h1Title          String?
+  h2Title          String?
+  
+  // Gallery
+  featuredImageId  String?
+  featuredImage    GalleryImage? @relation("FeaturedImage", fields: [featuredImageId], references: [id])
+  
+  // Relations
+  galleryImages    GalleryImage[]
+  seoData          GirlSEO?
+  views            GirlView[]
+  
+  // Timestamps
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  @@index([slug])
+  @@index([name])
+}
+
+// Gallery Images Model
+model GalleryImage {
+  id                String   @id @default(cuid())
+  girlId            String
+  girl              Girl     @relation(fields: [girlId], references: [id], onDelete: Cascade)
+  
+  // File Information
+  filename          String
+  originalFilename  String
+  filePath          String
+  thumbnailPath    String?
+  
+  // Image Metadata
+  width             Int?
+  height            Int?
+  fileSize          Int?     // in bytes
+  mimeType          String?
+  
+  // SEO
+  altText           String?
+  seoFilename       String?  // SEO-friendly filename
+  
+  // Display
+  displayOrder      Int      @default(0)
+  isFeatured        Boolean  @default(false)
+  
+  // Relations
+  featuredGirls     Girl[]   @relation("FeaturedImage")
+  views             ImageView[]
+  purchases         ImagePurchase[]
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([girlId])
+  @@index([displayOrder])
+}
+
+// Extended SEO Data Model
+model GirlSEO {
+  id                String   @id @default(cuid())
+  girlId            String   @unique
+  girl              Girl     @relation(fields: [girlId], references: [id], onDelete: Cascade)
+  
+  // Page Title Pattern
+  pageTitle         String?
+  
+  // Meta Tags
+  metaRobots        String?  // e.g., "index, follow"
+  metaAuthor        String?
+  metaCopyright     String?
+  
+  // Open Graph Extended
+  ogType            String?  @default("profile")
+  ogSiteName        String?
+  ogUrl             String?
+  
+  // Twitter Card
+  twitterCard       String?
+  twitterTitle      String?
+  twitterDescription String?
+  twitterImage      String?
+  
+  // Schema.org Structured Data
+  structuredData    String?  // JSON-LD schema
+  
+  // Internal Link Patterns
+  internalLinks     String?  // JSON array of internal link patterns
+  
+  // Gallery SEO
+  galleryTitle      String?  // Pattern for gallery page title
+  galleryMetaDesc   String?
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Homepage Settings Model
+model HomepageSettings {
+  id                String   @id @default(cuid())
+  
+  // Content
+  introText         String?  @default("")
+  mainTitle         String?
+  h1Title           String?
+  
+  // SEO
+  pageTitle         String?
+  metaDescription   String?
+  metaKeywords      String?
+  ogTitle           String?
+  ogDescription     String?
+  ogImage           String?
+  canonicalUrl      String?
+  
+  // Featured Content
+  featuredGirlsIds  String?  // JSON array of girl IDs
+  bannerImage       String?
+  logoImage         String?
+  
+  // Timestamps
+  updatedAt         DateTime @updatedAt
+  
+  @@unique([id])
+}
+
+// Analytics Models (Future-ready)
+
+// Image Views Tracking
+model ImageView {
+  id                String   @id @default(cuid())
+  imageId           String
+  image             GalleryImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  
+  sessionId         String?  // Anonymous session identifier
+  userAgent         String?
+  ipAddress         String?
+  referer           String?
+  
+  viewedAt          DateTime @default(now())
+  
+  @@index([imageId])
+  @@index([viewedAt])
+}
+
+// Girl Profile Views
+model GirlView {
+  id                String   @id @default(cuid())
+  girlId            String
+  girl              Girl     @relation(fields: [girlId], references: [id], onDelete: Cascade)
+  
+  sessionId         String?
+  userAgent         String?
+  ipAddress         String?
+  referer           String?
+  
+  viewedAt          DateTime @default(now())
+  
+  @@index([girlId])
+  @@index([viewedAt])
+}
+
+// Image Purchase Statistics
+model ImagePurchase {
+  id                String   @id @default(cuid())
+  imageId           String
+  image             GalleryImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  
+  price             Float
+  buyerId           String?  // Optional - for future user system
+  purchaseDate      DateTime @default(now())
+  
+  // Payment Info (future)
+  paymentMethod     String?
+  transactionId     String?
+  
+  @@index([imageId])
+  @@index([purchaseDate])
+}

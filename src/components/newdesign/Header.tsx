@@ -1,0 +1,269 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import SearchModal from '@/components/layout/SearchModal';
+import ContactModal from '@/components/layout/ContactModal';
+import GalleriesModal from './GalleriesModal';
+import FavoritesModal from './FavoritesModal';
+import { useCart } from '@/context/CartContext';
+import { useFavorites } from '@/context/FavoritesContext';
+
+export default function Header() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [galleriesModalOpen, setGalleriesModalOpen] = useState(false);
+  const [fontLoaded, setFontLoaded] = useState(false);
+  const { toggleCart, itemCount } = useCart();
+  const { toggleFavorites, favoriteCount } = useFavorites();
+
+  useEffect(() => {
+    // Check if font is loaded
+    if (typeof document !== 'undefined') {
+      const checkFont = async () => {
+        try {
+          await document.fonts.ready;
+          const isLoaded = document.fonts.check('1em "Dubba Dubba NF"');
+          if (isLoaded) {
+            setFontLoaded(true);
+          } else {
+            // Fallback: show after a short delay if font check fails
+            setTimeout(() => setFontLoaded(true), 100);
+          }
+        } catch {
+          // Fallback: show after a short delay
+          setTimeout(() => setFontLoaded(true), 100);
+        }
+      };
+      checkFont();
+    } else {
+      setFontLoaded(true);
+    }
+  }, []);
+
+  return (
+    <>
+      <header className="bg-[var(--bg-page)] border-b border-[var(--border-subtle)] sticky top-0 z-50 shadow-[0_2px_20px_rgba(0,0,0,0.06)]">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 md:h-20">
+          {/* Logo - Dubba Dubba NF wordmark */}
+          <Link href="/" className="leading-none">
+            <span
+              className="text-[30px] md:text-[38px] tracking-[0.015em] text-[var(--text-primary)] uppercase"
+              style={{ 
+                fontFamily: 'var(--font-logo-hero)',
+                opacity: fontLoaded ? 1 : 0,
+                transition: 'opacity 0.2s ease-in',
+              }}
+            >
+              Glamour Girls
+            </span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-8 text-sm tracking-[0.08em] uppercase">
+            <button
+              type="button"
+              onClick={() => setSearchModalOpen(true)}
+              className="text-[var(--text-primary)] font-medium transition-all duration-200 relative px-2 py-1 rounded"
+              style={{ 
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--accent-gold)';
+                e.currentTarget.style.textShadow = '0 2px 4px rgba(200, 164, 93, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-primary)';
+                e.currentTarget.style.textShadow = 'none';
+              }}
+            >
+              SEARCH
+            </button>
+            <button
+              type="button"
+              onClick={() => setGalleriesModalOpen(true)}
+              className="text-[var(--text-primary)] font-medium transition-all duration-200 relative px-2 py-1 rounded"
+              style={{ 
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--accent-gold)';
+                e.currentTarget.style.textShadow = '0 2px 4px rgba(200, 164, 93, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-primary)';
+                e.currentTarget.style.textShadow = 'none';
+              }}
+            >
+              GALLERIES
+            </button>
+            <button
+              type="button"
+              onClick={() => setContactModalOpen(true)}
+              className="text-[var(--text-primary)] font-medium transition-all duration-200 relative px-2 py-1 rounded"
+              style={{ 
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--accent-gold)';
+                e.currentTarget.style.textShadow = '0 2px 4px rgba(200, 164, 93, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--text-primary)';
+                e.currentTarget.style.textShadow = 'none';
+              }}
+            >
+              CONTACT
+            </button>
+          </nav>
+
+          <div className="hidden md:flex items-center gap-4">
+            <button 
+              onClick={toggleFavorites}
+              aria-label={`Favorites (${favoriteCount} items)`}
+              className="relative text-[var(--text-primary)] hover:text-[var(--accent-gold)] transition-colors"
+            >
+              <svg 
+                width="20" 
+                height="20" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              {favoriteCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-[var(--accent-gold)] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {favoriteCount}
+                </span>
+              )}
+            </button>
+            <button 
+              onClick={toggleCart}
+              aria-label={`Shopping cart with ${itemCount} items`}
+              className="relative text-[var(--text-primary)] hover:text-[var(--accent-gold)] transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M6 6h15l-1.5 9h-12z" />
+                <circle cx="9" cy="20" r="1" />
+                <circle cx="18" cy="20" r="1" />
+                <path d="M6 6L4 2H2" />
+              </svg>
+              {itemCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-[var(--accent-gold)] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div className="md:hidden flex items-center gap-3">
+            <button 
+              onClick={toggleFavorites}
+              aria-label={`Favorites (${favoriteCount} items)`}
+              className="relative text-[var(--text-primary)] hover:text-[var(--accent-gold)] transition-colors"
+            >
+              <svg 
+                width="20" 
+                height="20" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+              {favoriteCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-[var(--accent-gold)] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {favoriteCount}
+                </span>
+              )}
+            </button>
+            <button 
+              onClick={toggleCart}
+              aria-label={`Shopping cart with ${itemCount} items`}
+              className="relative text-[var(--text-primary)] hover:text-[var(--accent-gold)] transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M6 6h15l-1.5 9h-12z" />
+                <circle cx="9" cy="20" r="1" />
+                <circle cx="18" cy="20" r="1" />
+                <path d="M6 6L4 2H2" />
+              </svg>
+              {itemCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-[var(--accent-gold)] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
+            </button>
+            <button
+              className="p-2 text-[var(--text-primary)]"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <nav className="md:hidden py-4 border-t border-[var(--border-subtle)]">
+            <div className="flex flex-col gap-4">
+              <button
+                className="text-[var(--text-primary)] hover:text-[var(--accent-gold)] transition-colors text-left uppercase font-medium"
+                style={{ fontFamily: 'DM Sans, sans-serif' }}
+                onClick={() => {
+                  setSearchModalOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+              >
+                SEARCH
+              </button>
+              <button
+                className="text-[var(--text-primary)] hover:text-[var(--accent-gold)] transition-colors text-left uppercase font-medium"
+                style={{ fontFamily: 'DM Sans, sans-serif' }}
+                onClick={() => {
+                  setGalleriesModalOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+              >
+                GALLERIES
+              </button>
+              <button
+                className="text-[var(--text-primary)] hover:text-[var(--accent-gold)] transition-colors text-left uppercase font-medium"
+                style={{ fontFamily: 'DM Sans, sans-serif' }}
+                onClick={() => {
+                  setContactModalOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+              >
+                CONTACT
+              </button>
+            </div>
+          </nav>
+        )}
+      </div>
+      </header>
+
+      {/* Modals */}
+      <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
+      <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
+      <GalleriesModal isOpen={galleriesModalOpen} onClose={() => setGalleriesModalOpen(false)} />
+      <FavoritesModal />
+    </>
+  );
+}

@@ -1,0 +1,25 @@
+===========================================
+MYSQL "TOO MANY CONNECTIONS" FIX
+===========================================
+
+WHEN YOU SEE THIS ERROR:
+  "ER_CON_COUNT_ERROR" - "Too many connections"
+
+DO THIS:
+  brew services restart mysql
+
+THAT'S IT. IT WORKS EVERY TIME.
+
+===========================================
+WHY IT WORKS:
+- Restarts MySQL server
+- Clears ALL existing connections
+- Pool settings are already correct (limit=1, maxIdle=0)
+- After restart, everything works again
+
+===========================================
+ALTERNATIVE (if restart doesn't work):
+  npx tsx scripts/kill-mysql-connections.ts
+
+===========================================
+

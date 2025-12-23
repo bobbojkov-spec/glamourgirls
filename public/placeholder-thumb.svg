@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="150" height="200" viewBox="0 0 150 200">
+  <rect width="150" height="200" fill="#e0d5c0"/>
+  <rect x="45" y="30" width="60" height="70" rx="30" fill="#c9b896"/>
+  <ellipse cx="75" cy="140" rx="45" ry="35" fill="#c9b896"/>
+  <text x="75" y="180" text-anchor="middle" fill="#8b7355" font-family="Georgia" font-size="10">Thumbnail</text>
+</svg>
+
+
+
+
