@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     let total = 0;
     try {
+      // Count all admin users (including inactive ones - if any exist, setup is not needed)
       const [countRows] = await pool.execute(`select count(*)::int as total from public.admin_users`);
       total = Array.isArray(countRows) ? Number((countRows as any)[0]?.total || 0) : 0;
     } catch (e: any) {
@@ -17,6 +18,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // hasAdmins should be true if ANY admin users exist (even inactive ones)
+    // This ensures the setup form is hidden once any admin is created
     return NextResponse.json({ hasAdmins: total > 0, count: total });
   } catch (error: any) {
     console.error('Error checking admin users:', error);

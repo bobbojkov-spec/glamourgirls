@@ -151,7 +151,7 @@ export default function AdminLogin() {
               LOGIN
             </Button>
 
-            {/* Only show first-time setup if no admins exist */}
+            {/* Only show first-time setup if no admins exist (explicitly false, not null/loading or true) */}
             {hasAdmins === false && (
               <>
                 <Divider style={{ margin: '16px 0' }} />
@@ -159,7 +159,7 @@ export default function AdminLogin() {
                   type="info"
                   showIcon
                   title="First-time setup"
-                  description="If there are no admin users yet, you can create the first super admin using the email+password above."
+                  description="Create the first super admin user using the email and password fields above."
                 />
                 <Button style={{ marginTop: 12 }} block onClick={handleBootstrap} loading={loading}>
                   Create first admin (super admin)
