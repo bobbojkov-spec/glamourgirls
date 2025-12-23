@@ -3,62 +3,52 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
 import pool, { getPool } from '@/lib/db';
-import { createCanvas } from 'canvas';
 import { requireAdminApi } from '@/app/api/admin/_auth';
 
-// Helper function to create watermark using canvas with fixed width
-async function createWatermarkCanvas(text: string, imageWidth: number, imageHeight: number): Promise<Buffer> {
-  const targetTextWidth = 475; // Target width between 450-500px
-  const canvas = createCanvas(imageWidth, imageHeight);
-  const ctx = canvas.getContext('2d');
+// Helper function to create watermark using SVG (Vercel-compatible)
+function createWatermarkSVG(text: string, imageWidth: number, imageHeight: number): Buffer {
+  // Calculate font size based on image width (target ~475px text width)
+  // Approximate: font size ≈ text width / (text length * 0.6)
+  const targetTextWidth = 475;
+  const estimatedFontSize = Math.min(Math.max(targetTextWidth / (text.length * 0.6), 24), 48);
   
-  // Find the right font size to achieve target text width
-  let fontSize = 24; // Start with a reasonable size
-  let textWidth = 0;
-  let iterations = 0;
-  const maxIterations = 20;
-  
-  // Binary search to find font size that gives us ~475px width
-  let minSize = 12;
-  let maxSize = 72;
-  
-  while (iterations < maxIterations) {
-    fontSize = Math.floor((minSize + maxSize) / 2);
-    ctx.font = `${fontSize}px "Brush Script MT", "Brush Script", "Lucida Handwriting", cursive`;
-    const metrics = ctx.measureText(text);
-    textWidth = metrics.width;
-    
-    if (Math.abs(textWidth - targetTextWidth) < 5) {
-      break; // Close enough
-    }
-    
-    if (textWidth < targetTextWidth) {
-      minSize = fontSize + 1;
-    } else {
-      maxSize = fontSize - 1;
-    }
-    
-    iterations++;
-  }
-  
-  // Set final font
-  ctx.font = `${fontSize}px "Brush Script MT", "Brush Script", "Lucida Handwriting", cursive`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'bottom';
-  
-  // Set text color with transparency (80-90% opacity for better readability)
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)'; // Darker shadow for better contrast
-  ctx.lineWidth = 0.8;
-  
-  // Draw text with stroke for better visibility
   const x = imageWidth / 2;
   const y = imageHeight - 15;
   
-  ctx.strokeText(text, x, y);
-  ctx.fillText(text, x, y);
+  // Create SVG with text watermark
+  // Use system fonts that are available on most systems
+  const svg = Buffer.from(`
+    <svg width="${imageWidth}" height="${imageHeight}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+          <feOffset dx="1" dy="1" result="offsetblur"/>
+          <feComponentTransfer>
+            <feFuncA type="linear" slope="0.55"/>
+          </feComponentTransfer>
+          <feMerge>
+            <feMergeNode/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+      <text
+        x="${x}"
+        y="${y}"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="${estimatedFontSize}"
+        font-style="italic"
+        text-anchor="middle"
+        dominant-baseline="baseline"
+        fill="rgba(255, 255, 255, 0.85)"
+        stroke="rgba(0, 0, 0, 0.55)"
+        stroke-width="1"
+        filter="url(#shadow)"
+      >${text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>
+    </svg>
+  `);
   
-  return canvas.toBuffer('image/png');
+  return svg;
 }
 
 export async function POST(request: NextRequest) {
@@ -201,14 +191,14 @@ export async function POST(request: NextRequest) {
         const resizedWidth = resizedMeta.width || GALLERY_MAX_SIZE;
         const resizedHeight = resizedMeta.height || GALLERY_MAX_SIZE;
         
-        // Create watermark using canvas for better font support
+        // Create watermark using SVG (Vercel-compatible)
         const watermarkText = 'www.GlamourGirlsOftheSilverScreen.com';
-        const watermarkBuffer = await createWatermarkCanvas(watermarkText, resizedWidth, resizedHeight);
+        const watermarkSVG = createWatermarkSVG(watermarkText, resizedWidth, resizedHeight);
         
         // Composite watermark onto gallery image
         const galleryBuffer = await galleryImage
           .composite([{
-            input: watermarkBuffer,
+            input: watermarkSVG,
             top: 0,
             left: 0,
           }])
@@ -281,14 +271,14 @@ export async function POST(request: NextRequest) {
           finalGalleryWidth = resizedMeta.width || width;
           finalGalleryHeight = resizedMeta.height || height;
           
-          // Create watermark using canvas for better font support
+          // Create watermark using SVG (Vercel-compatible)
           const watermarkText = 'Glamour Girls of the Silver Screen';
-          const watermarkBuffer = await createWatermarkCanvas(watermarkText, finalGalleryWidth, finalGalleryHeight);
+          const watermarkSVG = createWatermarkSVG(watermarkText, finalGalleryWidth, finalGalleryHeight);
           
           // Composite watermark onto resized image
           galleryBuffer = Buffer.from(await resizedImage
             .composite([{
-              input: watermarkBuffer,
+              input: watermarkSVG,
               top: 0,
               left: 0,
             }])
@@ -297,12 +287,12 @@ export async function POST(request: NextRequest) {
         } else {
           // Image is already <= 900px, but still add watermark
           const watermarkText = 'Glamour Girls of the Silver Screen';
-          const watermarkBuffer = await createWatermarkCanvas(watermarkText, width, height);
+          const watermarkSVG = createWatermarkSVG(watermarkText, width, height);
           
           // Composite watermark onto original image
           galleryBuffer = Buffer.from(await image
             .composite([{
-              input: watermarkBuffer,
+              input: watermarkSVG,
               top: 0,
               left: 0,
             }])
