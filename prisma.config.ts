@@ -8,12 +8,16 @@ import { defineConfig, env } from "prisma/config";
 dotenv.config({ path: ".env" });
 dotenv.config({ path: ".env.local", override: true });
 
+// For prisma generate, DATABASE_URL is not required (only needed for migrations)
+// Use a dummy URL if not available to prevent build errors
+const databaseUrl = process.env.DATABASE_URL || "postgresql://user:password@localhost:5432/db";
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    url: databaseUrl,
   },
 });
