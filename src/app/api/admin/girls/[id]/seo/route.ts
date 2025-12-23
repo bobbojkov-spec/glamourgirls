@@ -107,10 +107,15 @@ export async function POST(
 ) {
   const { error } = await requireAdminApi(request);
   if (error) return error;
+  
+  // Declare variables outside try block so they're accessible in catch
+  let actressId: number | undefined;
+  let data: any;
+  
   try {
     const { id } = await params;
-    const actressId = parseInt(id);
-    const data = await request.json();
+    actressId = parseInt(id);
+    data = await request.json();
 
     if (isNaN(actressId)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
@@ -286,8 +291,8 @@ export async function POST(
       detail: err?.detail,
       hint: err?.hint,
       stack: err?.stack,
-      actressId,
-      data: data,
+      actressId: actressId ?? 'unknown',
+      data: data ?? 'not loaded',
     });
     const isProd = process.env.NODE_ENV === 'production';
     const errorMessage = isProd 
