@@ -11,6 +11,11 @@ function createPool(): Pool {
   const databaseUrl = process.env.DATABASE_URL;
   const useDatabaseUrl = Boolean(databaseUrl && databaseUrl.startsWith('postgres'));
 
+  // Warn if DATABASE_URL is not set in production
+  if (!databaseUrl && process.env.NODE_ENV === 'production') {
+    console.error('⚠️ WARNING: DATABASE_URL is not set in production! Falling back to localhost.');
+  }
+
   const dbConfig = useDatabaseUrl
     ? {
         connectionString: databaseUrl!,
@@ -38,14 +43,19 @@ function createPool(): Pool {
   // Log database configuration (without password)
   console.log('🔌 Database Configuration (PostgreSQL):');
   if (useDatabaseUrl) {
-    console.log('  Using DATABASE_URL:', '(set)');
+    const urlPreview = databaseUrl!.substring(0, 30) + '...';
+    console.log('  Using DATABASE_URL:', urlPreview);
     console.log('  SSL:', dbConfig.ssl ? 'enabled' : 'disabled');
   } else {
+    console.log('  ⚠️ Using fallback localhost configuration');
     console.log('  Host:', (dbConfig as any).host);
     console.log('  Port:', (dbConfig as any).port);
     console.log('  User:', (dbConfig as any).user);
     console.log('  Database:', (dbConfig as any).database);
     console.log('  Password:', (dbConfig as any).password ? '***' : '(empty)');
+    if (process.env.NODE_ENV === 'production') {
+      console.error('  ❌ ERROR: This will fail in production! DATABASE_URL must be set.');
+    }
   }
   
   const newPool = new Pool(dbConfig);
