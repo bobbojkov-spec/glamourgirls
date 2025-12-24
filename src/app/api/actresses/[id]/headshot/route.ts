@@ -125,7 +125,7 @@ export async function GET(
             'X-Image-Height': finalHeight.toString(),
           };
 
-          return new NextResponse(finalBuffer, { headers });
+          return new NextResponse(new Uint8Array(finalBuffer), { headers });
         }
       } catch (fetchError) {
         console.error(`Error fetching headshot from storage for actress ${actressId}:`, fetchError);
