@@ -88,7 +88,13 @@ export async function generateMetadata({ params }: { params: Promise<{ era: stri
     };
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  // Get base URL for metadata (synchronous, safe for generateMetadata)
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+    (process.env.NODE_ENV === 'production' 
+      ? 'https://www.glamourgirlsofthesilverscreen.com' 
+      : '');
+
+  const canonicalUrl = baseUrl ? `${baseUrl}/explore/${era}` : `/explore/${era}`;
 
   return {
     title: eraInfo.title,
@@ -96,7 +102,7 @@ export async function generateMetadata({ params }: { params: Promise<{ era: stri
     openGraph: {
       title: eraInfo.title,
       description: eraInfo.description,
-      url: `${baseUrl}/explore/${era}`,
+      url: canonicalUrl,
       siteName: 'Glamour Girls of the Silver Screen',
       type: 'website',
     },
@@ -106,7 +112,7 @@ export async function generateMetadata({ params }: { params: Promise<{ era: stri
       description: eraInfo.description,
     },
     alternates: {
-      canonical: `${baseUrl}/explore/${era}`,
+      canonical: canonicalUrl,
     },
   };
 }
@@ -136,10 +142,18 @@ export default async function ExploreEraPage({ params }: { params: Promise<{ era
       if (host) {
         baseUrl = `${protocol}://${host}`;
       } else {
-        baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        // Use environment variable or production domain, never localhost
+        baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+          (process.env.NODE_ENV === 'production' 
+            ? 'https://www.glamourgirlsofthesilverscreen.com' 
+            : '');
       }
     } catch (error) {
-      baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      // Use environment variable or production domain, never localhost
+      baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+        (process.env.NODE_ENV === 'production' 
+          ? 'https://www.glamourgirlsofthesilverscreen.com' 
+          : '');
     }
     
     const response = await fetch(`${baseUrl}/api/grid/era/${era}`, {
