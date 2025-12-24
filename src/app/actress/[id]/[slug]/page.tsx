@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
-import { headers } from 'next/headers';
 import ViewTracker from '@/components/actress/ViewTracker';
 import ActressBio from '@/components/actress/ActressBio';
 import ActressSourcesLinks from '@/components/actress/ActressSourcesLinks';
@@ -14,6 +13,14 @@ import FavoriteButton from '@/components/actress/FavoriteButton';
 import RelatedActressesGrid from '@/components/actress/RelatedActressesGrid';
 import Breadcrumb from '@/components/ui/Breadcrumb';
 import type { Actress } from '@/types/actress';
+import { fetchActressFromDb } from '@/lib/actress/fetchActress';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
+// Force Node.js runtime for consistent execution (metadata + page + helpers)
+// This ensures generateMetadata runs in the same runtime as the page component
+export const runtime = 'nodejs';
 
 interface FeaturedImage {
   id: number;
@@ -85,24 +92,31 @@ const findHQForGallery = (galleryId: number, hqImages: NonNullable<Actress['imag
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  // Diagnostic log to verify code is running (remove after verification)
+  console.log('METADATA VERSION 2025-01-XX - generateMetadata executing');
+  
   const { id, slug } = await params;
+  
+  // Validate and convert id to number
+  const actressId = parseInt(id);
+  if (isNaN(actressId) || actressId <= 0) {
+    return {
+      title: 'Actress Profile',
+    };
+  }
+  
   try {
-    const baseUrl = await resolveBaseUrl();
-    const res = await fetch(`${baseUrl}/api/actresses/${id}`, {
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-store',
-      },
-    });
+    // Fetch directly from database
+    console.log(`METADATA: Fetching actress ${actressId} from database`);
+    const actressData = await fetchActressFromDb(actressId);
     
-    if (!res.ok) {
+    if (!actressData) {
       return {
         title: 'Actress Profile',
       };
     }
     
-    const actressData = await res.json();
-    const baseUrlFull = await resolveBaseUrl();
+    const baseUrl = getBaseUrl();
     const actressName = actressData.name;
     const birthName = actressData.birthName ? ` (${actressData.birthName})` : '';
     
@@ -113,10 +127,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     let ogImage: string | undefined;
     if (actressData.images?.gallery?.[0]?.url) {
       const galleryUrl = actressData.images.gallery[0].url;
-      ogImage = galleryUrl.startsWith('http') ? galleryUrl : `${baseUrlFull}${galleryUrl.startsWith('/') ? galleryUrl : '/' + galleryUrl}`;
+      ogImage = galleryUrl.startsWith('http') ? galleryUrl : (baseUrl ? `${baseUrl}${galleryUrl.startsWith('/') ? galleryUrl : '/' + galleryUrl}` : galleryUrl);
+    } else {
+      // Fallback to headshot API endpoint (relative URL)
+      ogImage = baseUrl ? `${baseUrl}/api/actresses/${actressId}/headshot` : `/api/actresses/${actressId}/headshot`;
     }
     
-    const canonicalUrl = `${baseUrlFull}/actress/${id}/${slug}`;
+    const canonicalUrl = baseUrl ? `${baseUrl}/actress/${id}/${slug}` : `/actress/${id}/${slug}`;
     
     return {
       title,
@@ -156,81 +173,46 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-const resolveBaseUrl = async () => {
-  // Try to get the host from request headers first (works on Vercel)
-  try {
-    const headersList = await headers();
-    const host = headersList.get('host');
-    const protocol = headersList.get('x-forwarded-proto') || 'https';
-    
-    if (host) {
-      return `${protocol}://${host}`;
-    }
-  } catch (error) {
-    // Headers might not be available in all contexts
-    console.warn('Could not get headers for base URL:', error);
-  }
-  
-  // Fallback to environment variables
+// Helper to get base URL for metadata (only used for canonical URLs and OG images)
+// This function is synchronous and safe for use in generateMetadata
+function getBaseUrl(): string {
+  // Use environment variable if available
   if (process.env.NEXT_PUBLIC_BASE_URL) {
     return process.env.NEXT_PUBLIC_BASE_URL;
   }
   
-  // Use VERCEL_URL on Vercel (automatically set by Vercel)
-  if (process.env.VERCEL_URL) {
-    const vercelUrl = process.env.VERCEL_URL;
-    // Check if it already includes protocol
-    if (vercelUrl.startsWith('http://') || vercelUrl.startsWith('https://')) {
-      return vercelUrl;
-    }
-    return `https://${vercelUrl}`;
+  // For production, use the production domain
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://www.glamourgirlsofthesilverscreen.com';
   }
   
-  // Fallback to localhost for local development
-  return 'http://localhost:3000';
-};
-
-async function fetchActress(id: string): Promise<Actress | null> {
-  try {
-    const baseUrl = await resolveBaseUrl();
-    const res = await fetch(`${baseUrl}/api/actresses/${id}`, {
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-store',
-      },
-    });
-    
-    if (!res.ok) {
-      console.warn(`Actress not available: ${id} (${res.status})`);
-      return null;
-    }
-    
-    const data = await res.json();
-    
-    // Log API response for debugging
-    console.log(`[API] Loaded actress ${id}:`, {
-      name: data.name,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      headshotUrl: `/api/actresses/${id}/headshot`,
-      hasImages: !!data.images?.gallery?.length,
-      imageCount: data.images?.gallery?.length || 0,
-    });
-    
-    return data;
-  } catch (error) {
-    console.warn(`Actress not available: ${id} (fetch error)`, error);
-    return null;
-  }
+  // For development/preview, return empty string (relative URLs)
+  return '';
 }
 
 export default async function ActressPage({ params }: PageProps) {
   const { id, slug } = await params;
-  const actressData: Actress | null = await fetchActress(id);
+  
+  // Validate and convert id to number
+  const actressId = parseInt(id);
+  if (isNaN(actressId) || actressId <= 0) {
+    notFound();
+    return;
+  }
+  
+  // Fetch directly from database (no HTTP call)
+  let actressData: Actress | null = null;
+  try {
+    actressData = await fetchActressFromDb(actressId);
+  } catch (error) {
+    console.error(`Error fetching actress ${actressId}:`, error);
+    notFound();
+    return;
+  }
   
   if (!actressData) {
     notFound();
-    return; // Explicit return to prevent any further execution
+    return;
   }
 
   if (actressData.slug && actressData.slug !== slug) {
@@ -315,6 +297,7 @@ export default async function ActressPage({ params }: PageProps) {
     (actressName.includes(heroFirstNameRaw) ? actressName.replace(heroFirstNameRaw, '').trim() : actressName) ||
     heroFirstNameRaw;
   const heroImage = `/api/actresses/${id}/headshot`;
+  const heroImage2 = `/api/actresses/${id}/headshot2`;
 
   // Log hero section data for debugging
   console.log(`[Hero] Rendering hero section:`, {
@@ -322,6 +305,7 @@ export default async function ActressPage({ params }: PageProps) {
     heroFirstName,
     heroLastName,
     heroImage,
+    heroImage2,
   });
 
   return (

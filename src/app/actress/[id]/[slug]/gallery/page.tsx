@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
-import { headers } from 'next/headers';
 import { GalleryGrid, GalleryImage } from '@/components/gallery';
+import { fetchActressFromDb } from '@/lib/actress/fetchActress';
 
 // Era background colors
 const eraBackgrounds: Record<string, string> = {
@@ -12,8 +12,11 @@ const eraBackgrounds: Record<string, string> = {
   '60s': 'era-60s',
 };
 
-// ISR: Revalidate every hour
-export const revalidate = 3600;
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
+// Force Node.js runtime for consistent execution (metadata + page + helpers)
+export const runtime = 'nodejs';
 
 interface PageProps {
   params: Promise<{ id: string; slug: string }>;
@@ -27,11 +30,32 @@ export async function generateStaticParams() {
   return [];
 }
 
+// Helper to get base URL for metadata
+function getBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://www.glamourgirlsofthesilverscreen.com';
+  }
+  return '';
+}
+
 // Generate metadata for SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id, slug } = await params;
+  
+  // Validate and convert id to number
+  const actressId = parseInt(id);
+  if (isNaN(actressId) || actressId <= 0) {
+    return {
+      title: 'Actress Gallery',
+    };
+  }
+  
   try {
-    const actressData = await fetchActressData(id);
+    // Fetch directly from database
+    const actressData = await fetchActressFromDb(actressId);
     
     if (!actressData) {
       return {
@@ -39,7 +63,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       };
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.glamourgirlsofthesilverscreen.com';
+    const baseUrl = getBaseUrl();
     const actressName = actressData.name;
     const title = `${actressName} Photo Gallery - ${actressName} Pictures | ${slug}`;
     const description = `${actressName} Photo Gallery - Browse our collection of ${actressName} pictures and photographs. ${actressName} Images from Glamour Girls of the Silver Screen.`;
@@ -48,10 +72,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     let ogImage: string | undefined;
     if (actressData.images?.gallery?.[0]?.url) {
       const galleryUrl = actressData.images.gallery[0].url;
-      ogImage = galleryUrl.startsWith('http') ? galleryUrl : `${baseUrl}${galleryUrl.startsWith('/') ? galleryUrl : '/' + galleryUrl}`;
+      ogImage = galleryUrl.startsWith('http') ? galleryUrl : (baseUrl ? `${baseUrl}${galleryUrl.startsWith('/') ? galleryUrl : '/' + galleryUrl}` : galleryUrl);
     }
     
-    const canonicalUrl = `${baseUrl}/actress/${id}/${slug}/gallery`;
+    const canonicalUrl = baseUrl ? `${baseUrl}/actress/${id}/${slug}/gallery` : `/actress/${id}/${slug}/gallery`;
     
     return {
       title,
@@ -83,105 +107,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-const resolveBaseUrl = async () => {
-  // Try to get the host from request headers first (works on Vercel)
-  try {
-    const headersList = await headers();
-    const host = headersList.get('host');
-    const protocol = headersList.get('x-forwarded-proto') || 'https';
-    
-    if (host) {
-      return `${protocol}://${host}`;
-    }
-  } catch (error) {
-    // Headers might not be available in all contexts
-    console.warn('Could not get headers for base URL:', error);
-  }
-  
-  // Fallback to environment variables
-  if (process.env.NEXT_PUBLIC_BASE_URL) {
-    return process.env.NEXT_PUBLIC_BASE_URL;
-  }
-  
-  // Use VERCEL_URL on Vercel (automatically set by Vercel)
-  if (process.env.VERCEL_URL) {
-    const vercelUrl = process.env.VERCEL_URL;
-    // Check if it already includes protocol
-    if (vercelUrl.startsWith('http://') || vercelUrl.startsWith('https://')) {
-      return vercelUrl;
-    }
-    return `https://${vercelUrl}`;
-  }
-  
-  // Fallback to localhost for local development
-  return 'http://localhost:3000';
-};
-
-async function fetchActressData(id: string) {
-  try {
-    const baseUrl = await resolveBaseUrl();
-    const res = await fetch(`${baseUrl}/api/actresses/${id}`, {
-      cache: 'no-store',
-      headers: {
-        'Cache-Control': 'no-store',
-      },
-    });
-    
-    if (!res.ok) {
-      return null;
-    }
-    
-    const data = await res.json();
-    
-    // Map era
-    const eraMap: Record<string, string> = {
-      '20-30s': '20-30s',
-      '40s': '40s',
-      '50s': '50s',
-      '60s': '60s',
-    };
-    
-    // Build image URLs
-    const baseUrlFull = await resolveBaseUrl();
-    const buildImageUrl = (path: string) => {
-      if (!path) return '';
-      if (path.startsWith('http')) return path;
-      return path.startsWith('/') ? `${baseUrlFull}${path}` : `${baseUrlFull}/${path}`;
-    };
-
-    // Transform API response to match expected format
-    const galleryImages = (data.images?.gallery || []).map((img: any) => ({
-      id: img.id,
-      url: buildImageUrl(img.url),
-      width: img.width,
-      height: img.height,
-      thumbnailUrl: buildImageUrl(img.thumbnailUrl || img.url),
-    }));
-
-    const hqImages = (data.images?.hq || []).map((img: any) => ({
-      id: img.id,
-      url: buildImageUrl(img.url),
-      width: img.width,
-      height: img.height,
-    }));
-
-    return {
-      id: data.id,
-      name: data.name,
-      firstName: data.firstName || '',
-      lastName: data.lastName || '',
-      slug: data.slug,
-      era: data.era || '50s',
-      images: {
-        gallery: galleryImages,
-        hq: hqImages,
-      },
-    };
-  } catch (error) {
-    console.error('Error fetching actress data:', error);
-    return null;
-  }
-}
 
 // Helper to find HQ image for a gallery image
 function findHQ(galleryImageId: number, hqImages: any[]): any {
@@ -193,8 +118,22 @@ function findHQ(galleryImageId: number, hqImages: any[]): any {
 export default async function GalleryPage({ params }: PageProps) {
   const { id, slug } = await params;
   
-  // Fetch actress data from API
-  const actressData = await fetchActressData(id);
+  // Validate and convert id to number
+  const actressId = parseInt(id);
+  if (isNaN(actressId) || actressId <= 0) {
+    notFound();
+    return;
+  }
+  
+  // Fetch directly from database (no HTTP call)
+  let actressData = null;
+  try {
+    actressData = await fetchActressFromDb(actressId);
+  } catch (error) {
+    console.error(`Error fetching actress ${actressId}:`, error);
+    notFound();
+    return;
+  }
   
   if (!actressData) {
     notFound();
