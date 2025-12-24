@@ -48,3 +48,7 @@ next-env.d.ts
 /all-girls-seo-output.txt
 scripts/upload-failures.jsonl
 scripts/upload-missing.txt
+
+# Database backups
+/backups/
+*.sql.gz
