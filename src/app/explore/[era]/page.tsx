@@ -122,27 +122,29 @@ export default async function ExploreEraPage({ params }: { params: Promise<{ era
     try {
       const headersList = await headers();
       const host = headersList.get('host');
-      const protocol = headersList.get('x-forwarded-proto') || 'https';
+      const protocol = headersList.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https');
       
       if (host) {
         baseUrl = `${protocol}://${host}`;
       } else {
-        // Use environment variable or production domain, never localhost
+        // Use environment variable or default to localhost in development
         baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
           (process.env.NODE_ENV === 'production' 
             ? 'https://www.glamourgirlsofthesilverscreen.com' 
-            : '');
+            : 'http://localhost:3000');
       }
     } catch (error) {
-      // Use environment variable or production domain, never localhost
+      // Use environment variable or default to localhost in development
       baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
         (process.env.NODE_ENV === 'production' 
           ? 'https://www.glamourgirlsofthesilverscreen.com' 
-          : '');
+          : 'http://localhost:3000');
     }
     
+    console.log(`[Explore Page] Fetching grid data for era ${era} from ${baseUrl}/api/grid/era/${era}`);
+    // Use cache: 'no-store' to bypass Next.js cache and get fresh data
     const response = await fetch(`${baseUrl}/api/grid/era/${era}`, {
-      next: { revalidate: 3600 }, // Cache for 1 hour
+      cache: 'no-store', // Always fetch fresh data
       headers: {
         'Cache-Control': 'no-store',
       },
@@ -150,9 +152,14 @@ export default async function ExploreEraPage({ params }: { params: Promise<{ era
     
     if (response.ok) {
       const jsonData = await response.json();
+      console.log(`[Explore Page] Received data for ${era}: success=${jsonData?.success}, count=${jsonData?.count}, items=${jsonData?.items?.length || 0}`);
       // Ensure the data structure matches what the component expects
       if (jsonData && typeof jsonData === 'object' && 'success' in jsonData) {
         gridData = jsonData;
+        // Log if we got empty items but API says success
+        if (jsonData.success && (!jsonData.items || jsonData.items.length === 0)) {
+          console.warn(`[Explore Page] WARNING: API returned success but empty items for era ${era}`);
+        }
       } else {
         console.error('Invalid grid data structure:', jsonData);
         gridData = null;
@@ -162,7 +169,7 @@ export default async function ExploreEraPage({ params }: { params: Promise<{ era
       gridData = null;
     }
   } catch (error) {
-    console.error('Error fetching grid data:', error);
+    console.error(`[Explore Page] Error fetching grid data for era ${era}:`, error);
   }
 
   // Get random hero collage from saved versions (1-3)
