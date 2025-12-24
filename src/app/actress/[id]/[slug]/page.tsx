@@ -249,6 +249,13 @@ export default async function ActressPage({ params }: PageProps) {
   }
   const relatedActresses = actressData.relatedActresses || [];
   const galleryImages = (actressData.images?.gallery || []).filter((img) => !!img?.url);
+  
+  // Debug logging
+  console.log(`[Gallery] Processing gallery for actress ${id}:`, {
+    galleryCount: galleryImages.length,
+    galleryImages: galleryImages.map(img => ({ id: img.id, url: img.url?.substring(0, 80) + '...', thumbnailUrl: img.thumbnailUrl?.substring(0, 80) + '...' })),
+  });
+  
   const galleryGridImages: GalleryImage[] = galleryImages.map((galleryImg) => {
     const hqImage = findHQForGallery(Number(galleryImg.id), actressData.images?.hq || []);
     const price = hqImage ? 9.9 : undefined;
