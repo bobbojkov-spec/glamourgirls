@@ -6,7 +6,7 @@
        url('/fonts/dubba-dubba-nf/DubbaDubbaNF.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
-  font-display: block; /* Block rendering until font loads to prevent FOUT */
+  font-display: block; /* Block to prevent FOUC - text invisible until font loads */
 }
 
 @font-face {
@@ -14,7 +14,7 @@
   src: url('/fonts/lemonmilk-cufonfonts/LemonMilk.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: block; /* Block for display fonts - prevent FOUC */
 }
 
 @font-face {
@@ -22,7 +22,7 @@
   src: url('/fonts/lemonmilk-cufonfonts/LemonMilkbold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
-  font-display: swap;
+  font-display: block; /* Block for display fonts - prevent FOUC */
 }
 
 @font-face {
@@ -30,7 +30,7 @@
   src: url('/fonts/didot-2/Didot Bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
-  font-display: swap;
+  font-display: block; /* Block for display fonts - prevent FOUC */
 }
 
 @font-face {
@@ -38,7 +38,7 @@
   src: url('/fonts/Broadway.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
-  font-display: swap;
+  font-display: block; /* Block for display fonts - prevent FOUC */
 }
 
 @font-face {
@@ -46,7 +46,7 @@
   src: url('/fonts/Kabel Black Regular/Kabel Black Regular.otf') format('opentype');
   font-weight: 900;
   font-style: normal;
-  font-display: block; /* Block rendering until font loads to prevent FOUT */
+  font-display: block; /* Block for display fonts - prevent FOUC */
 }
 
 /* ========================================
@@ -96,7 +96,7 @@
   --logo-line-height: 1.05;
   --logo-letter-spacing: -0.01em;
 
-  /* Typography - Heading Sizes */
+  /* Typography - Heading Sizes (Desktop) */
   --h1-size: 28px;
   --h1-line-height: 1.2;
   --h1-letter-spacing: 0.05em;
@@ -110,7 +110,7 @@
   --h3-letter-spacing: 0.1em;
   --heading-gap: 20px;
 
-  /* Typography - Body Sizes */
+  /* Typography - Body Sizes (Desktop) */
   --body-lg-size: 18px;
   --body-lg-line-height: 1.7;
   --body-size: 16px;
@@ -118,11 +118,32 @@
   --meta-size: 13px;
   --meta-line-height: 1.4;
   --meta-letter-spacing: 0.08em;
+}
 
-  /* Shadows */
-  --shadow-subtle: 0 6px 22px rgba(18, 18, 18, 0.10);
-  --shadow-lift: 0 10px 32px rgba(18, 18, 18, 0.14);
-  --shadow-input: inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 0 0 1px rgba(30, 30, 30, 0.12);
+/* Tablet-specific typography (768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root {
+    --h1-size: 24px;
+    --h2-size: 18px;
+    --h3-size: 15px;
+    --body-lg-size: 16px;
+    --body-size: 15px;
+    --meta-size: 12px;
+    --heading-gap: 16px;
+  }
+}
+
+/* Mobile-specific typography (max-width: 767px) */
+@media (max-width: 767px) {
+  :root {
+    --h1-size: 22px;
+    --h2-size: 17px;
+    --h3-size: 14px;
+    --body-lg-size: 15px;
+    --body-size: 14px;
+    --meta-size: 12px;
+    --heading-gap: 14px;
+  }
 }
 
 /* Base Styles for New Design */
@@ -132,6 +153,79 @@ body.new-design {
   font-family: var(--font-ui);
   font-size: var(--body-size);
   line-height: var(--body-line-height);
+}
+
+/* Search Page Typography - Hero Title */
+.search-hero-title {
+  font-size: 32px; /* Mobile: 32-36px - increased significantly */
+  font-weight: 400; /* Normal weight for script font (Great Vibes) */
+  font-style: normal;
+  /* Text will remain invisible until Great Vibes font loads (font-display: block prevents FOUC) */
+}
+
+@media (min-width: 768px) {
+  .search-hero-title {
+    font-size: 40px; /* Tablet: 40-44px - increased significantly */
+  }
+}
+
+@media (min-width: 1024px) {
+  .search-hero-title {
+    font-size: 48px; /* Desktop: 48-56px - increased significantly */
+  }
+  
+  /* Search form inputs - Desktop: 15-16px */
+  .search-form-input,
+  .search-form-select {
+    font-size: 15px !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Search form inputs - Tablet: 15-16px */
+  .search-form-input,
+  .search-form-select {
+    font-size: 15px !important;
+  }
+}
+
+/* Search Page Hero Section - Responsive Padding */
+.search-hero-section {
+  padding-top: 27px; /* Mobile: 50-60% reduction from 68px */
+  padding-bottom: 27px;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .search-hero-section {
+    padding-top: 44px; /* Tablet: 30-35% reduction from 68px */
+    padding-bottom: 44px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .search-hero-section {
+    padding-top: 48px; /* Desktop: reduced from 68px, keeps form visible */
+    padding-bottom: 48px;
+  }
+}
+
+/* Search Page Typography - Actress Names in Listing */
+.search-actress-name {
+  font-size: 16px; /* Mobile: 16-17px */
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .search-actress-name {
+    font-size: 17px; /* Tablet: 17-18px */
+  }
+}
+
+@media (min-width: 1024px) {
+  .search-actress-name {
+    font-size: 18px; /* Desktop: 18-19px */
+  }
 }
 
 /* Responsive section grid for /newdesign layout */

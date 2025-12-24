@@ -5,6 +5,8 @@ import path from 'path';
 import fs from 'fs/promises';
 import { requireAdminApi } from '@/app/api/admin/_auth';
 
+export const runtime = 'nodejs';
+
 // Era mapping: era name -> database value
 const ERA_MAP: Record<string, number> = {
   '1930s': 1,

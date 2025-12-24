@@ -63,6 +63,13 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
     },
   });
 
+  // Debug: Log images when initialData changes
+  useEffect(() => {
+    if (initialData?.images) {
+      console.log('Admin: Initial images received:', initialData.images.length, initialData.images);
+    }
+  }, [initialData]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [headshotFileList, setHeadshotFileList] = useState<UploadFile[]>([]);
   const [galleryFileList, setGalleryFileList] = useState<UploadFile[]>([]);
@@ -826,15 +833,27 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
           {!initialData?.id && (
             <p className="text-xs text-gray-500 mb-3" style={{ fontSize: '11px' }}>Please save the entry first before uploading gallery images.</p>
           )}
-          {formData.images && formData.images.length > 0 && (
+          {formData.images && formData.images.length > 0 ? (
             <div>
+              <div className="mb-2 text-sm text-gray-600">
+                {formData.images.length} image{formData.images.length !== 1 ? 's' : ''} found
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {formData.images.map((img: any, index: number) => {
                   const galleryPath = img.url || img.path || '';
-                  const cleanPath = galleryPath.startsWith('/') ? galleryPath.slice(1) : galleryPath;
-                  const thumbnailUrl = galleryPath 
-                    ? `/api/images/thumbnail?path=${encodeURIComponent(galleryPath)}&width=200&height=250`
-                    : '';
+                  
+                  // If the path is already a full Supabase URL, use it directly
+                  // Otherwise, use the thumbnail API with the database path
+                  let thumbnailUrl = '';
+                  if (galleryPath) {
+                    if (galleryPath.startsWith('http://') || galleryPath.startsWith('https://')) {
+                      // Already a full URL - use thumbnail API to resize it
+                      thumbnailUrl = `/api/images/thumbnail?path=${encodeURIComponent(galleryPath)}&width=200&height=250`;
+                    } else {
+                      // Database path - use thumbnail API
+                      thumbnailUrl = `/api/images/thumbnail?path=${encodeURIComponent(galleryPath)}&width=200&height=250`;
+                    }
+                  }
                   
                   const handleDeleteImage = async () => {
                     modal.confirm({
@@ -864,12 +883,13 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                   
                   return (
                     <div key={img.id || index} className="border border-gray-300 p-1.5 bg-white relative">
-                      <div className="relative">
+                      <div className="relative bg-white">
                         {thumbnailUrl ? (
                           <img 
                             src={thumbnailUrl} 
                             alt={`Image ${index + 1}`}
-                            className="w-full h-auto"
+                            className="w-full h-auto block"
+                            style={{ backgroundColor: 'transparent' }}
                           />
                         ) : (
                           <div className="w-full h-32 bg-gray-200 flex items-center justify-center text-xs text-gray-500">
@@ -899,6 +919,10 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                   );
                 })}
               </div>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-500 py-4">
+              No gallery images found. Upload images using the uploader above.
             </div>
           )}
         </div>

@@ -6,6 +6,7 @@ import EraGridGalleryOptimized from '@/components/grid/EraGridGalleryOptimized';
 import VintageButton from '@/components/ui/VintageButton';
 import fs from 'fs/promises';
 import path from 'path';
+import { headers } from 'next/headers';
 import '../../newdesign/design-tokens.css';
 
 /**
@@ -125,17 +126,41 @@ export default async function ExploreEraPage({ params }: { params: Promise<{ era
   // Fetch data server-side for pre-rendering
   let gridData = null;
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-      (typeof window === 'undefined' ? 'http://localhost:3000' : '');
+    // Resolve base URL dynamically (same pattern as actress detail page)
+    let baseUrl: string;
+    try {
+      const headersList = await headers();
+      const host = headersList.get('host');
+      const protocol = headersList.get('x-forwarded-proto') || 'https';
+      
+      if (host) {
+        baseUrl = `${protocol}://${host}`;
+      } else {
+        baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      }
+    } catch (error) {
+      baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    }
     
-    const url = baseUrl ? `${baseUrl}/api/grid/era/${era}` : `/api/grid/era/${era}`;
-    
-    const response = await fetch(url, {
+    const response = await fetch(`${baseUrl}/api/grid/era/${era}`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
+      headers: {
+        'Cache-Control': 'no-store',
+      },
     });
     
     if (response.ok) {
-      gridData = await response.json();
+      const jsonData = await response.json();
+      // Ensure the data structure matches what the component expects
+      if (jsonData && typeof jsonData === 'object' && 'success' in jsonData) {
+        gridData = jsonData;
+      } else {
+        console.error('Invalid grid data structure:', jsonData);
+        gridData = null;
+      }
+    } else {
+      console.error(`Failed to fetch grid data: ${response.status} ${response.statusText}`);
+      gridData = null;
     }
   } catch (error) {
     console.error('Error fetching grid data:', error);

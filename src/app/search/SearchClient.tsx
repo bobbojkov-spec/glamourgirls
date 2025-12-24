@@ -133,20 +133,25 @@ export default function SearchClient() {
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)]">
       <Header />
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative w-full py-[68px] overflow-hidden min-h-[51vh]" style={{ backgroundColor: '#f6e5c0' }}>
-          <div className="mx-auto max-w-7xl px-6 flex flex-col justify-center items-center h-full">
-            <div className="flex flex-col items-center text-center mb-8">
+        {/* Hero Section - Responsive padding to reduce visual dominance on tablet/mobile */}
+        <section 
+          className="relative w-full overflow-hidden search-hero-section" 
+          style={{ 
+            backgroundColor: '#f6e5c0',
+          }}
+        >
+          <div className="mx-auto max-w-7xl px-6 flex flex-col justify-center items-center">
+            <div className="flex flex-col items-center text-center" style={{ marginBottom: 'clamp(8px, 1.5vh, 16px)' }}>
               <h1
-                className="mb-4 font-normal"
+                className="search-hero-title"
                 style={{
-                  fontFamily: 'var(--font-logo-primary)',
+                  fontFamily: 'var(--font-logo-primary)', /* Great Vibes - will be invisible until loaded */
                   color: 'var(--text-primary)',
-                  fontSize: 'clamp(3.8rem, 11vw, 11.5rem)',
-                  lineHeight: '1.05',
+                  lineHeight: '1.2',
                   letterSpacing: '0',
-                  fontWeight: 400,
                   textTransform: 'none',
+                  marginBottom: 'clamp(6px, 1vh, 12px)', /* Reduced margins for compact prominence */
+                  marginTop: 'clamp(6px, 1vh, 12px)',
                 }}
               >
                 Search
@@ -167,7 +172,15 @@ export default function SearchClient() {
             <div className="w-full px-6">
               {!loading && (
                 <div className="text-center mb-6">
-                  <p className="text-gray-600" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px' }}>
+                  <p 
+                    className="text-gray-600" 
+                    style={{ 
+                      fontFamily: 'DM Sans, sans-serif', 
+                      fontSize: '13px',
+                      fontWeight: 400,
+                      opacity: 0.75,
+                    }}
+                  >
                     <strong>{actresses.length}</strong> records found
                   </p>
                 </div>

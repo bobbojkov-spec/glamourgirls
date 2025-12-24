@@ -22,9 +22,14 @@ interface EraGridGalleryOptimizedProps {
   } | null;
 }
 
-// Helper function to generate thumbnail URL using the API endpoint
+// Helper function to generate thumbnail URL
 function getThumbnailUrl(imagePath: string | null): string {
   if (!imagePath) return '';
+  
+  // If it's already a full URL (Supabase storage URL), return as-is
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
   
   // If it's already an API URL, return as-is
   if (imagePath.includes('/api/')) {
@@ -110,7 +115,10 @@ export default function EraGridGalleryOptimized({ era, initialData }: EraGridGal
       
       <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-1.5 md:gap-2">
         {items.map((item, index) => {
-          const thumbnailUrl = item.thumbnailUrl ? getThumbnailUrl(item.thumbnailUrl) : null;
+          // thumbnailUrl from API is already a full Supabase URL (gallery image)
+          // We'll use it directly - Next.js Image will handle it
+          // Note: API returns gallery image URL, not thumbnail, but it's okay for grid display
+          const imageUrl = item.thumbnailUrl || null;
           
           return (
             <div
@@ -121,16 +129,16 @@ export default function EraGridGalleryOptimized({ era, initialData }: EraGridGal
               {/* Vintage rounded white frame with 4-5px border */}
               <div className="relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow" style={{ padding: '5px' }}>
                 <div className="relative aspect-square bg-gray-100 rounded overflow-hidden">
-                  {thumbnailUrl ? (
+                  {imageUrl ? (
                     <Image
-                      src={thumbnailUrl}
+                      src={imageUrl}
                       alt={`${item.actressName} - ${era} glamour girl`}
                       fill
                       className="object-cover"
                       sizes="(max-width: 640px) 25vw, (max-width: 768px) 16.67vw, (max-width: 1024px) 12.5vw, (max-width: 1280px) 10vw, 8.33vw"
                       loading={index < 32 ? 'eager' : 'lazy'} // Eager load first 32 images
                       quality={85}
-                      unoptimized={thumbnailUrl.includes('/api/')} // API handles optimization
+                      unoptimized={true} // Supabase URLs are already optimized
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">

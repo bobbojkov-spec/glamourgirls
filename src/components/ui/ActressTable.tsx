@@ -103,19 +103,50 @@ export default function ActressTable({
                     />
                   </div>
                   {/* Name */}
-                  <span className="font-bold uppercase" style={{ fontFamily: "'Kabel Black', sans-serif" }}>
+                  <span 
+                    className="uppercase search-actress-name" 
+                    style={{ 
+                      fontFamily: "'Kabel Black', sans-serif",
+                    }}
+                  >
                     {actress.name}
                   </span>
                 </Link>
               </td>
-              <td className="py-3 text-sm text-[var(--text-secondary)]" style={{ fontFamily: 'DM Sans, sans-serif' }}>{actress.years}</td>
-              <td className="py-3 text-center text-[var(--text-secondary)]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              <td 
+                className="py-3 text-[var(--text-secondary)]" 
+                style={{ 
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontSize: '13px', /* 13-14px range */
+                  fontWeight: 400,
+                  opacity: 0.7, /* Lower contrast than names */
+                }}
+              >
+                {actress.years}
+              </td>
+              <td 
+                className="py-3 text-center text-[var(--text-secondary)]" 
+                style={{ 
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontSize: '13px', /* 13-14px range */
+                  fontWeight: 400,
+                  opacity: 0.7, /* Lower contrast than names */
+                }}
+              >
                 {actress.hasNewPhotos && (
                   <span className="inline-block w-4 h-4 mr-1">📷</span>
                 )}
                 {actress.photoCount > 0 ? actress.photoCount : '-'}
               </td>
-              <td className="py-3 text-center text-[var(--text-secondary)]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              <td 
+                className="py-3 text-center text-[var(--text-secondary)]" 
+                style={{ 
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontSize: '13px', /* 13-14px range */
+                  fontWeight: 400,
+                  opacity: 0.7, /* Lower contrast than names */
+                }}
+              >
                 {actress.hqPhotoCount > 0 ? actress.hqPhotoCount : '-'}
               </td>
             </tr>
@@ -156,10 +187,23 @@ export default function ActressTable({
                 {actress.isNew && (
                   <span className="badge-new mr-2">NEW</span>
                 )}
-                <div className="font-bold mb-1 uppercase" style={{ fontFamily: "'Kabel Black', sans-serif" }}>
+                <div 
+                  className="mb-1 uppercase search-actress-name" 
+                  style={{ 
+                    fontFamily: "'Kabel Black', sans-serif",
+                  }}
+                >
                   {actress.name}
                 </div>
-                <div className="text-sm text-[var(--text-secondary)]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                <div 
+                  className="text-[var(--text-secondary)]" 
+                  style={{ 
+                    fontFamily: 'DM Sans, sans-serif',
+                    fontSize: '13px',
+                    fontWeight: 400,
+                    opacity: 0.7,
+                  }}
+                >
                   {actress.years} • {actress.photoCount} photos
                   {actress.hqPhotoCount > 0 && ` • ${actress.hqPhotoCount} HQ`}
                 </div>

@@ -83,26 +83,54 @@ export default async function RootLayout({
     return (
       <html lang="en" className="new-design">
         <head>
-          {/* Preload Dubba Dubba NF font to prevent FOUT */}
+          {/* Preload critical fonts to prevent FOUT */}
           <link
             rel="preload"
             href="/fonts/dubba-dubba-nf/DubbaDubbaNF.otf"
             as="font"
+            type="font/otf"
             crossOrigin="anonymous"
           />
-          {/* Preload Kabel Black font to prevent FOUT */}
           <link
             rel="preload"
             href="/fonts/Kabel Black Regular/Kabel Black Regular.otf"
             as="font"
+            type="font/otf"
             crossOrigin="anonymous"
           />
-          {/* Preconnect for faster font loading */}
+          <link
+            rel="preload"
+            href="/fonts/Broadway.ttf"
+            as="font"
+            type="font/ttf"
+            crossOrigin="anonymous"
+          />
+          <link
+            rel="preload"
+            href="/fonts/didot-2/Didot Bold.otf"
+            as="font"
+            type="font/otf"
+            crossOrigin="anonymous"
+          />
+          {/* Preload LEMON MILK font */}
+          <link
+            rel="preload"
+            href="/fonts/lemonmilk-cufonfonts/LemonMilk.otf"
+            as="font"
+            type="font/otf"
+            crossOrigin="anonymous"
+          />
+          {/* Preconnect for faster Google Font loading */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          {/* New Design Fonts */}
+          {/* Display fonts (Great Vibes, Alex Brush) - using block to prevent FOUC */}
           <link
-            href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Alex+Brush&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Alex+Brush&display=block"
+            rel="stylesheet"
+          />
+          {/* Body and UI fonts - using swap (acceptable for non-display fonts) */}
+          <link
+            href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap"
             rel="stylesheet"
           />
         </head>

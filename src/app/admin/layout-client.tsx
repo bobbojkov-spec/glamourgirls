@@ -5,6 +5,7 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import Backdrop from '@/layout-admin/Backdrop';
 import AntdProvider from '@/components/admin/AntdProvider';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import 'antd/dist/reset.css';
 
 function MobileMenuButton() {
@@ -114,6 +115,35 @@ export default function AdminLayoutClient({
 }: {
   children: React.ReactNode;
 }) {
+  const [fontsReady, setFontsReady] = useState(false);
+
+  useEffect(() => {
+    // Hide content until fonts are ready to prevent FOUC
+    if (typeof document !== 'undefined') {
+      document.body.style.visibility = 'hidden';
+      
+      const loadFonts = async () => {
+        try {
+          await document.fonts.ready;
+          // Small delay to ensure fonts are rendered
+          setTimeout(() => {
+            document.body.style.visibility = 'visible';
+            setFontsReady(true);
+          }, 50);
+        } catch (error) {
+          console.error('Error loading fonts:', error);
+          // Fallback: show content after timeout if fonts fail
+          setTimeout(() => {
+            document.body.style.visibility = 'visible';
+            setFontsReady(true);
+          }, 500);
+        }
+      };
+      
+      loadFonts();
+    }
+  }, []);
+
   return (
     <AntdProvider>
       <SidebarProvider>

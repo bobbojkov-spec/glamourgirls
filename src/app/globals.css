@@ -839,7 +839,7 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
 }
 
 /* ========================================
-   TIMELINE (Biography)
+   TIMELINE (Biography) - CSS Grid Layout
    ======================================== */
 .actress-bio {
   width: 100%;
@@ -849,16 +849,50 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
 .timeline {
   width: 100%;
   max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
+/* Desktop: Fixed-width date column (130px), flexible text column */
 .timeline-row {
   display: grid;
   grid-template-columns: 130px 1fr;
   gap: 1.5rem;
-  padding: 0.4rem 0;
+  padding: 0.75rem 0;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  border-bottom: 1px solid rgba(30, 30, 30, 0.08);
+}
+
+.timeline-row:last-child {
+  border-bottom: none;
+}
+
+/* Tablet: Slightly smaller date column, tighter spacing */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .timeline-row {
+    grid-template-columns: 100px 1fr;
+    gap: 1rem;
+    padding: 0.6rem 0;
+  }
+}
+
+/* Mobile: Single column, date above text with subtle divider */
+@media (max-width: 767px) {
+  .timeline-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 0.75rem 0;
+  }
+  
+  .timeline-date {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(30, 30, 30, 0.08);
+  }
 }
 
 /* Remove bottom border for sources/links/books sections */
@@ -914,18 +948,10 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
   }
 }
 
-/* Mobile */
-@media (max-width: 600px) {
-  .timeline-row {
-    grid-template-columns: 1fr;
-    gap: 0.25rem;
-  }
-  
-  .timeline-date {
-    font-weight: 600;
-  }
-  
-  /* Stack table on mobile */
+/* Mobile styles are handled above in the timeline-row mobile breakpoint */
+
+/* Mobile - Stack table on mobile */
+@media (max-width: 767px) {
   .results-table-mobile {
     display: block;
   }

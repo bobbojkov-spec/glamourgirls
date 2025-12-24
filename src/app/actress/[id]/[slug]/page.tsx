@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import ViewTracker from '@/components/actress/ViewTracker';
 import ActressBio from '@/components/actress/ActressBio';
 import ActressSourcesLinks from '@/components/actress/ActressSourcesLinks';
@@ -86,9 +87,12 @@ const findHQForGallery = (galleryId: number, hqImages: NonNullable<Actress['imag
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id, slug } = await params;
   try {
-    const baseUrl = resolveBaseUrl();
+    const baseUrl = await resolveBaseUrl();
     const res = await fetch(`${baseUrl}/api/actresses/${id}`, {
       cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-store',
+      },
     });
     
     if (!res.ok) {
@@ -98,7 +102,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
     
     const actressData = await res.json();
-    const baseUrlFull = resolveBaseUrl();
+    const baseUrlFull = await resolveBaseUrl();
     const actressName = actressData.name;
     const birthName = actressData.birthName ? ` (${actressData.birthName})` : '';
     
@@ -152,24 +156,48 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-const resolveBaseUrl = () => {
-  // Use NEXT_PUBLIC_BASE_URL if available (works in server components)
+const resolveBaseUrl = async () => {
+  // Try to get the host from request headers first (works on Vercel)
+  try {
+    const headersList = await headers();
+    const host = headersList.get('host');
+    const protocol = headersList.get('x-forwarded-proto') || 'https';
+    
+    if (host) {
+      return `${protocol}://${host}`;
+    }
+  } catch (error) {
+    // Headers might not be available in all contexts
+    console.warn('Could not get headers for base URL:', error);
+  }
+  
+  // Fallback to environment variables
   if (process.env.NEXT_PUBLIC_BASE_URL) {
     return process.env.NEXT_PUBLIC_BASE_URL;
   }
+  
   // Use VERCEL_URL on Vercel (automatically set by Vercel)
   if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
+    const vercelUrl = process.env.VERCEL_URL;
+    // Check if it already includes protocol
+    if (vercelUrl.startsWith('http://') || vercelUrl.startsWith('https://')) {
+      return vercelUrl;
+    }
+    return `https://${vercelUrl}`;
   }
+  
   // Fallback to localhost for local development
   return 'http://localhost:3000';
 };
 
 async function fetchActress(id: string): Promise<Actress | null> {
   try {
-    const baseUrl = resolveBaseUrl();
+    const baseUrl = await resolveBaseUrl();
     const res = await fetch(`${baseUrl}/api/actresses/${id}`, {
       cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-store',
+      },
     });
     
     if (!res.ok) {
@@ -211,51 +239,56 @@ export default async function ActressPage({ params }: PageProps) {
 
   const heroYears = formatYearRange(actressData.birthYear, actressData.deathYear);
   const featuredImage = selectFeaturedImage(actressData);
-  // Get up to 2 featured images
+  // Get up to 4 featured images (2 or 4, always even number for desktop layout)
   const featuredImages: FeaturedImage[] = [];
   if (featuredImage) {
     featuredImages.push(featuredImage);
-    // Try to get a second featured image
+    // Try to get additional featured images (up to 3 more for max 4 total)
     const hqImages = actressData.images?.hq || [];
     const galleryImages = actressData.images?.gallery || [];
-    if (hqImages.length > 1) {
-      const secondHQ = hqImages[1];
-      const secondGalleryMatch = galleryImages.find(
-        (img) => Math.abs(Number(img.id) - Number(secondHQ.id)) <= 1
-      );
-      if (secondGalleryMatch || secondHQ) {
+    
+    // Get up to 3 more images (for total of 4)
+    for (let i = 1; i < 4 && featuredImages.length < 4; i++) {
+      if (hqImages.length > i) {
+        const hqImg = hqImages[i];
+        const galleryMatch = galleryImages.find(
+          (img) => Math.abs(Number(img.id) - Number(hqImg.id)) <= 1
+        );
+        if (galleryMatch || hqImg) {
+          featuredImages.push({
+            id: Number(hqImg.id),
+            displayUrl: normalizeImageUrl(galleryMatch?.url || hqImg.url),
+            downloadUrl: normalizeImageUrl(hqImg.url),
+            width: hqImg.width,
+            height: hqImg.height,
+            price: 9.9,
+          });
+        }
+      } else if (galleryImages.length > i) {
+        // If no more HQ images, use gallery images
+        const galleryImg = galleryImages[i];
+        const hqForGallery = findHQForGallery(Number(galleryImg.id), hqImages);
         featuredImages.push({
-          id: Number(secondHQ.id),
-          displayUrl: normalizeImageUrl(secondGalleryMatch?.url || secondHQ.url),
-          downloadUrl: normalizeImageUrl(secondHQ.url),
-          width: secondHQ.width,
-          height: secondHQ.height,
-          price: 9.9,
+          id: Number(galleryImg.id),
+          displayUrl: normalizeImageUrl(galleryImg.url),
+          downloadUrl: normalizeImageUrl(galleryImg.url),
+          width: galleryImg.width,
+          height: galleryImg.height,
+          price: hqForGallery ? 9.9 : undefined,
         });
       }
-    } else if (galleryImages.length > 1) {
-      // If no second HQ, use second gallery image
-      const secondGallery = galleryImages[1];
-      const hqForSecond = findHQForGallery(Number(secondGallery.id), hqImages);
-      featuredImages.push({
-        id: Number(secondGallery.id),
-        displayUrl: normalizeImageUrl(secondGallery.url),
-        downloadUrl: normalizeImageUrl(secondGallery.url),
-        width: secondGallery.width,
-        height: secondGallery.height,
-        price: hqForSecond ? 9.9 : undefined,
-      });
+    }
+    
+    // Limit photos based on breakpoint requirements:
+    // Mobile: max 4 (2 rows of 2) - keep all up to 4
+    // Tablet: max 3 (1 row of 3) - hide 4th via CSS
+    // Desktop: max 4 (2 rows of 2, must be even) - hide 3rd if we have 3
+    if (featuredImages.length > 4) {
+      featuredImages.splice(4);
     }
   }
   const relatedActresses = actressData.relatedActresses || [];
   const galleryImages = (actressData.images?.gallery || []).filter((img) => !!img?.url);
-  
-  // Debug logging
-  console.log(`[Gallery] Processing gallery for actress ${id}:`, {
-    galleryCount: galleryImages.length,
-    galleryImages: galleryImages.map(img => ({ id: img.id, url: img.url?.substring(0, 80) + '...', thumbnailUrl: img.thumbnailUrl?.substring(0, 80) + '...' })),
-  });
-  
   const galleryGridImages: GalleryImage[] = galleryImages.map((galleryImg) => {
     const hqImage = findHQForGallery(Number(galleryImg.id), actressData.images?.hq || []);
     const price = hqImage ? 9.9 : undefined;
@@ -298,19 +331,41 @@ export default async function ActressPage({ params }: PageProps) {
         <Header />
 
         <main className="flex-1">
-        {/* Hero Section - Asymmetric Layout */}
-        <section className="relative w-full py-[68px] overflow-hidden min-h-[51vh]" style={{ backgroundColor: '#f6e5c0' }}>
-          <div className="mx-auto max-w-7xl px-6 flex justify-center items-center h-full">
+        {/* Hero Section - Fixed min-height to prevent layout shift */}
+        <section 
+          className="relative w-full overflow-hidden" 
+          style={{ 
+            backgroundColor: '#f6e5c0',
+            minHeight: '450px',
+            maxHeight: '480px',
+            paddingTop: 'clamp(40px, 6vh, 68px)',
+            paddingBottom: 'clamp(40px, 6vh, 68px)',
+          }}
+        >
+          <div 
+            className="mx-auto w-full px-6 flex justify-center items-center"
+            style={{ maxWidth: '1280px' }}
+          >
             {/* Combined Block - Headshot + Name + Button, centered */}
-            <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
-              {/* Headshot (tilted, framed) - 20% bigger than before */}
-              <div className="relative flex flex-col justify-center h-full items-center gap-4">
-                <HeadshotImage
-                  src={heroImage}
-                  alt={`${actressName} portrait`}
-                  className="w-full max-w-[1440px] md:max-w-[483px] md:h-[248%] md:object-contain rounded-xl border-[10px] border-white shadow-lg transform rotate-[-2deg]"
-                  theirMan={actressData.theirMan}
-                />
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
+              {/* Headshot (tilted, framed) - Fixed aspect ratio to prevent layout shift */}
+              <div className="relative flex flex-col justify-center items-center gap-4" style={{ 
+                width: 'clamp(150px, 25vw, 200px)', 
+                minWidth: '150px',
+                flexShrink: 0,
+              }}>
+                <div className="relative" style={{ 
+                  aspectRatio: '3/4', 
+                  width: '100%',
+                  maxWidth: '100%',
+                }}>
+                  <HeadshotImage
+                    src={heroImage}
+                    alt={`${actressName} portrait`}
+                    className="w-full h-full object-cover rounded-xl border-[10px] border-white shadow-lg transform rotate-[-2deg]"
+                    theirMan={actressData.theirMan}
+                  />
+                </div>
                 <FavoriteButton
                   actressId={actressData.id.toString()}
                   actressName={actressName}
@@ -319,31 +374,36 @@ export default async function ActressPage({ params }: PageProps) {
                 />
               </div>
 
-              {/* Name + Button (offset upward) */}
-              <div className="relative md:-mt-12 text-center md:text-left">
-                <h1 className="leading-none">
+                  {/* Name + Button - Fixed font sizes to prevent layout shift */}
+              <div className="relative text-center" style={{ marginTop: '0', minHeight: '120px' }}>
+                <h1 className="leading-none" style={{ minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <span 
-                    className="block text-2xl md:text-3xl text-[var(--text-primary)]"
+                    className="block text-[var(--text-primary)]"
                     style={{ 
                       fontFamily: 'Alex Brush, cursive', 
                       textTransform: 'none',
-                      textShadow: '0 0 6px white, 0 0 12px white, 0 0 18px white'
+                      textShadow: '0 0 6px white, 0 0 12px white, 0 0 18px white',
+                      fontSize: 'clamp(1.5rem, 4vw, 2rem)', /* Responsive but stable */
+                      lineHeight: '1.2',
                     }}
                   >
                     {heroFirstName}
                   </span>
                   <span 
-                    className="block text-6xl md:text-7xl text-[var(--text-primary)]"
+                    className="block text-[var(--text-primary)]"
                     style={{ 
                       fontFamily: 'Broadway BT, serif',
-                      textShadow: '0 0 6px white, 0 0 12px white, 0 0 18px white'
+                      textShadow: '0 0 6px white, 0 0 12px white, 0 0 18px white',
+                      fontSize: 'clamp(3rem, 8vw, 4.5rem)', /* Responsive but stable */
+                      lineHeight: '1.1',
+                      marginTop: '0.25rem',
                     }}
                   >
                     {heroLastName}
                   </span>
                 </h1>
 
-                <div className="flex justify-center md:justify-start mt-8">
+                <div className="flex justify-center mt-8">
                   <HeroGalleryButton
                     galleryImages={galleryGridImages}
                     actressId={actressData.id.toString()}
@@ -355,9 +415,18 @@ export default async function ActressPage({ params }: PageProps) {
           </div>
         </section>
 
-        {/* Main Content Section */}
-        <section className="bg-[var(--bg-page)] pb-10 md:pb-16 px-4 md:px-6 lg:px-8">
-          <div className="max-w-[1600px] mx-auto">
+        {/* Main Content Section - Fixed max-width to prevent layout shift */}
+        <section 
+          className="bg-[var(--bg-page)] px-4 md:px-6 lg:px-8"
+          style={{ 
+            paddingTop: '2rem',
+            paddingBottom: '2.5rem', /* Mobile: 2.5rem */
+          }}
+        >
+          <div 
+            className="mx-auto w-full"
+            style={{ maxWidth: '1280px' }}
+          >
             {/* Breadcrumb */}
             <Breadcrumb
               items={[
@@ -372,10 +441,22 @@ export default async function ActressPage({ params }: PageProps) {
               {/* content later */}
             </div>
 
-            {/* Two Column Layout - Desktop */}
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(240px,0.8fr)]">
+            {/* Layout: Mobile/Tablet single column, Desktop two columns */}
+            <div 
+              className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(240px,0.8fr)]"
+              style={{
+                gap: '1.5rem', /* Mobile/Tablet: tighter spacing */
+              }}
+            >
               {/* Left Column - Main Content */}
-              <div className="space-y-8">
+              <div 
+                className="space-y-6"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1.5rem', /* Tablet: tighter spacing */
+                }}
+              >
                 {/* Timeline Section - Full Width */}
                 <div className="w-full">
                   <ActressBio timeline={actressData.timeline || []} birthName={actressData.birthName} />
@@ -403,7 +484,51 @@ export default async function ActressPage({ params }: PageProps) {
                   </div>
                 )}
 
-                {/* Photo Gallery Section - Right after Sources & Links */}
+                {/* Featured Photos Section - Mobile/Tablet: In main column, Desktop: In sidebar */}
+                {featuredImages.length > 0 && (
+                  <div 
+                    className="p-5 md:p-6 rounded-xl lg:hidden" 
+                    style={{ backgroundColor: '#f6e5c0' }}
+                  >
+                    <h3
+                      className="text-[var(--text-primary)] mb-4"
+                      style={{
+                        fontFamily: 'var(--font-headline)',
+                        fontSize: 'var(--h2-size)',
+                        letterSpacing: 'var(--h2-letter-spacing)',
+                        lineHeight: 'var(--h2-line-height)',
+                      }}
+                    >
+                      Featured Photo
+                    </h3>
+                    <div className="mt-[15px]">
+                      {/* 
+                        Mobile (max-width: 767px): 2 columns, max 4 photos (2 rows of 2)
+                        Tablet (min-width: 768px, max-width: 1023px): 3 columns, max 3 photos (1 row of 3)
+                      */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                      {featuredImages.slice(0, 3).map((img, index) => {
+                        // Mobile: show up to 4, Tablet: show up to 3
+                        const isFourthItem = index === 3;
+                        return (
+                          <div
+                            key={index}
+                            className={isFourthItem ? 'hidden' : ''}
+                          >
+                            <FeaturedPhoto
+                              image={img}
+                              actressId={actressData.id.toString()}
+                              actressName={actressName}
+                            />
+                          </div>
+                        );
+                      })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Photo Gallery Section - Right after Featured Photos on Mobile/Tablet */}
                 {galleryGridImages.length > 0 && (
                   <div className="w-full bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-5 md:p-6">
                     <h3
@@ -430,8 +555,9 @@ export default async function ActressPage({ params }: PageProps) {
               </div>
 
               {/* Right Column - Sidebar (Desktop Only) */}
-              <div className="lg:block space-y-8">
-                {/* Featured Photo Section */}
+              <div className="hidden lg:block">
+                <div className="space-y-6">
+                {/* Featured Photo Section - Desktop Only */}
                 {featuredImages.length > 0 && (
                   <div className="p-6 rounded-xl" style={{ backgroundColor: '#f6e5c0' }}>
                     <h3
@@ -446,15 +572,43 @@ export default async function ActressPage({ params }: PageProps) {
                       Featured Photo
                     </h3>
                     <div className="mt-[15px]">
-                      <div className="grid grid-cols-3 gap-4 mb-4">
-                      {featuredImages.slice(0, 3).map((img, index) => (
-                        <FeaturedPhoto
-                          key={index}
-                          image={img}
-                          actressId={actressData.id.toString()}
-                          actressName={actressName}
-                        />
-                      ))}
+                      {/* 
+                        Mobile (max-width: 767px): 2 columns, max 4 photos (2 rows of 2)
+                        Tablet (min-width: 768px, max-width: 1023px): 3 columns, max 3 photos (1 row of 3)
+                        Desktop (min-width: 1024px): 2 columns, max 4 photos (2 rows of 2), must be even
+                      */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-4 mb-4">
+                      {featuredImages.map((img, index) => {
+                        // Visibility logic per breakpoint:
+                        // Mobile (default, <768px): Show all up to 4 (indices 0,1,2,3) - 2 columns
+                        // Tablet (md: 768px-1023px): Show first 3 (indices 0,1,2) - 3 columns, hide index 3
+                        // Desktop (lg: 1024px+): Show 2 or 4 (if 3 total, hide index 2) - 2 columns
+                        
+                        const isFourthItem = index === 3;
+                        const isThirdItemWithThreeTotal = index === 2 && featuredImages.length === 3;
+                        
+                        let visibilityClasses = '';
+                        if (index >= 4) {
+                          visibilityClasses = 'hidden'; // Hide 5th+ on all breakpoints
+                        } else if (isFourthItem) {
+                          visibilityClasses = 'hidden md:hidden lg:block'; // Hide 4th on mobile/tablet, show on desktop
+                        } else if (isThirdItemWithThreeTotal) {
+                          visibilityClasses = 'lg:hidden'; // Hide 3rd on desktop when we have exactly 3 total
+                        }
+                        
+                        return (
+                          <div
+                            key={index}
+                            className={visibilityClasses}
+                          >
+                            <FeaturedPhoto
+                              image={img}
+                              actressId={actressData.id.toString()}
+                              actressName={actressName}
+                            />
+                          </div>
+                        );
+                      })}
                       </div>
                     </div>
                   </div>
@@ -479,6 +633,7 @@ export default async function ActressPage({ params }: PageProps) {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           </div>

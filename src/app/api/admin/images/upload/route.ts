@@ -5,6 +5,8 @@ import sharp from 'sharp';
 import pool, { getPool } from '@/lib/db';
 import { requireAdminApi } from '@/app/api/admin/_auth';
 
+export const runtime = 'nodejs';
+
 // Helper function to create watermark using SVG (Vercel-compatible)
 function createWatermarkSVG(text: string, imageWidth: number, imageHeight: number): Buffer {
   // Calculate font size based on image width (target ~475px text width)

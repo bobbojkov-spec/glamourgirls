@@ -5,6 +5,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import { requireAdminApi } from '@/app/api/admin/_auth';
 
+export const runtime = 'nodejs';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ actressId: string }> }

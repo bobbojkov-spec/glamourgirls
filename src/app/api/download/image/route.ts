@@ -3,6 +3,8 @@ import path from 'path';
 import { getOrderByCode, logDownload } from '@/lib/orderStore';
 import { fetchFromStorage } from '@/lib/supabase/storage';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl.searchParams;

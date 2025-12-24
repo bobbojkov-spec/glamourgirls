@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import { GalleryGrid, GalleryImage } from '@/components/gallery';
 
 // Era background colors
@@ -82,22 +83,48 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-const resolveBaseUrl = () => {
+const resolveBaseUrl = async () => {
+  // Try to get the host from request headers first (works on Vercel)
+  try {
+    const headersList = await headers();
+    const host = headersList.get('host');
+    const protocol = headersList.get('x-forwarded-proto') || 'https';
+    
+    if (host) {
+      return `${protocol}://${host}`;
+    }
+  } catch (error) {
+    // Headers might not be available in all contexts
+    console.warn('Could not get headers for base URL:', error);
+  }
+  
+  // Fallback to environment variables
   if (process.env.NEXT_PUBLIC_BASE_URL) {
     return process.env.NEXT_PUBLIC_BASE_URL;
   }
+  
   // Use VERCEL_URL on Vercel (automatically set by Vercel)
   if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
+    const vercelUrl = process.env.VERCEL_URL;
+    // Check if it already includes protocol
+    if (vercelUrl.startsWith('http://') || vercelUrl.startsWith('https://')) {
+      return vercelUrl;
+    }
+    return `https://${vercelUrl}`;
   }
+  
+  // Fallback to localhost for local development
   return 'http://localhost:3000';
 };
 
 async function fetchActressData(id: string) {
   try {
-    const baseUrl = resolveBaseUrl();
+    const baseUrl = await resolveBaseUrl();
     const res = await fetch(`${baseUrl}/api/actresses/${id}`, {
       cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-store',
+      },
     });
     
     if (!res.ok) {
@@ -115,7 +142,7 @@ async function fetchActressData(id: string) {
     };
     
     // Build image URLs
-    const baseUrlFull = resolveBaseUrl();
+    const baseUrlFull = await resolveBaseUrl();
     const buildImageUrl = (path: string) => {
       if (!path) return '';
       if (path.startsWith('http')) return path;

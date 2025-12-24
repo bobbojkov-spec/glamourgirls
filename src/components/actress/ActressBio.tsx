@@ -17,8 +17,8 @@ interface ActressBioProps {
 export default function ActressBio({ birthName, timeline, filmography }: ActressBioProps) {
   return (
     <div className="actress-bio">
-      {/* Timeline */}
-      <div className="timeline space-y-0">
+      {/* Timeline - CSS Grid with fixed-width date column */}
+      <div className="timeline">
         {timeline.map((item, index) => (
           <div key={index} className="timeline-row">
             <div className="timeline-date">{item.date}</div>

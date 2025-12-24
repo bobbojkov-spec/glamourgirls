@@ -4,6 +4,8 @@ import path from 'path';
 import sharp from 'sharp';
 import { requireAdminApi } from '@/app/api/admin/_auth';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   const { error } = await requireAdminApi(request);
   if (error) return error;

@@ -85,7 +85,16 @@ export default function SearchPanel({
       <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
         {/* New entry filter - Toggle */}
         <div className="flex items-center gap-3">
-          <span className="font-medium text-sm text-[var(--text-primary)]">New entry</span>
+          <span 
+            className="font-medium text-[var(--text-primary)]"
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              opacity: 0.75,
+            }}
+          >
+            New entry
+          </span>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
@@ -94,7 +103,12 @@ export default function SearchPanel({
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E6D9B3]"></div>
-            <span className="ml-3 text-sm text-[var(--text-secondary)] w-8 inline-block text-left">
+            <span 
+              className="ml-3 text-[var(--text-secondary)] w-8 inline-block text-left"
+              style={{
+                fontSize: '16px', /* Mobile: 16px */
+              }}
+            >
               {filters.newEntry === 'yes' ? 'Yes' : 'No'}
             </span>
           </label>
@@ -102,7 +116,16 @@ export default function SearchPanel({
 
         {/* New photos filter - Toggle */}
         <div className="flex items-center gap-3">
-          <span className="font-medium text-sm text-[var(--text-primary)]">New Photos</span>
+          <span 
+            className="font-medium text-[var(--text-primary)]"
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              opacity: 0.75,
+            }}
+          >
+            New Photos
+          </span>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
@@ -111,7 +134,12 @@ export default function SearchPanel({
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E6D9B3]"></div>
-            <span className="ml-3 text-sm text-[var(--text-secondary)] w-8 inline-block text-left">
+            <span 
+              className="ml-3 text-[var(--text-secondary)] w-8 inline-block text-left"
+              style={{
+                fontSize: '16px', /* Mobile: 16px */
+              }}
+            >
               {filters.newPhotos === 'yes' ? 'Yes' : 'No'}
             </span>
           </label>
@@ -119,7 +147,16 @@ export default function SearchPanel({
 
         {/* Years filter - Radio Buttons */}
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="font-medium text-sm text-[var(--text-primary)]">Years</span>
+          <span 
+            className="font-medium text-[var(--text-primary)]"
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              opacity: 0.75,
+            }}
+          >
+            Years
+          </span>
           <div className="flex items-center gap-2 border border-gray-300 rounded-md p-1 bg-white">
             {['all', '20-30s', '40s', '50s', '60s', 'men'].map(year => (
               <label key={year} className="flex items-center cursor-pointer">
@@ -131,11 +168,16 @@ export default function SearchPanel({
                   onChange={() => setFilters(prev => ({ ...prev, years: [year] }))}
                   className="sr-only peer"
                 />
-                <span className={`px-3 py-1 text-sm rounded transition-all ${
-                  filters.years[0] === year
-                    ? 'bg-[#E6D9B3] text-gray-900 border border-[#d1c4a0]'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}>
+                <span 
+                  className={`px-3 py-1 rounded transition-all search-form-select ${
+                    filters.years[0] === year
+                      ? 'bg-[#E6D9B3] text-gray-900 border border-[#d1c4a0]'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                  style={{
+                    fontSize: '16px', /* Mobile: 16px, Desktop/tablet handled by CSS */
+                  }}
+                >
                   {year === 'men' ? 'Their Men' : year}
                 </span>
               </label>
@@ -177,8 +219,11 @@ export default function SearchPanel({
               }
             }}
             placeholder="input search text"
-            className="flex-1 pl-12 pr-0 py-3 border-0 rounded-l-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none"
-            style={{ fontFamily: 'DM Sans, sans-serif' }}
+            className="flex-1 pl-12 pr-0 py-3 border-0 rounded-l-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none search-form-input"
+            style={{ 
+              fontFamily: 'DM Sans, sans-serif',
+              fontSize: '16px', /* Mobile: 16px, Desktop/tablet handled by CSS */
+            }}
           />
 
           {/* Search Button - Darker Glamour Girls Colors */}

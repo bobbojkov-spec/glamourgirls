@@ -20,10 +20,15 @@ export default function GalleryItem({ image, onClick, theirMan }: GalleryItemPro
   const displayWidth = Math.round(displayHeight * aspectRatio);
   
   // Use thumbnailUrl if available (should be 250px height), otherwise generate from fullUrl
-  // If thumbnailUrl exists, use it directly (it's already optimized at 250px)
-  // Otherwise, generate on-the-fly at 200px for display
-  const initialImageSrc = image.thumbnailUrl || 
-    (image.fullUrl ? `/api/images/thumbnail?path=${encodeURIComponent(image.fullUrl)}&width=${displayWidth}&height=${displayHeight}` : null);
+  // If thumbnailUrl exists and is a full URL (starts with http), use it directly
+  // If thumbnailUrl is a local path, use it directly (it's already optimized at 250px)
+  // Otherwise, generate on-the-fly at 200px for display via thumbnail API
+  const initialImageSrc = image.thumbnailUrl && image.thumbnailUrl.startsWith('http') 
+    ? image.thumbnailUrl  // Full URL - use directly
+    : image.thumbnailUrl || 
+      (image.fullUrl && !image.fullUrl.startsWith('http')
+        ? `/api/images/thumbnail?path=${encodeURIComponent(image.fullUrl)}&width=${displayWidth}&height=${displayHeight}` 
+        : image.fullUrl || null);
   
   const currentSrc = imgSrc || initialImageSrc || (theirMan ? '/images/placeholder-man-portrait.png' : null);
 
@@ -43,13 +48,16 @@ export default function GalleryItem({ image, onClick, theirMan }: GalleryItemPro
       className="gallery-thumb group relative"
       onClick={onClick}
     >
-      <div className="relative w-full bg-gray-100 overflow-hidden" style={{ height: '200px', maxHeight: '200px' }}>
+      <div 
+        className="relative w-full bg-gray-100 overflow-hidden" 
+        style={{ aspectRatio: '3/4', width: '100%', height: 'auto' }}
+      >
         {currentSrc ? (
           <img
             src={currentSrc}
             alt="Gallery photo"
             className="w-full h-full object-cover"
-            style={{ maxHeight: '200px' }}
+            style={{ aspectRatio: '3/4', width: '100%', height: '100%' }}
             loading="lazy"
             onError={handleError}
           />

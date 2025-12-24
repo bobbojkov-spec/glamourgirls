@@ -36,6 +36,7 @@ export async function GET(
     // Get all published girls for this era with at least one gallery image
     // Exclude "their men" category (theirman != 1)
     // Use INNER JOIN to only include actresses with gallery images (mytp = 4)
+    // Only include images with valid paths (securepic or newpic folders)
     const [actresses] = await pool.execute(
       `SELECT DISTINCT
          g.id as actressId,
@@ -51,6 +52,7 @@ export async function GET(
          AND i.mytp = 4
          AND i.path IS NOT NULL 
          AND i.path != ''
+         AND (i.path LIKE '%securepic/%' OR i.path LIKE '%newpic/%')
        ORDER BY g.nm ASC, g.firstname ASC, g.familiq ASC`,
       [eraValue]
     ) as any[];
@@ -69,6 +71,7 @@ export async function GET(
     const placeholders = actressIds.map(() => '?').join(',');
     
     // Get first gallery image per actress using subquery for reliability
+    // Only include images with valid paths (securepic or newpic folders)
     const [imageResults] = await pool.execute(
       `SELECT 
          i1.girlid as actressId,
@@ -83,6 +86,7 @@ export async function GET(
            AND mytp = 4
            AND path IS NOT NULL 
            AND path != ''
+           AND (path LIKE '%securepic/%' OR path LIKE '%newpic/%')
          GROUP BY girlid
        ) i2 ON i1.girlid = i2.girlid AND i1.id = i2.minId`,
       actressIds
@@ -128,6 +132,12 @@ export async function GET(
     if (Array.isArray(imageResults) && imageResults.length > 0) {
       for (const row of imageResults) {
         if (!row.imagePath) continue;
+        
+        // Double-check that path is valid (securepic or newpic)
+        const path = String(row.imagePath || '');
+        if (!path.includes('/securepic/') && !path.includes('/newpic/')) {
+          continue;
+        }
         
         const actressId = row.actressId;
         

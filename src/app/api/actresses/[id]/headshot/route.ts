@@ -5,6 +5,8 @@ import fs from 'fs/promises';
 import pool from '@/lib/db';
 import { fetchFromStorage } from '@/lib/supabase/storage';
 
+export const runtime = 'nodejs';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -163,7 +165,7 @@ export async function GET(
           headers['X-Image-Height'] = placeholderMetadata.height.toString();
         }
 
-        return new NextResponse(placeholderBuffer, { headers });
+        return new NextResponse(new Uint8Array(placeholderBuffer), { headers });
       } catch (placeholderError) {
         console.error('Error reading placeholder image:', placeholderError);
         // Fall through to generated placeholder
@@ -186,7 +188,7 @@ export async function GET(
       .png()
       .toBuffer();
 
-      return new NextResponse(placeholderBuffer, {
+      return new NextResponse(new Uint8Array(placeholderBuffer), {
         headers: {
           'Content-Type': 'image/png',
           'Cache-Control': 'public, max-age=3600',

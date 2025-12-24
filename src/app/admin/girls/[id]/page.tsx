@@ -1,8 +1,6 @@
 import { notFound } from 'next/navigation';
 import pool from '@/lib/db';
 import GirlEditForm from '@/components/admin/girls/GirlEditForm';
-import { access, stat } from 'fs/promises';
-import path from 'path';
 import { Title, Text } from '@/components/admin/AdminTypography';
 
 export default async function EditGirlPage({
@@ -102,80 +100,50 @@ export default async function EditGirlPage({
       }
     });
 
-    // Filter to only gallery images (mytp = 4) and check if files exist
-    // Delete inactive images from database
+    // Include all gallery images (mytp = 4) - they're all in Supabase Storage now
+    // No need to filter by path since all images should be valid
     const validImages = [];
     for (const img of galleryImages) {
       if (!img.path) continue;
       
-      const cleanPath = img.path.startsWith('/') ? img.path.slice(1) : img.path;
-      const fullPath = path.join(process.cwd(), 'public', cleanPath);
+      const pathStr = String(img.path || '');
       
-      try {
-        await access(fullPath);
+      // Include all images - they're all valid if they're in the database
+      // Only skip if path is completely empty (already checked above)
+      
+      // Find associated HQ image
+      const hqImage = hqMap.get(img.id);
+      let hqInfo = null;
+      
+      if (hqImage && hqImage.path) {
+        // HQ images are in Supabase Storage (images_raw bucket or public bucket)
+        const hqPathStr = String(hqImage.path || '');
+        // Include all HQ images - estimate file size based on dimensions
+        const estimatedSizeMB = ((Number(hqImage.width) || 0) * (Number(hqImage.height) || 0) * 3) / (1024 * 1024);
         
-        // Find associated HQ image
-        const hqImage = hqMap.get(img.id);
-        let hqInfo = null;
-        
-        if (hqImage && hqImage.path) {
-          const hqCleanPath = hqImage.path.startsWith('/') ? hqImage.path.slice(1) : hqImage.path;
-          const hqFullPath = path.join(process.cwd(), 'public', hqCleanPath);
-          
-          try {
-            await access(hqFullPath);
-            // Get file size - ensure it's a plain number, not a Stats object
-            const stats = await stat(hqFullPath);
-            const fileSizeMB = parseFloat((stats.size / (1024 * 1024)).toFixed(2));
-            
-            hqInfo = {
-              id: Number(hqImage.id) || 0, // Ensure it's a number, not BigInt
-              width: Number(hqImage.width) || 0,
-              height: Number(hqImage.height) || 0,
-              sizeMB: Number(fileSizeMB) || 0, // Ensure it's a number
-              url: String(hqImage.path || ''), // Ensure it's a string
-            };
-          } catch {
-            // HQ file doesn't exist, skip it
-          }
-        }
-        
-        validImages.push({
-          id: Number(img.id) || 0,
-          path: String(img.path || ''),
-          width: Number(img.width) || 0,
-          height: Number(img.height) || 0,
-          mytp: Number(img.mytp) || 0,
-          hq: hqInfo ? {
-            id: Number(hqInfo.id) || 0,
-            width: Number(hqInfo.width) || 0,
-            height: Number(hqInfo.height) || 0,
-            sizeMB: Number(hqInfo.sizeMB) || 0,
-            url: String(hqInfo.url || ''),
-          } : null,
-        });
-      } catch {
-        // File doesn't exist - delete from database
-        console.log(`Image file not found, deleting from database: ${fullPath}`);
-        try {
-          await pool.execute(`DELETE FROM images WHERE id = ?`, [img.id]);
-          // Also delete associated thumbnail if exists
-          const [thumbRows] = await pool.execute(
-            `SELECT id FROM images WHERE thumbid = ?`,
-            [img.id]
-          ) as any[];
-          if (Array.isArray(thumbRows) && thumbRows.length > 0) {
-            await pool.execute(`DELETE FROM images WHERE id = ?`, [thumbRows[0].id]);
-          }
-          // Delete associated HQ if exists
-          if (hqMap.has(img.id)) {
-            const hqImg = hqMap.get(img.id);
-            await pool.execute(`DELETE FROM images WHERE id = ?`, [hqImg.id]);
-          }
-        } catch (deleteError) {
-          console.error(`Error deleting image ${img.id} from database:`, deleteError);
-        }
+        hqInfo = {
+          id: Number(hqImage.id) || 0,
+          width: Number(hqImage.width) || 0,
+          height: Number(hqImage.height) || 0,
+          sizeMB: parseFloat(estimatedSizeMB.toFixed(2)),
+          url: hqPathStr,
+        };
       }
+      
+      validImages.push({
+        id: Number(img.id) || 0,
+        path: pathStr,
+        width: Number(img.width) || 0,
+        height: Number(img.height) || 0,
+        mytp: Number(img.mytp) || 0,
+        hq: hqInfo ? {
+          id: Number(hqInfo.id) || 0,
+          width: Number(hqInfo.width) || 0,
+          height: Number(hqInfo.height) || 0,
+          sizeMB: Number(hqInfo.sizeMB) || 0,
+          url: String(hqInfo.url || ''),
+        } : null,
+      });
     }
 
     // Fetch links and books from girllinks table
