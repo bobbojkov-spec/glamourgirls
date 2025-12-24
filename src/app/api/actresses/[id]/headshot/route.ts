@@ -67,42 +67,71 @@ export async function GET(
         }
 
         if (!sourceGifPath) {
-          // Check if this is a "their men" entry - if so, return placeholder
+          // No headshot found locally - return appropriate placeholder
           try {
             const [results] = await pool.execute(
               `SELECT theirman FROM girls WHERE id = ? AND published = 2`,
               [actressId]
             ) as any[];
             
+            let placeholderPath: string;
             if (Array.isArray(results) && results.length > 0 && Boolean(results[0].theirman) === true) {
               // Return placeholder for "their men" entries
-              const placeholderPath = path.join(process.cwd(), 'public', 'images', 'placeholder-man-portrait.png');
-              try {
-                const placeholderBuffer = await fs.readFile(placeholderPath);
-                const placeholderMetadata = await sharp(placeholderBuffer).metadata();
-                
-                const headers: HeadersInit = {
-                  'Content-Type': 'image/png',
-                  'Cache-Control': 'public, max-age=31536000, immutable',
-                };
-                
-                if (placeholderMetadata.width && placeholderMetadata.height) {
-                  headers['X-Image-Width'] = placeholderMetadata.width.toString();
-                  headers['X-Image-Height'] = placeholderMetadata.height.toString();
-                }
-                
-                return new NextResponse(placeholderBuffer, { headers });
-              } catch (placeholderError) {
-                console.error('Error reading placeholder image:', placeholderError);
-                // Fall through to 404
+              placeholderPath = path.join(process.cwd(), 'public', 'images', 'placeholder-man-portrait.png');
+            } else {
+              // Return default placeholder for regular actresses
+              placeholderPath = path.join(process.cwd(), 'public', 'images', 'placeholder-portrait.png');
+            }
+            
+            try {
+              const placeholderBuffer = await fs.readFile(placeholderPath);
+              const placeholderMetadata = await sharp(placeholderBuffer).metadata();
+              
+              const headers: HeadersInit = {
+                'Content-Type': 'image/png',
+                'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+              };
+              
+              if (placeholderMetadata.width && placeholderMetadata.height) {
+                headers['X-Image-Width'] = placeholderMetadata.width.toString();
+                headers['X-Image-Height'] = placeholderMetadata.height.toString();
               }
+              
+              return new NextResponse(placeholderBuffer, { headers });
+            } catch (placeholderError) {
+              console.error('Error reading placeholder image:', placeholderError);
+              // Fall through to try generating a simple placeholder
             }
           } catch (dbError) {
             console.error('Error checking theirman status:', dbError);
-            // Fall through to 404
+            // Fall through to try generating a simple placeholder
           }
           
-          return NextResponse.json({ error: 'Headshot image not found' }, { status: 404 });
+          // Last resort: generate a simple gray placeholder
+          try {
+            const placeholderBuffer = await sharp({
+              create: {
+                width: 200,
+                height: 250,
+                channels: 3,
+                background: { r: 220, g: 220, b: 220 }
+              }
+            })
+            .png()
+            .toBuffer();
+            
+            return new NextResponse(placeholderBuffer, {
+              headers: {
+                'Content-Type': 'image/png',
+                'Cache-Control': 'public, max-age=3600',
+                'X-Image-Width': '200',
+                'X-Image-Height': '250',
+              }
+            });
+          } catch (generateError) {
+            console.error('Error generating placeholder:', generateError);
+            return NextResponse.json({ error: 'Headshot image not found' }, { status: 404 });
+          }
         }
 
         // Process the image: crop 40px from top, 40px from bottom, 25px from left, 28px from right
@@ -138,28 +167,114 @@ export async function GET(
 
     // Return the processed image with dimensions in headers
     if (!headshotPath) {
-      return NextResponse.json({ error: 'Headshot image not found' }, { status: 404 });
+      // Fallback to placeholder if headshot path wasn't resolved
+      const placeholderPath = path.join(process.cwd(), 'public', 'images', 'placeholder-portrait.png');
+      try {
+        const placeholderBuffer = await fs.readFile(placeholderPath);
+        return new NextResponse(placeholderBuffer, {
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=3600',
+            'X-Image-Width': '200',
+            'X-Image-Height': '250',
+          }
+        });
+      } catch {
+        // Generate simple gray placeholder as last resort
+        const placeholderBuffer = await sharp({
+          create: {
+            width: 200,
+            height: 250,
+            channels: 3,
+            background: { r: 220, g: 220, b: 220 }
+          }
+        })
+        .png()
+        .toBuffer();
+        
+        return new NextResponse(placeholderBuffer, {
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=3600',
+            'X-Image-Width': '200',
+            'X-Image-Height': '250',
+          }
+        });
+      }
     }
-    const imageBuffer = await fs.readFile(headshotPath);
-    const headshotMetadata = await sharp(imageBuffer).metadata();
     
-    const headers: HeadersInit = {
-      'Content-Type': 'image/jpeg',
-      'Cache-Control': 'public, max-age=31536000, immutable',
-    };
-    
-    if (headshotMetadata.width && headshotMetadata.height) {
-      headers['X-Image-Width'] = headshotMetadata.width.toString();
-      headers['X-Image-Height'] = headshotMetadata.height.toString();
+    try {
+      const imageBuffer = await fs.readFile(headshotPath);
+      const headshotMetadata = await sharp(imageBuffer).metadata();
+      
+      const headers: HeadersInit = {
+        'Content-Type': 'image/jpeg',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      };
+      
+      if (headshotMetadata.width && headshotMetadata.height) {
+        headers['X-Image-Width'] = headshotMetadata.width.toString();
+        headers['X-Image-Height'] = headshotMetadata.height.toString();
+      }
+      
+      return new NextResponse(imageBuffer, { headers });
+    } catch (readError) {
+      // If we can't read the file (e.g., on Vercel where files don't exist), return placeholder
+      console.warn(`Headshot file not accessible for actress ${actressId}, returning placeholder`);
+      const placeholderPath = path.join(process.cwd(), 'public', 'images', 'placeholder-portrait.png');
+      try {
+        const placeholderBuffer = await fs.readFile(placeholderPath);
+        return new NextResponse(placeholderBuffer, {
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=3600',
+            'X-Image-Width': '200',
+            'X-Image-Height': '250',
+          }
+        });
+      } catch {
+        // Generate simple gray placeholder
+        const placeholderBuffer = await sharp({
+          create: {
+            width: 200,
+            height: 250,
+            channels: 3,
+            background: { r: 220, g: 220, b: 220 }
+          }
+        })
+        .png()
+        .toBuffer();
+        
+        return new NextResponse(placeholderBuffer, {
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=3600',
+            'X-Image-Width': '200',
+            'X-Image-Height': '250',
+          }
+        });
+      }
     }
-    
-    return new NextResponse(imageBuffer, { headers });
   } catch (error) {
     console.error('Error processing headshot:', error);
-    return NextResponse.json(
-      { error: 'Failed to process headshot' },
-      { status: 500 }
-    );
+    // Try to return placeholder even on error
+    try {
+      const placeholderPath = path.join(process.cwd(), 'public', 'images', 'placeholder-portrait.png');
+      const placeholderBuffer = await fs.readFile(placeholderPath);
+      return new NextResponse(placeholderBuffer, {
+        headers: {
+          'Content-Type': 'image/png',
+          'Cache-Control': 'public, max-age=3600',
+          'X-Image-Width': '200',
+          'X-Image-Height': '250',
+        }
+      });
+    } catch {
+      return NextResponse.json(
+        { error: 'Failed to process headshot' },
+        { status: 500 }
+      );
+    }
   }
 }
 
