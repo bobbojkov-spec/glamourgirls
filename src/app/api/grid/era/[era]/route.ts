@@ -110,20 +110,32 @@ export async function GET(
     // Create a map of images by actress ID
     const actressImageMap = new Map<number, any>();
     
+    // Helper to convert database paths to Supabase Storage URLs
+    const getStorageUrl = (path: string | null | undefined): string => {
+      if (!path) return '';
+      if (path.startsWith('http')) return path; // Already a URL
+      
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl) {
+        // Fallback to original path if Supabase URL not set
+        return path.startsWith('/') ? path : `/${path}`;
+      }
+      
+      const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+      return `${supabaseUrl}/storage/v1/object/public/glamourgirls_images/${cleanPath}`;
+    };
+    
     if (Array.isArray(imageResults) && imageResults.length > 0) {
       for (const row of imageResults) {
         if (!row.imagePath) continue;
         
         const actressId = row.actressId;
-        const imagePath = row.imagePath.startsWith('/') 
-          ? row.imagePath 
-          : `/${row.imagePath}`;
         
         // Store only the first image per actress (already filtered by query)
         if (!actressImageMap.has(actressId)) {
           actressImageMap.set(actressId, {
             imageId: row.imageId,
-            thumbnailUrl: imagePath,
+            thumbnailUrl: getStorageUrl(row.imagePath),
           });
         }
       }

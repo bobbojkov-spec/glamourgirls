@@ -143,7 +143,7 @@ export async function GET(request: Request) {
         hqPhotoCount: Number(row.hqPhotoCount) || 0,
         isNew: Number(row.isnew) === 2,
         hasNewPhotos: Number(row.isnewpix) === 2,
-        headshot: `/api/actresses/${row.id}/headshot`, // Headshot URL
+        headshot: `/api/actresses/${row.id}/headshot`, // Headshot URL (API endpoint handles Supabase Storage)
         theirMan: Boolean(row.theirman) === true, // Add theirMan flag
       };
     }) : [];
