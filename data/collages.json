@@ -1,0 +1,54 @@
+{
+  "collages": [
+    {
+      "era": "1930s",
+      "version": 1,
+      "filepath": "/images/hero-collage-1930s-v1.jpg",
+      "filename": "hero-collage-1930s-v1.jpg",
+      "active": true,
+      "fileSize": 196889,
+      "id": "1930s-v1-1766584181419",
+      "createdAt": "2025-12-24T13:49:41.419Z"
+    },
+    {
+      "era": "1930s",
+      "version": 3,
+      "filepath": "/images/hero-collage-1930s-v3.jpg",
+      "filename": "hero-collage-1930s-v3.jpg",
+      "active": true,
+      "fileSize": 179297,
+      "id": "1930s-v3-1766584229923",
+      "createdAt": "2025-12-24T13:50:29.923Z"
+    },
+    {
+      "era": "1930s",
+      "version": 2,
+      "filepath": "/images/hero-collage-1930s-v2.jpg",
+      "filename": "hero-collage-1930s-v2.jpg",
+      "active": true,
+      "fileSize": 215620,
+      "id": "1930s-v2-1766584271011",
+      "createdAt": "2025-12-24T13:51:11.012Z"
+    },
+    {
+      "era": "1940s",
+      "version": 1,
+      "filepath": "/images/hero-collage-1940s-v1.jpg",
+      "filename": "hero-collage-1940s-v1.jpg",
+      "active": true,
+      "fileSize": 197669,
+      "id": "1940s-v1-1766584382008",
+      "createdAt": "2025-12-24T13:53:02.008Z"
+    },
+    {
+      "era": "1940s",
+      "version": 2,
+      "filepath": "https://apmqsfgvwfpscxurrfeg.supabase.co/storage/v1/object/public/glamourgirls_images/collages/hero-collage-1940s-v2.jpg",
+      "filename": "hero-collage-1940s-v2.jpg",
+      "active": true,
+      "fileSize": 195749,
+      "id": "1940s-v2-1766584882396",
+      "createdAt": "2025-12-24T14:01:22.396Z"
+    }
+  ]
+}

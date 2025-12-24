@@ -2,6 +2,22 @@
  * Utility functions for working with Supabase Storage
  */
 
+import { createClient } from '@supabase/supabase-js';
+
+/**
+ * Get Supabase client for server-side operations
+ */
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Supabase URL and Service Role Key must be set');
+  }
+
+  return createClient(supabaseUrl, supabaseKey);
+}
+
 /**
  * Convert a database path (e.g., "/securepic/1/3.jpg") to a Supabase Storage public URL
  * @param dbPath - Database path from images.path column
@@ -50,6 +66,45 @@ export async function fetchFromStorage(
     return Buffer.from(arrayBuffer);
   } catch (error) {
     console.error(`Error fetching from storage: ${storageUrl}`, error);
+    return null;
+  }
+}
+
+/**
+ * Upload a file to Supabase Storage
+ * @param filePath - Storage path (e.g., "collages/hero-collage-1930s-v1.jpg")
+ * @param buffer - File buffer to upload
+ * @param bucket - Storage bucket name (default: 'glamourgirls_images')
+ * @param contentType - MIME type (default: 'image/jpeg')
+ * @returns Storage path if successful, null if failed
+ */
+export async function uploadToStorage(
+  filePath: string,
+  buffer: Buffer,
+  bucket: string = 'glamourgirls_images',
+  contentType: string = 'image/jpeg'
+): Promise<string | null> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    // Remove leading slash and normalize path
+    const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+    
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(cleanPath, buffer, {
+        contentType,
+        upsert: true, // Overwrite if exists
+      });
+
+    if (error) {
+      console.error(`Failed to upload to Supabase Storage: ${error.message}`);
+      return null;
+    }
+
+    return cleanPath;
+  } catch (error: any) {
+    console.error(`Error uploading to storage: ${filePath}`, error);
     return null;
   }
 }

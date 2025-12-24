@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import pool from '@/lib/db';
 import path from 'path';
-import fs from 'fs/promises';
 import { requireAdminApi } from '@/app/api/admin/_auth';
+import * as collageStorage from '@/lib/collage-storage';
+import { fetchFromStorage, uploadToStorage, getStorageUrl } from '@/lib/supabase/storage';
 
 export const runtime = 'nodejs';
 
@@ -20,7 +21,7 @@ const ERA_MAP: Record<string, number> = {
  * Creates a "thrown pictures on the floor" mosaic effect
  * @param generationId - Unique ID to ensure different collages each time (timestamp or counter)
  */
-async function generateHeroCollage(era: string, version: number = 1, generationId: number = Date.now()): Promise<string> {
+async function generateHeroCollage(era: string, version: number = 1, generationId: number = Date.now()): Promise<{ storagePath: string; publicUrl: string | null; fileSize: number }> {
   const eraValue = ERA_MAP[era];
   if (!eraValue) {
     throw new Error(`Invalid era: ${era}. Valid eras: 1930s, 1940s, 1950s, 1960s`);
@@ -54,6 +55,16 @@ async function generateHeroCollage(era: string, version: number = 1, generationI
   }
 
   console.log(`📸 Found ${images.length} images for collage`);
+  
+  // Log first few image paths for debugging
+  if (images.length > 0) {
+    console.log(`📸 Sample image paths (first 3):`);
+    for (let i = 0; i < Math.min(3, images.length); i++) {
+      const img = images[i];
+      const pathRaw = img?.imagePath || img?.imagepath || img?.path;
+      console.log(`  ${i + 1}. ${pathRaw}`);
+    }
+  }
 
   // Hero dimensions: 16:9 aspect ratio, long side 1500px
   // 16:9 = 1.777... so 1500 / 1.777 = 844px height
@@ -87,18 +98,34 @@ async function generateHeroCollage(era: string, version: number = 1, generationI
   // Load and prepare images - use more images for better coverage
   for (let i = 0; i < Math.min(images.length, 35); i++) {
     const img = images[i];
-    const imagePath = img.imagePath.startsWith('/') 
-      ? img.imagePath.slice(1) 
-      : img.imagePath;
     
-    const fullPath = path.join(publicDir, imagePath);
-
+    // Get imagePath - handle both camelCase and lowercase field names (PostgreSQL case sensitivity)
+    const imagePathRaw = img?.imagePath || img?.imagepath || img?.path;
+    
+    // Skip if imagePath is missing or invalid
+    if (!imagePathRaw || typeof imagePathRaw !== 'string' || imagePathRaw.trim() === '') {
+      console.warn(`  ⚠️  Skipped image ${i + 1}: invalid or missing imagePath`);
+      continue;
+    }
+    
+    // Fetch from Supabase Storage only
+    let imageBuffer: Buffer | null = null;
+    
     try {
-      // Check if file exists
-      await fs.access(fullPath);
+      // Fetch from Supabase Storage
+      imageBuffer = await fetchFromStorage(imagePathRaw, 'glamourgirls_images');
       
-      // Load image
-      const imageBuffer = await fs.readFile(fullPath);
+      if (!imageBuffer) {
+        if (i < 3) {
+          console.log(`  ⚠️  Image not found in Supabase Storage: ${imagePathRaw}`);
+        }
+        throw new Error(`Image not found in Supabase Storage: ${imagePathRaw}`);
+      }
+      
+      if (i < 3) {
+        console.log(`  ✅ Fetched from Supabase Storage: ${imagePathRaw}`);
+      }
+      
       const metadata = await sharp(imageBuffer).metadata();
       
       if (!metadata.width || !metadata.height) continue;
@@ -217,19 +244,32 @@ async function generateHeroCollage(era: string, version: number = 1, generationI
     .jpeg({ quality: 90, mozjpeg: true })
     .toBuffer();
 
-  // Save to /public/images/
-  const outputDir = path.join(publicDir, 'images');
-  await fs.mkdir(outputDir, { recursive: true });
-  
+  // Upload to Supabase Storage
   const filename = `hero-collage-${era}-v${version}.jpg`;
-  const outputPath = path.join(outputDir, filename);
-  await fs.writeFile(outputPath, collageBuffer);
+  const storagePath = `collages/${filename}`;
+  
+  console.log(`📤 Uploading collage to Supabase Storage: ${storagePath}`);
+  const uploadedPath = await uploadToStorage(storagePath, collageBuffer, 'glamourgirls_images', 'image/jpeg');
+  
+  if (!uploadedPath) {
+    throw new Error('Failed to upload collage to Supabase Storage');
+  }
 
-  console.log(`✅ Collage saved: ${filename}`);
+  // Get the public URL for the collage
+  const publicUrl = getStorageUrl(uploadedPath, 'glamourgirls_images');
+  
+  console.log(`✅ Collage uploaded to Supabase Storage: ${uploadedPath}`);
+  console.log(`   Public URL: ${publicUrl}`);
   console.log(`   Size: ${CANVAS_WIDTH}x${CANVAS_HEIGHT}px`);
   console.log(`   Images used: ${imageBuffers.length}`);
+  console.log(`   File size: ${(collageBuffer.length / 1024 / 1024).toFixed(2)} MB`);
 
-  return `/images/${filename}`;
+  // Return object with both path and buffer size for metadata
+  return {
+    storagePath: `/${uploadedPath}`,
+    publicUrl: publicUrl || `/${uploadedPath}`,
+    fileSize: collageBuffer.length,
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -252,14 +292,28 @@ export async function POST(request: NextRequest) {
     
     console.log(`Generating collage for ${era}, version ${versionNum}, generation ${genId}...`);
     
-    const filepath = await generateHeroCollage(era, versionNum, genId);
+    const result = await generateHeroCollage(era, versionNum, genId);
+    const filename = path.basename(result.storagePath);
+
+    // Save metadata (default to active for new collages)
+    // Store the public URL for easy access
+    const metadata = await collageStorage.addCollage({
+      era,
+      version: versionNum,
+      filepath: result.publicUrl, // Store public URL
+      filename,
+      active: true,
+      fileSize: result.fileSize,
+    });
 
     return NextResponse.json({
       success: true,
-      filepath,
+      filepath: result.publicUrl,
+      storagePath: result.storagePath,
       era,
       version: versionNum,
-      message: `Collage generated successfully!`,
+      id: metadata.id,
+      message: `Collage generated and uploaded to Supabase Storage successfully!`,
     });
   } catch (error: any) {
     console.error('Error generating collage:', error);

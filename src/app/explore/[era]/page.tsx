@@ -4,44 +4,29 @@ import { Header, Footer } from '@/components/newdesign';
 import Image from 'next/image';
 import EraGridGalleryOptimized from '@/components/grid/EraGridGalleryOptimized';
 import VintageButton from '@/components/ui/VintageButton';
-import fs from 'fs/promises';
-import path from 'path';
 import { headers } from 'next/headers';
 import '../../newdesign/design-tokens.css';
 
 /**
- * Find available collage versions for an era and randomly select one
+ * Find available active collages for an era and randomly select one
  */
 async function getRandomHeroCollage(era: string): Promise<string | null> {
   try {
-    const publicDir = path.join(process.cwd(), 'public', 'images');
-    const availableVersions: number[] = [];
+    // Try to get active collages from storage
+    const { getActiveCollagesByEra } = await import('@/lib/collage-storage');
+    const activeCollages = await getActiveCollagesByEra(era);
 
-    // Check which versions (1-3) exist
-    for (let v = 1; v <= 3; v++) {
-      const filename = `hero-collage-${era}-v${v}.jpg`;
-      const filePath = path.join(publicDir, filename);
-      
-      try {
-        await fs.access(filePath);
-        availableVersions.push(v);
-      } catch {
-        // File doesn't exist, skip
-      }
+    if (activeCollages.length > 0) {
+      // Randomly select one of the active collages
+      const randomCollage = activeCollages[Math.floor(Math.random() * activeCollages.length)];
+      console.log(`Selected active hero collage for ${era}: ${randomCollage.filename} (${activeCollages.length} active collages available)`);
+      // Return the public URL (stored in filepath)
+      return randomCollage.filepath;
     }
 
-    // If no versions found, return null (will fallback to default)
-    if (availableVersions.length === 0) {
-      console.log(`No collage images found for era ${era}`);
-      return null;
-    }
-
-    // Randomly select one of the available versions
-    const randomVersion = availableVersions[Math.floor(Math.random() * availableVersions.length)];
-    const heroImage = `/images/hero-collage-${era}-v${randomVersion}.jpg`;
-    
-    console.log(`Selected hero collage for ${era}: v${randomVersion} (${availableVersions.length} versions available)`);
-    return heroImage;
+    // No active collages found
+    console.log(`No active collage images found for era ${era}`);
+    return null;
   } catch (error) {
     console.error(`Error finding hero collage for ${era}:`, error);
     return null;
