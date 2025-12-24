@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
-import fs from 'fs/promises';
-import path from 'path';
+import { fetchFromStorage } from '@/lib/supabase/storage';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,42 +13,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Image path required' }, { status: 400 });
     }
 
-    // Normalize the supplied path. Support absolute URLs by grabbing the pathname.
-    let normalizedPath = imagePath;
+    // If already a full URL (Supabase Storage URL), fetch directly
+    let imageBuffer: Buffer | null = null;
+    
     if (/^https?:\/\//i.test(imagePath)) {
       try {
-        const url = new URL(imagePath);
-        normalizedPath = url.pathname || '';
+        const response = await fetch(imagePath);
+        if (!response.ok) {
+          return NextResponse.json({ error: 'Image not found' }, { status: 404 });
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        imageBuffer = Buffer.from(arrayBuffer);
       } catch (err) {
-        console.error('Invalid image URL provided to thumbnail API:', err);
-        return NextResponse.json({ error: 'Invalid image path' }, { status: 400 });
+        console.error('Error fetching image from URL:', err);
+        return NextResponse.json({ error: 'Failed to fetch image' }, { status: 500 });
+      }
+    } else {
+      // Database path - fetch from Supabase Storage
+      imageBuffer = await fetchFromStorage(imagePath);
+      
+      if (!imageBuffer) {
+        return NextResponse.json({ error: 'Image not found in storage' }, { status: 404 });
       }
     }
 
-    // Remove leading slash and construct full path
-    const cleanPath = normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath;
-    const publicDir = path.resolve(process.cwd(), 'public');
-    const fullPath = path.resolve(publicDir, cleanPath);
-
-    // Ensure the resolved file stays within the public directory
-    if (
-      !fullPath.startsWith(`${publicDir}${path.sep}`) &&
-      fullPath !== publicDir
-    ) {
-      return NextResponse.json({ error: 'Invalid image path' }, { status: 400 });
-    }
-
-    // Check if file exists
-    try {
-      await fs.access(fullPath);
-    } catch {
-      return NextResponse.json({ error: 'Image not found' }, { status: 404 });
-    }
-
-    // Read and process image with Sharp
-    const imageBuffer = await fs.readFile(fullPath);
-    const fileExt = path.extname(fullPath).toLowerCase();
-    
+    // Process image with Sharp
     // Create sharp instance and get metadata
     let sharpInstance = sharp(imageBuffer);
     const metadata = await sharpInstance.metadata();

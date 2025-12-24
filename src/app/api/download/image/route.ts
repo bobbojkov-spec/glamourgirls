@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs/promises';
 import path from 'path';
 import { getOrderByCode, logDownload } from '@/lib/orderStore';
+import { fetchFromStorage } from '@/lib/supabase/storage';
 
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
+    const { searchParams } = request.nextUrl.searchParams;
     const code = searchParams.get('code');
     const imageId = searchParams.get('imageId');
     const hqUrl = searchParams.get('hqUrl'); // Optional: allow direct hqUrl for fallback
@@ -108,41 +108,51 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Construct full file path
-    // Paths in database are like "/newpic/3/image.jpg" or "/securepic/3/image.jpg"
-    const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-    const fullPath = path.join(process.cwd(), 'public', cleanPath);
-
     console.log('Download attempt - imagePath:', imagePath);
-    console.log('Download attempt - cleanPath:', cleanPath);
-    console.log('Download attempt - fullPath:', fullPath);
 
-    // Check if file exists
-    try {
-      await fs.access(fullPath);
-      console.log('File exists, proceeding with download');
-    } catch (fileError: any) {
-      console.error('File access error:', fileError.message);
-      console.error('Attempted path:', fullPath);
-      return NextResponse.json(
-        { error: `Image file not found on server: ${cleanPath}` },
-        { status: 404 }
-      );
+    // Fetch image from Supabase Storage
+    // HQ images are in the private 'images_raw' bucket, but may also be in public bucket
+    let fileBuffer: Buffer | null = null;
+    
+    if (/^https?:\/\//i.test(imagePath)) {
+      // Already a full URL (Supabase Storage URL)
+      try {
+        const response = await fetch(imagePath);
+        if (!response.ok) {
+          return NextResponse.json(
+            { error: 'Image not found in storage' },
+            { status: 404 }
+          );
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        fileBuffer = Buffer.from(arrayBuffer);
+        console.log('File fetched from URL successfully, size:', fileBuffer.length, 'bytes');
+      } catch (fetchError: any) {
+        console.error('Error fetching image from URL:', fetchError);
+        return NextResponse.json(
+          { error: 'Failed to fetch image from storage' },
+          { status: 500 }
+        );
+      }
+    } else {
+      // Database path - try images_raw bucket first (HQ images), then public bucket as fallback
+      fileBuffer = await fetchFromStorage(imagePath, 'images_raw');
+      
+      if (!fileBuffer) {
+        // Try the public bucket as fallback
+        fileBuffer = await fetchFromStorage(imagePath, 'glamourgirls_images');
+        
+        if (!fileBuffer) {
+          return NextResponse.json(
+            { error: 'Image not found in storage' },
+            { status: 404 }
+          );
+        }
+      }
+      console.log('File fetched from storage successfully, size:', fileBuffer.length, 'bytes');
     }
-
-    // Read the file
-    let fileBuffer: Buffer;
-    try {
-      fileBuffer = await fs.readFile(fullPath);
-      console.log('File read successfully, size:', fileBuffer.length, 'bytes');
-    } catch (readError: any) {
-      console.error('File read error:', readError.message);
-      return NextResponse.json(
-        { error: 'Failed to read image file from server' },
-        { status: 500 }
-      );
-    }
-    const fileExt = path.extname(fullPath).toLowerCase();
+    
+    const fileExt = path.extname(imagePath).toLowerCase();
     
     // Determine content type
     const contentType = 
@@ -172,4 +182,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

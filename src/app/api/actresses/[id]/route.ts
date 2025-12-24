@@ -336,29 +336,67 @@ export async function GET(
                      thumb.path?.includes(`thumb${img.id}`);
             });
             
+            // Convert database paths to Supabase Storage URLs
+            const getStorageUrl = (path: string | null | undefined): string => {
+              if (!path) return '';
+              if (path.startsWith('http')) return path; // Already a URL
+              
+              const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+              if (!supabaseUrl) return path; // Fallback to original path if Supabase URL not set
+              
+              const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+              return `${supabaseUrl}/storage/v1/object/public/glamourgirls_images/${cleanPath}`;
+            };
+            
             return {
               id: img.id,
-              url: img.path,
+              url: getStorageUrl(img.path),
               width: img.width,
               height: img.height,
               size: img.sz,
               thumbnailId: img.thumbid,
-              thumbnailUrl: thumbnail?.path || '',
+              thumbnailUrl: getStorageUrl(thumbnail?.path || ''),
             };
           }),
-        hq: hqImages.map((img: any) => ({
-          id: img.id,
-          url: img.path,
-          width: img.width,
-          height: img.height,
-          size: img.sz,
-        })),
-        thumbnails: thumbnails.map((thumb: any) => ({
-          id: thumb.id,
-          url: thumb.path,
-          width: thumb.width,
-          height: thumb.height,
-        })),
+        hq: hqImages.map((img: any) => {
+          // HQ images are in images_raw bucket (private) - these should not be directly accessible via public URL
+          // For now, return the path - the download API will handle fetching from the correct bucket
+          const getHqStorageUrl = (path: string | null | undefined): string => {
+            if (!path) return '';
+            if (path.startsWith('http')) return path; // Already a URL
+            
+            // HQ images are in private bucket, so we return the path for the download API to handle
+            // The frontend should use the download API with a code for HQ images
+            return path;
+          };
+          
+          return {
+            id: img.id,
+            url: getHqStorageUrl(img.path),
+            width: img.width,
+            height: img.height,
+            size: img.sz,
+          };
+        }),
+        thumbnails: thumbnails.map((thumb: any) => {
+          const getStorageUrl = (path: string | null | undefined): string => {
+            if (!path) return '';
+            if (path.startsWith('http')) return path; // Already a URL
+            
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            if (!supabaseUrl) return path; // Fallback to original path if Supabase URL not set
+            
+            const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+            return `${supabaseUrl}/storage/v1/object/public/glamourgirls_images/${cleanPath}`;
+          };
+          
+          return {
+            id: thumb.id,
+            url: getStorageUrl(thumb.path),
+            width: thumb.width,
+            height: thumb.height,
+          };
+        }),
       },
     };
 
