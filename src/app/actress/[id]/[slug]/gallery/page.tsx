@@ -43,6 +43,9 @@ function getBaseUrl(): string {
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  // Diagnostic log to verify code is running (remove after verification)
+  console.log('METADATA VERSION 2025-01-XX - generateMetadata executing (gallery)');
+  
   const { id, slug } = await params;
   
   // Validate and convert id to number
@@ -55,6 +58,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   
   try {
     // Fetch directly from database
+    console.log(`METADATA: Fetching actress ${actressId} from database (gallery)`);
     const actressData = await fetchActressFromDb(actressId);
     
     if (!actressData) {
