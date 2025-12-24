@@ -1,11 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import sharp from 'sharp';
-import fs from 'fs/promises';
 import path from 'path';
 import { requireAdminApi } from '@/app/api/admin/_auth';
+import { fetchFromStorage } from '@/lib/supabase/storage';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
+
+// Helper function to upload to Supabase storage
+async function uploadToSupabase(
+  supabase: any,
+  bucket: string,
+  filePath: string,
+  buffer: Buffer,
+  contentType: string = 'image/jpeg'
+): Promise<string> {
+  const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+  
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(cleanPath, buffer, {
+      contentType,
+      upsert: true,
+    });
+
+  if (error) {
+    throw new Error(`Supabase upload failed: ${error.message}`);
+  }
+
+  return cleanPath;
+}
 
 export async function POST(
   request: NextRequest,
@@ -36,28 +61,31 @@ export async function POST(
       }, { status: 404 });
     }
 
-    const publicDir = path.resolve(process.cwd(), 'public');
+    // Initialize Supabase client
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json(
+        { error: 'Supabase configuration missing. Cannot rebuild thumbnails.' },
+        { status: 500 }
+      );
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
     let rebuiltCount = 0;
     const errors: string[] = [];
 
     for (const galleryImg of galleryImages) {
       try {
-        // Get the full path to the gallery image
-        const galleryPath = galleryImg.path.startsWith('/') 
-          ? galleryImg.path.slice(1) 
-          : galleryImg.path;
-        const fullGalleryPath = path.resolve(publicDir, galleryPath);
-
-        // Check if gallery image exists
-        try {
-          await fs.access(fullGalleryPath);
-        } catch {
-          errors.push(`Gallery image not found: ${galleryPath}`);
+        // Fetch gallery image from Supabase storage
+        const galleryBuffer = await fetchFromStorage(galleryImg.path);
+        
+        if (!galleryBuffer) {
+          errors.push(`Gallery image not found in Supabase: ${galleryImg.path}`);
           continue;
         }
-
-        // Read the gallery image
-        const galleryBuffer = await fs.readFile(fullGalleryPath);
         
         // Get image metadata
         const metadata = await sharp(galleryBuffer).metadata();
@@ -105,15 +133,15 @@ export async function POST(
             thumbFileName = pathParts.base;
           } else {
             // Create new thumbnail path
-            const galleryPathParts = path.parse(galleryPath);
+            const galleryPathParts = path.parse(galleryImg.path);
             thumbFileName = `thumb_${path.basename(galleryPathParts.dir)}_${galleryImg.id}.jpg`;
-            thumbPath = path.join(path.dirname(galleryPath), thumbFileName);
+            thumbPath = path.join(path.dirname(galleryImg.path), thumbFileName);
           }
         } else {
           // Create new thumbnail path
-          const galleryPathParts = path.parse(galleryPath);
+          const galleryPathParts = path.parse(galleryImg.path);
           thumbFileName = `thumb_${path.basename(galleryPathParts.dir)}_${galleryImg.id}.jpg`;
-          thumbPath = path.join(path.dirname(galleryPath), thumbFileName);
+          thumbPath = path.join(path.dirname(galleryImg.path), thumbFileName);
         }
 
         // Ensure thumbPath starts with /
@@ -121,10 +149,9 @@ export async function POST(
           thumbPath = '/' + thumbPath;
         }
 
-        // Save thumbnail file
-        const fullThumbPath = path.resolve(publicDir, thumbPath.startsWith('/') ? thumbPath.slice(1) : thumbPath);
-        await fs.mkdir(path.dirname(fullThumbPath), { recursive: true });
-        await fs.writeFile(fullThumbPath, thumbnailBuffer);
+        // Upload thumbnail to Supabase storage
+        const thumbStoragePath = thumbPath.startsWith('/') ? thumbPath.slice(1) : thumbPath;
+        await uploadToSupabase(supabase, 'glamourgirls_images', thumbStoragePath, thumbnailBuffer, 'image/jpeg');
 
         // Update or insert thumbnail in database
         if (galleryImg.thumbid) {

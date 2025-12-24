@@ -297,10 +297,13 @@ export async function POST(request: NextRequest) {
 
     // Save metadata (default to active for new collages)
     // Store the public URL for easy access
+    // Handle null case: use storagePath as fallback if publicUrl is null
+    const filepath = result.publicUrl || result.storagePath;
+    
     const metadata = await collageStorage.addCollage({
       era,
       version: versionNum,
-      filepath: result.publicUrl, // Store public URL
+      filepath, // Store public URL or fallback to storagePath
       filename,
       active: true,
       fileSize: result.fileSize,

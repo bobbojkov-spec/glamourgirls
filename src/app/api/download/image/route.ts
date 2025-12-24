@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = request.nextUrl.searchParams;
+    const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get('code');
     const imageId = searchParams.get('imageId');
     const hqUrl = searchParams.get('hqUrl'); // Optional: allow direct hqUrl for fallback
