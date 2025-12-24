@@ -86,6 +86,10 @@ const resolveBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_BASE_URL) {
     return process.env.NEXT_PUBLIC_BASE_URL;
   }
+  // Use VERCEL_URL on Vercel (automatically set by Vercel)
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
   return 'http://localhost:3000';
 };
 
