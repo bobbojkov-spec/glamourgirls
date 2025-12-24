@@ -245,6 +245,7 @@ export async function GET(
     }
     
     const placeholders = actressIds.map(() => '?').join(',');
+    const actressIdNumbers = actressesToUse.map((a: any) => parseInt(a.actressId));
     
     // Get first gallery image per actress using subquery for reliability
     // Match the same query pattern as random-thumbnails (no path filtering)
@@ -335,6 +336,28 @@ export async function GET(
       console.log(`[Grid API] No image results to process`);
     }
 
+    // Check which actresses have HQ images (mytp = 5)
+    const [hqResults] = await pool.execute(
+      `SELECT DISTINCT girlid as actressid
+       FROM images
+       WHERE girlid IN (${placeholders})
+         AND mytp = 5
+         AND path IS NOT NULL 
+         AND path != ''`,
+      actressIdNumbers
+    ) as any[];
+
+    const hqActressIds = new Set<number>();
+    if (Array.isArray(hqResults)) {
+      for (const row of hqResults) {
+        const actressId = row.actressid || row.actressId;
+        if (actressId) {
+          hqActressIds.add(parseInt(actressId));
+        }
+      }
+    }
+    console.log(`[Grid API] Found ${hqActressIds.size} actresses with HQ images`);
+
     // Build items array in alphabetical order (already sorted from query)
     // Only include actresses that have at least one gallery image
     console.log(`[Grid API] Building items array from ${actressesToUse.length} actresses, ${actressImageMap.size} have images`);
@@ -363,6 +386,7 @@ export async function GET(
           actressSlug,
           imageId: imageData?.imageId || null,
           thumbnailUrl: imageData?.thumbnailUrl || null,
+          hasHqImages: hqActressIds.has(parseInt(actress.actressId)),
         };
       });
 

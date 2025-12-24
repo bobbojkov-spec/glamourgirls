@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
+import EraGridGalleryModal from './EraGridGalleryModal';
 
 interface GridItem {
   actressId: number;
@@ -10,6 +11,7 @@ interface GridItem {
   actressSlug: string;
   imageId: number | null;
   thumbnailUrl: string | null;
+  hasHqImages?: boolean;
 }
 
 interface EraGridGalleryOptimizedProps {
@@ -50,6 +52,8 @@ export default function EraGridGalleryOptimized({ era, initialData }: EraGridGal
   const [isLoading, setIsLoading] = useState(!initialData);
   const [visibleItems, setVisibleItems] = useState<Set<number>>(new Set());
   const popIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalIndex, setModalIndex] = useState(0);
 
   const startPopInAnimation = useCallback((itemsToShow: GridItem[]) => {
     // Clear any existing interval
@@ -124,8 +128,9 @@ export default function EraGridGalleryOptimized({ era, initialData }: EraGridGal
 
   const items = data?.items || [];
 
-  const handleClick = (item: GridItem) => {
-    router.push(`/actress/${item.actressId}/${item.actressSlug}`);
+  const handleClick = (item: GridItem, index: number) => {
+    setModalIndex(index);
+    setModalOpen(true);
   };
 
   if (isLoading) {
@@ -192,7 +197,7 @@ export default function EraGridGalleryOptimized({ era, initialData }: EraGridGal
               style={{
                 animation: isVisible ? 'popIn 0.3s ease-out' : 'none',
               }}
-              onClick={() => handleClick(item)}
+              onClick={() => handleClick(item, index)}
             >
               {/* Vintage rounded white frame with 4-5px border */}
               <div className="relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow" style={{ padding: '5px' }}>
@@ -246,6 +251,16 @@ export default function EraGridGalleryOptimized({ era, initialData }: EraGridGal
           }
         }
       `}</style>
+
+      {/* Gallery Modal */}
+      {items.length > 0 && (
+        <EraGridGalleryModal
+          items={items}
+          initialIndex={modalIndex}
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
     </>
   );
 }
