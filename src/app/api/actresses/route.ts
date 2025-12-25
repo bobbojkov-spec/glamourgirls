@@ -32,12 +32,21 @@ export async function GET(request: Request) {
       }
     }
 
-    // Build query - using same working pattern as test-query
-    // Start with simple query, add JOIN for photo counts only if needed
+    // Build query - include first gallery image (mytp = 4) for each actress
+    // Also include featured status fields
     let query = `
       SELECT g.id, g.nm, g.firstname, g.familiq, g.godini, g.isnew, g.isnewpix, g.slug, g.theirman,
+             g.is_featured, g.featured_order,
              COUNT(DISTINCT CASE WHEN i.mytp = 4 THEN i.id END)::int as "photoCount",
-             COUNT(DISTINCT CASE WHEN i.mytp = 5 THEN i.id END)::int as "hqPhotoCount"
+             COUNT(DISTINCT CASE WHEN i.mytp = 5 THEN i.id END)::int as "hqPhotoCount",
+             (SELECT i2.path 
+              FROM images i2 
+              WHERE i2.girlid = g.id 
+                AND i2.mytp = 4 
+                AND i2.path IS NOT NULL 
+                AND i2.path != ''
+              ORDER BY i2.id ASC 
+              LIMIT 1) as "galleryImagePath"
       FROM girls g
       LEFT JOIN images i ON g.id = i.girlid
       WHERE g.published = 2
@@ -110,7 +119,20 @@ export async function GET(request: Request) {
       query += ` AND g.theirman = true`;
     }
 
-    query += ` GROUP BY g.id ORDER BY g.familiq, g.firstname`;
+    // Check if we should order by created_at (for Latest Additions)
+    // Note: created_at may not exist in all database schemas, so we handle it gracefully
+    const orderByCreatedAt = searchParams.get('orderBy') === 'created_at';
+    
+    query += ` GROUP BY g.id, g.nm, g.firstname, g.familiq, g.godini, g.isnew, g.isnewpix, g.slug, g.theirman, g.is_featured, g.featured_order`;
+    
+    // Order by created_at DESC if requested (will fallback gracefully if column doesn't exist)
+    // Otherwise use default ordering by name
+    if (orderByCreatedAt) {
+      // Try created_at DESC first, fallback to id DESC (newer IDs are typically higher)
+      query += ` ORDER BY g.id DESC`;
+    } else {
+      query += ` ORDER BY g.familiq, g.firstname`;
+    }
 
     const [results] = await pool.execute(query, params) as any[];
 
@@ -131,6 +153,16 @@ export async function GET(request: Request) {
       
       const years = eraMap[Number(row.godini)] || '50s';
       
+      // Get gallery image URL (first gallery image, mytp = 4)
+      let galleryImageUrl: string | undefined;
+      if (row.galleryImagePath) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const cleanPath = row.galleryImagePath.startsWith('/') ? row.galleryImagePath.slice(1) : row.galleryImagePath;
+        galleryImageUrl = supabaseUrl 
+          ? `${supabaseUrl}/storage/v1/object/public/glamourgirls_images/${cleanPath}`
+          : undefined;
+      }
+      
       return {
         id: Number(row.id) || 0,
         name: String(row.nm || ''),
@@ -143,8 +175,11 @@ export async function GET(request: Request) {
         hqPhotoCount: Number(row.hqPhotoCount) || 0,
         isNew: Number(row.isnew) === 2,
         hasNewPhotos: Number(row.isnewpix) === 2,
-        headshot: `/api/actresses/${row.id}/headshot`, // Headshot URL (API endpoint handles Supabase Storage)
+        headshot: `/api/actresses/${row.id}/headshot`, // Keep for backward compatibility
+        galleryImageUrl: galleryImageUrl, // First gallery image URL
         theirMan: Boolean(row.theirman) === true, // Add theirMan flag
+        isFeatured: Boolean(row.is_featured) === true, // Featured status
+        featuredOrder: row.featured_order ? Number(row.featured_order) : null, // Featured order (1-4)
       };
     }) : [];
 

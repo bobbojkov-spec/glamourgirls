@@ -149,20 +149,21 @@ export default function SearchPanel({
       style={{ fontFamily: 'DM Sans, sans-serif' }}
     >
       {/* Filters row - centered */}
-      <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+      <div className="flex flex-wrap items-center justify-center gap-x-2 sm:gap-x-4 md:gap-x-8 gap-y-3 w-full">
         {/* New entry filter - Toggle */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-shrink-0" style={{ minWidth: 0 }}>
           <span 
-            className="font-medium text-[var(--text-primary)]"
+            className="font-medium text-[var(--text-primary)] flex-shrink-0"
             style={{
-              fontSize: '13px',
+              fontSize: 'clamp(11px, 2vw, 13px)',
               fontWeight: 500,
               opacity: 0.75,
+              whiteSpace: 'nowrap',
             }}
           >
             New entry
           </span>
-          <label className="relative inline-flex items-center cursor-pointer">
+          <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
             <input
               type="checkbox"
               checked={filters.newEntry === 'yes'}
@@ -174,11 +175,12 @@ export default function SearchPanel({
               }}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E6D9B3]"></div>
+            <div className="w-10 h-5 sm:w-11 sm:h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-[#E6D9B3]"></div>
             <span 
-              className="ml-3 text-[var(--text-secondary)] w-8 inline-block text-left"
+              className="ml-2 text-[var(--text-secondary)] flex-shrink-0 text-left"
               style={{
-                fontSize: '16px', /* Mobile: 16px */
+                fontSize: 'clamp(13px, 2vw, 16px)',
+                whiteSpace: 'nowrap',
               }}
             >
               {filters.newEntry === 'yes' ? 'Yes' : 'No'}
@@ -187,18 +189,19 @@ export default function SearchPanel({
         </div>
 
         {/* New photos filter - Toggle */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-shrink-0" style={{ minWidth: 0 }}>
           <span 
-            className="font-medium text-[var(--text-primary)]"
+            className="font-medium text-[var(--text-primary)] flex-shrink-0"
             style={{
-              fontSize: '13px',
+              fontSize: 'clamp(11px, 2vw, 13px)',
               fontWeight: 500,
               opacity: 0.75,
+              whiteSpace: 'nowrap',
             }}
           >
             New Photos
           </span>
-          <label className="relative inline-flex items-center cursor-pointer">
+          <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
             <input
               type="checkbox"
               checked={filters.newPhotos === 'yes'}
@@ -210,11 +213,12 @@ export default function SearchPanel({
               }}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E6D9B3]"></div>
+            <div className="w-10 h-5 sm:w-11 sm:h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 sm:after:h-5 sm:after:w-5 after:transition-all peer-checked:bg-[#E6D9B3]"></div>
             <span 
-              className="ml-3 text-[var(--text-secondary)] w-8 inline-block text-left"
+              className="ml-2 text-[var(--text-secondary)] flex-shrink-0 text-left"
               style={{
-                fontSize: '16px', /* Mobile: 16px */
+                fontSize: 'clamp(13px, 2vw, 16px)',
+                whiteSpace: 'nowrap',
               }}
             >
               {filters.newPhotos === 'yes' ? 'Yes' : 'No'}
@@ -222,19 +226,23 @@ export default function SearchPanel({
           </label>
         </div>
 
-        {/* Years filter - Radio Buttons */}
-        <div className="flex items-center gap-3 flex-nowrap md:flex-wrap">
-          <span 
-            className="font-medium text-[var(--text-primary)] flex-shrink-0"
-            style={{
-              fontSize: '13px',
-              fontWeight: 500,
-              opacity: 0.75,
-            }}
-          >
-            Years
-          </span>
-          <div className="flex items-center gap-2 flex-nowrap overflow-x-auto">
+        {/* Years filter - Toggle Pills */}
+        <div className="w-full">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-0">
+            <span 
+              className="font-medium text-[var(--text-primary)] flex-shrink-0"
+              style={{
+                fontSize: 'clamp(11px, 2vw, 13px)',
+                fontWeight: 500,
+                opacity: 0.75,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Years
+            </span>
+          </div>
+          {/* Mobile: Fixed 3 columns x 2 rows (all | 20–30s | 40s / 50s | 60s | Their Men), Desktop: flex row */}
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 sm:grid-cols-none sm:flex sm:flex-wrap sm:items-center">
             {['all', '20-30s', '40s', '50s', '60s', 'men'].map(year => (
               <label key={year} className="flex items-center cursor-pointer flex-shrink-0">
                 <input
@@ -246,14 +254,18 @@ export default function SearchPanel({
                   className="sr-only peer"
                 />
                 <span 
-                  className={`interactive-button px-3 py-1.5 rounded-md border ${
-                    filters.years[0] === year
-                      ? 'border-gray-600 text-gray-900 bg-transparent'
-                      : 'border-gray-300 text-gray-700 bg-transparent hover:border-gray-400'
-                  }`}
+                  className={`
+                    px-2 py-1 sm:px-3 sm:py-1.5 rounded-md border transition-all
+                    ${filters.years[0] === year
+                      ? 'border-gray-700 bg-gray-700 text-white shadow-sm'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                    }
+                    peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-gray-500 peer-focus-visible:ring-offset-2
+                  `}
                   style={{
-                    fontSize: '13px', /* 3px smaller on mobile (was 16px) */
+                    fontSize: 'clamp(11px, 2vw, 13px)',
                     fontFamily: 'DM Sans, sans-serif',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {year === 'men' ? 'Their Men' : year}
@@ -266,50 +278,53 @@ export default function SearchPanel({
 
       {/* Keyword and search button */}
       <div className="flex flex-col items-center gap-4">
-        <div className="relative flex items-stretch w-full max-w-md border border-gray-300 rounded-lg overflow-hidden">
-          {/* Magnifying Glass Icon on Left */}
-          <div className="absolute left-4 z-10 pointer-events-none flex items-center h-full">
-            <svg
-              className="w-5 h-5 text-gray-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
+        <div className="relative flex flex-col sm:flex-row items-stretch w-full border border-gray-300 rounded-lg overflow-hidden">
+          {/* Input with icon inside */}
+          <div className="relative flex-1">
+            {/* Magnifying Glass Icon inside input */}
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex items-center">
+              <svg
+                className="w-5 h-5 text-gray-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
 
-          {/* Input */}
-          <input
-            ref={keywordInputRef}
-            id="keyword"
-            type="text"
-            value={filters.keyword}
-            onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value }))}
-            onFocus={handleKeywordFocus}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleSubmit(e as any);
-              }
-            }}
-            placeholder="input search text"
-            className="flex-1 pl-12 pr-0 py-3 border-0 bg-white text-gray-900 placeholder-gray-400 focus:outline-none search-form-input"
-            style={{ 
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '16px', /* Mobile: 16px, Desktop/tablet handled by CSS */
-            }}
-          />
+            {/* Input */}
+            <input
+              ref={keywordInputRef}
+              id="keyword"
+              type="text"
+              value={filters.keyword}
+              onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value }))}
+              onFocus={handleKeywordFocus}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSubmit(e as any);
+                }
+              }}
+              placeholder="input search text"
+              className="w-full pl-12 pr-0 py-3 border-0 bg-white text-gray-900 placeholder-gray-400 focus:outline-none search-form-input"
+              style={{ 
+                fontFamily: 'DM Sans, sans-serif',
+                fontSize: '16px', /* Mobile: 16px, Desktop/tablet handled by CSS */
+              }}
+            />
+          </div>
 
           {/* Search Button - Darker Glamour Girls Colors */}
           <button
             type="submit"
-            className="interactive-button px-6 py-3 font-medium border-l border-gray-300 flex items-center"
+            className="interactive-button px-6 py-3 font-medium border-t sm:border-t-0 sm:border-l border-gray-300 flex items-center justify-center w-full sm:w-auto"
             style={{
               backgroundColor: '#8b6f2a',
               color: '#ffffff',

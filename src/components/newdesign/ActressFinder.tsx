@@ -187,25 +187,28 @@ export default function ActressFinder() {
 
         <div className="relative">
           <div className="relative flex items-center rounded-lg overflow-hidden border border-gray-300">
-            {/* Magnifying Glass Icon on Left */}
-            <div className="absolute left-4 z-10 pointer-events-none">
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+            {/* Input with icon inside */}
+            <div className="relative flex-1">
+              {/* Magnifying Glass Icon inside input */}
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex items-center">
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              
+              {/* Input */}
+              <input
+                ref={inputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={handleFocus}
+                placeholder="Type 3 letters..."
+                className="w-full pl-12 pr-0 py-3 border-0 rounded-l-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none"
+                style={{ fontSize: '15px' }}
+              />
             </div>
-            
-            {/* Input */}
-            <input
-              ref={inputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => handleInputChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={handleFocus}
-              placeholder="Type 3 letters..."
-              className="flex-1 pl-12 pr-0 py-3 border-0 rounded-l-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none"
-              style={{ fontSize: '15px' }}
-            />
             
             {/* Loading indicator */}
             {isLoading && (

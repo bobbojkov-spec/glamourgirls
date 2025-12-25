@@ -207,7 +207,8 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Years Filter - Above Search Input */}
               <div>
-                <div className="flex items-center gap-1.5 border border-gray-300 rounded-md p-0.5 bg-white flex-nowrap overflow-x-auto">
+                {/* Mobile: Fixed 3 columns x 2 rows (all | 20–30s | 40s / 50s | 60s | Their Men), Desktop: flex row */}
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-1.5 sm:grid-cols-none sm:flex sm:items-center sm:border sm:border-gray-300 sm:rounded-md sm:p-0.5 sm:bg-white sm:flex-nowrap sm:overflow-x-auto">
                   {['all', '20-30s', '40s', '50s', '60s', 'men'].map(era => (
                     <label key={era} className="flex items-center cursor-pointer flex-shrink-0">
                       <input
@@ -218,11 +219,14 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                         onChange={(e) => setSelectedEra(e.target.value)}
                         className="sr-only peer"
                       />
-                      <span className={`interactive-button px-2 py-0.5 text-xs rounded whitespace-nowrap ${
-                        selectedEra === era
-                          ? 'bg-gray-100 text-gray-700 border border-gray-300'
-                          : 'text-gray-500 hover:bg-gray-50'
-                      }`}>
+                      <span className={`
+                        px-2 py-1 sm:py-0.5 text-xs sm:text-xs rounded whitespace-nowrap transition-all
+                        ${selectedEra === era
+                          ? 'border border-gray-700 bg-gray-700 text-white shadow-sm'
+                          : 'border border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                        }
+                        peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-gray-500 peer-focus-visible:ring-offset-2
+                      `}>
                         {era === 'men' ? 'Their Men' : era === 'all' ? 'All' : era}
                       </span>
                     </label>
@@ -233,43 +237,46 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
               {/* Search Input */}
               <div className="relative">
                 <div className="relative flex items-center rounded-lg overflow-hidden border border-gray-300">
-                  {/* Magnifying Glass Icon on Left */}
-                  <div className="absolute left-4 z-10 pointer-events-none">
-                    <svg
-                      className="w-5 h-5 text-gray-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                      />
-                    </svg>
-                  </div>
+                  {/* Input with icon inside */}
+                  <div className="relative flex-1">
+                    {/* Magnifying Glass Icon inside input */}
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex items-center">
+                      <svg
+                        className="w-5 h-5 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                    </div>
 
-                  {/* Input */}
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={(e) => {
-                      // Only update if not searching - prevent state updates during navigation
-                      if (!isSearching) {
-                        setQuery(e.target.value);
-                      }
-                    }}
-                    onKeyDown={handleKeyDown}
-                    placeholder="input search text"
-                    disabled={isSearching || !isOpen}
-                    autoComplete="off"
-                    autoFocus={false}
-                    tabIndex={isOpen ? 0 : -1}
-                    className="flex-1 pl-12 pr-0 py-3 border-0 rounded-l-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none disabled:opacity-70 disabled:cursor-wait"
-                    style={{ fontFamily: 'var(--font-ui)', fontSize: '1rem' }}
-                  />
+                    {/* Input */}
+                    <input
+                      ref={inputRef}
+                      type="text"
+                      value={query}
+                      onChange={(e) => {
+                        // Only update if not searching - prevent state updates during navigation
+                        if (!isSearching) {
+                          setQuery(e.target.value);
+                        }
+                      }}
+                      onKeyDown={handleKeyDown}
+                      placeholder="input search text"
+                      disabled={isSearching || !isOpen}
+                      autoComplete="off"
+                      autoFocus={false}
+                      tabIndex={isOpen ? 0 : -1}
+                      className="w-full pl-12 pr-0 py-3 border-0 rounded-l-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none disabled:opacity-70 disabled:cursor-wait"
+                      style={{ fontFamily: 'var(--font-ui)', fontSize: '1rem' }}
+                    />
+                  </div>
 
                   {/* Search Button - Darker Glamour Girls Colors */}
                   <button
