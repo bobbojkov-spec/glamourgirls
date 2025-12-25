@@ -54,6 +54,7 @@ export default function EraGridGalleryModal({
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
   const [hqImageInfo, setHqImageInfo] = useState<HqImageInfo | null>(null);
   const [loadingHqInfo, setLoadingHqInfo] = useState(false);
+  const [hasOtherHqImages, setHasOtherHqImages] = useState(false);
 
   const currentItem = items[currentIndex];
   const isFavorited = currentItem ? isFavorite(currentItem.actressId.toString()) : false;
@@ -75,8 +76,9 @@ export default function EraGridGalleryModal({
   // Fetch HQ image info when current item changes
   useEffect(() => {
     const fetchHqImageInfo = async () => {
-      if (!currentItem || !currentItem.hasHqImages || !currentItem.imageId) {
+      if (!currentItem) {
         setHqImageInfo(null);
+        setHasOtherHqImages(false);
         return;
       }
 
@@ -88,7 +90,14 @@ export default function EraGridGalleryModal({
           const galleryImages = actressData.images?.gallery || [];
           const hqImages = actressData.images?.hq || [];
           
-          // Find the gallery image that matches
+          // Check if there are any HQ images for this actress
+          const hasAnyHqImages = hqImages.length > 0 && hqImages.some((hq: any) => {
+            if (!hq.width || !hq.height) return false;
+            const longSide = Math.max(hq.width, hq.height);
+            return longSide >= 1200;
+          });
+          
+          // Find the gallery image that matches current image
           const galleryImage = galleryImages.find((img: any) => 
             img.id.toString() === currentItem.imageId?.toString()
           );
@@ -110,15 +119,28 @@ export default function EraGridGalleryModal({
                   price: 9.9,
                   imageId: galleryImage.id.toString(), // Use gallery ID for cart consistency
                 });
+                setHasOtherHqImages(false);
                 return;
               }
             }
           }
+          
+          // If current image doesn't have HQ but other images do
+          if (hasAnyHqImages) {
+            setHasOtherHqImages(true);
+          } else {
+            setHasOtherHqImages(false);
+          }
+          
+          setHqImageInfo(null);
+        } else {
+          setHqImageInfo(null);
+          setHasOtherHqImages(false);
         }
-        setHqImageInfo(null);
       } catch (error) {
         console.error('Error fetching HQ image info:', error);
         setHqImageInfo(null);
+        setHasOtherHqImages(false);
       } finally {
         setLoadingHqInfo(false);
       }
@@ -407,87 +429,45 @@ export default function EraGridGalleryModal({
         {/* Info panel */}
         <div className="w-full max-w-4xl px-4">
           <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
-            {/* First row: Actress name (left) and HQ info (right) */}
-            <div className="flex items-start justify-between mb-3 gap-4">
-              {/* Left: Actress name (20% smaller, more white, always two rows) */}
-              <div className="flex-1">
-                <h2 
-                  className="font-bold text-white uppercase leading-tight" 
-                  style={{ 
-                    fontFamily: "'Kabel Black', sans-serif",
-                    fontSize: '0.8em', // 20% smaller
-                    opacity: 1, // More white/dense opacity
-                  }}
-                >
-                  {firstName && (
-                    <div className="block">{firstName}</div>
-                  )}
-                  {surname && (
-                    <div className="block">{surname}</div>
-                  )}
-                  {!firstName && !surname && currentItem.actressName && (
-                    <>
-                      <div className="block">{currentItem.actressName.split(' ')[0]}</div>
-                      {currentItem.actressName.split(' ').slice(1).length > 0 && (
-                        <div className="block">{currentItem.actressName.split(' ').slice(1).join(' ')}</div>
-                      )}
-                    </>
-                  )}
-                </h2>
-              </div>
-
-              {/* Right: Favorite button and HQ info */}
-              <div className="flex items-start gap-3 flex-shrink-0">
-                {/* HQ Image Info (only if available) - First row */}
-                {hqImageInfo && !loadingHqInfo && (
-                  <div className="flex items-center gap-2 text-white/90" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.75rem' }}>
-                    <span>High-quality images are available</span>
-                    <span>•</span>
-                    <span>{hqImageInfo.width.toLocaleString()} × {hqImageInfo.height.toLocaleString()} px</span>
-                    <span>•</span>
-                    <span className="font-semibold">${hqImageInfo.price.toFixed(2)}</span>
-                  </div>
+            {/* First row: Actress name */}
+            <div className="mb-3">
+              <h2 
+                className="font-bold text-white uppercase leading-tight" 
+                style={{ 
+                  fontFamily: "'Kabel Black', sans-serif",
+                  fontSize: '0.8em',
+                  opacity: 1,
+                }}
+              >
+                {firstName && (
+                  <div className="block">{firstName}</div>
                 )}
-
-                {/* Favorite button */}
-                <button
-                  onClick={handleFavoriteClick}
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)] flex-shrink-0"
-                  aria-label={isFavorited ? `Remove ${currentItem.actressName} from favorites` : `Add ${currentItem.actressName} to favorites`}
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill={isFavorited ? '#8B4513' : 'none'}
-                    stroke={isFavorited ? '#8B4513' : 'currentColor'}
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="transition-all duration-200"
-                    style={{ 
-                      color: isFavorited ? '#8B4513' : 'white',
-                    }}
-                  >
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                  </svg>
-                </button>
-              </div>
+                {surname && (
+                  <div className="block">{surname}</div>
+                )}
+                {!firstName && !surname && currentItem.actressName && (
+                  <>
+                    <div className="block">{currentItem.actressName.split(' ')[0]}</div>
+                    {currentItem.actressName.split(' ').slice(1).length > 0 && (
+                      <div className="block">{currentItem.actressName.split(' ').slice(1).join(' ')}</div>
+                    )}
+                  </>
+                )}
+              </h2>
             </div>
 
-            {/* Second row: View details link (left) and Add to Cart button (right) */}
-            <div className="flex items-center justify-between">
-              <button
-                onClick={handleViewDetails}
-                className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-sm font-medium"
-                style={{ fontFamily: 'DM Sans, sans-serif' }}
-              >
-                Go see details on this actress →
-              </button>
-              
-              {/* Add to Cart button (same row as "Go see details") */}
-              {hqImageInfo && !loadingHqInfo && (
-                <div>
+            {/* Second row: HQ available, pixel size, price, and Add button (if HQ available) */}
+            {hqImageInfo && !loadingHqInfo && (
+              <div className="flex items-center justify-between mb-3 gap-4">
+                <div className="flex items-center gap-2 text-white/90 flex-1" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.75rem' }}>
+                  <span>HQ available</span>
+                  <span>•</span>
+                  <span>{hqImageInfo.width.toLocaleString()} × {hqImageInfo.height.toLocaleString()} px</span>
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <span className="font-semibold text-white text-base" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                    ${hqImageInfo.price.toFixed(2)}
+                  </span>
                   {!isAlreadyInCart ? (
                     <button
                       onClick={handleAddToCart}
@@ -534,7 +514,51 @@ export default function EraGridGalleryModal({
                     </button>
                   )}
                 </div>
-              )}
+              </div>
+            )}
+
+            {/* Show "HiQ images available" if current image doesn't have HQ but other images do */}
+            {!hqImageInfo && !loadingHqInfo && hasOtherHqImages && (
+              <div className="mb-3">
+                <p className="text-white/90 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  HiQ images available
+                </p>
+              </div>
+            )}
+
+            {/* Third row: View details link (left) and Favorite button (right) */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={handleViewDetails}
+                className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-sm font-medium"
+                style={{ fontFamily: 'DM Sans, sans-serif' }}
+              >
+                {currentItem.actressName.split(' ').length > 1 ? 'See details on this actress' : 'Go to details'} →
+              </button>
+              
+              {/* Favorite button */}
+              <button
+                onClick={handleFavoriteClick}
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)] flex-shrink-0"
+                aria-label={isFavorited ? `Remove ${currentItem.actressName} from favorites` : `Add ${currentItem.actressName} to favorites`}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill={isFavorited ? '#8B4513' : 'none'}
+                  stroke={isFavorited ? '#8B4513' : 'currentColor'}
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transition-all duration-200"
+                  style={{ 
+                    color: isFavorited ? '#8B4513' : 'white',
+                  }}
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </button>
             </div>
 
             {/* Image counter */}

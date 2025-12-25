@@ -60,6 +60,9 @@ export default function FavoritesModal() {
                       name={actress.name}
                       slug={actress.slug}
                       thumbnailUrl={actress.thumbnailUrl}
+                      onClick={() => {
+                        closeFavorites();
+                      }}
                       actionButton={
                         <button
                           onClick={(e) => {
