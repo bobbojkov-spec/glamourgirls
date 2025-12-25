@@ -104,7 +104,7 @@ export default function SearchPanel({
   // Years filter now uses radio buttons, so we just set the selected year
   // Hero search: Auto-search immediately to narrow results
   const handleYearChange = (year: string) => {
-    const newFilters = { ...filters, years: [year] };
+    const newFilters: SearchFilters = { ...filters, years: [year] };
     setFilters(newFilters);
     // Immediately refine search with new year filter
     onSearch?.(newFilters);
@@ -130,7 +130,7 @@ export default function SearchPanel({
     // Toggle: if same letter clicked, clear; otherwise set to that letter
     const newValue = currentValue === letter ? '' : letter;
     
-    const newFilters = {
+    const newFilters: SearchFilters = {
       ...filters,
       [type === 'name' ? 'nameStartsWith' : 'surnameStartsWith']: newValue
     };
@@ -168,7 +168,7 @@ export default function SearchPanel({
               checked={filters.newEntry === 'yes'}
               onChange={(e) => {
                 // Hero search: Auto-search immediately to narrow results
-                const newFilters = { ...filters, newEntry: e.target.checked ? 'yes' : 'no' };
+                const newFilters: SearchFilters = { ...filters, newEntry: e.target.checked ? 'yes' : 'no' };
                 setFilters(newFilters);
                 onSearch?.(newFilters);
               }}
@@ -204,7 +204,7 @@ export default function SearchPanel({
               checked={filters.newPhotos === 'yes'}
               onChange={(e) => {
                 // Hero search: Auto-search immediately to narrow results
-                const newFilters = { ...filters, newPhotos: e.target.checked ? 'yes' : 'no' };
+                const newFilters: SearchFilters = { ...filters, newPhotos: e.target.checked ? 'yes' : 'no' };
                 setFilters(newFilters);
                 onSearch?.(newFilters);
               }}
