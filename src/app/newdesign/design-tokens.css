@@ -6,7 +6,7 @@
        url('/fonts/dubba-dubba-nf/DubbaDubbaNF.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
-  font-display: block; /* Block to prevent FOUC - text invisible until font loads */
+  font-display: optional; /* Optional for decorative fonts - prevents blocking */
 }
 
 @font-face {
@@ -14,7 +14,7 @@
   src: url('/fonts/lemonmilk-cufonfonts/LemonMilk.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
-  font-display: block; /* Block for display fonts - prevent FOUC */
+  font-display: optional; /* Optional for decorative fonts - prevents blocking */
 }
 
 @font-face {
@@ -22,7 +22,7 @@
   src: url('/fonts/lemonmilk-cufonfonts/LemonMilkbold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
-  font-display: block; /* Block for display fonts - prevent FOUC */
+  font-display: optional; /* Optional for decorative fonts - prevents blocking */
 }
 
 @font-face {
@@ -30,7 +30,7 @@
   src: url('/fonts/didot-2/Didot Bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
-  font-display: block; /* Block for display fonts - prevent FOUC */
+  font-display: optional; /* Optional for decorative fonts - prevents blocking */
 }
 
 @font-face {
@@ -38,7 +38,7 @@
   src: url('/fonts/Broadway.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
-  font-display: block; /* Block for display fonts - prevent FOUC */
+  font-display: optional; /* Optional for decorative fonts - prevents blocking */
 }
 
 @font-face {
@@ -46,7 +46,7 @@
   src: url('/fonts/Kabel Black Regular/Kabel Black Regular.otf') format('opentype');
   font-weight: 900;
   font-style: normal;
-  font-display: block; /* Block for display fonts - prevent FOUC */
+  font-display: optional; /* Optional for decorative fonts - prevents blocking */
 }
 
 /* ========================================
@@ -86,7 +86,8 @@
   --font-logo-secondary: 'Alex Brush', cursive;
   --font-logo-hero: 'Dubba Dubba NF', 'Great Vibes', cursive;
   --font-headline: 'LEMON MILK', 'Didot', 'Bodoni Moda', 'Playfair Display', serif;
-  --font-ui: 'Inter', 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  /* UI fonts loaded via next/font - use CSS variables */
+  --font-ui: var(--font-inter), var(--font-source-sans), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --font-name: 'Didot Bold', 'Didot', 'Times New Roman', serif;
 
   /* Typography - Logo Sizes */

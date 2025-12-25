@@ -207,12 +207,9 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Years Filter - Above Search Input */}
               <div>
-                <label className="block text-sm font-medium text-[var(--text-primary)] mb-3" style={{ fontFamily: 'var(--font-ui)' }}>
-                  Years
-                </label>
-                <div className="flex items-center gap-2 border border-gray-300 rounded-md p-1 bg-white">
+                <div className="flex items-center gap-1.5 border border-gray-300 rounded-md p-0.5 bg-white flex-nowrap overflow-x-auto">
                   {['all', '20-30s', '40s', '50s', '60s', 'men'].map(era => (
-                    <label key={era} className="flex items-center cursor-pointer">
+                    <label key={era} className="flex items-center cursor-pointer flex-shrink-0">
                       <input
                         type="radio"
                         name="era"
@@ -221,10 +218,10 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                         onChange={(e) => setSelectedEra(e.target.value)}
                         className="sr-only peer"
                       />
-                      <span className={`interactive-button px-3 py-1 text-sm rounded ${
+                      <span className={`interactive-button px-2 py-0.5 text-xs rounded whitespace-nowrap ${
                         selectedEra === era
-                          ? 'bg-[#E6D9B3] text-gray-900 border border-[#d1c4a0]'
-                          : 'text-gray-700 hover:bg-gray-50'
+                          ? 'bg-gray-100 text-gray-700 border border-gray-300'
+                          : 'text-gray-500 hover:bg-gray-50'
                       }`}>
                         {era === 'men' ? 'Their Men' : era === 'all' ? 'All' : era}
                       </span>

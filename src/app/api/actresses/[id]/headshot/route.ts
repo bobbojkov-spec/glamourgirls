@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs/promises';
 import pool from '@/lib/db';
-import { fetchFromStorage } from '@/lib/supabase/storage';
+import { fetchFromStorage, fetchFromStorageWithClient } from '@/lib/supabase/storage';
 
 export const runtime = 'nodejs';
 
@@ -83,9 +83,17 @@ export async function GET(
     // If we found a headshot image in the database, fetch it from Supabase Storage
     if (headshotImage && headshotImage.path) {
       try {
-        const imageBuffer = await fetchFromStorage(headshotImage.path);
+        console.log(`[Headshot API] Actress ${actressId}: Found headshot in DB: ${headshotImage.path}`);
+        // Try fetchFromStorageWithClient first (more reliable), fallback to fetchFromStorage
+        let imageBuffer = await fetchFromStorageWithClient(headshotImage.path);
+        
+        if (!imageBuffer) {
+          console.log(`[Headshot API] Actress ${actressId}: fetchFromStorageWithClient failed, trying fetchFromStorage...`);
+          imageBuffer = await fetchFromStorage(headshotImage.path);
+        }
         
         if (imageBuffer) {
+          console.log(`[Headshot API] Actress ${actressId}: Successfully fetched from storage (${imageBuffer.length} bytes)`);
           // Check if this is already processed (headshot.jpg) or needs processing
           const needsProcessing = !headshotImage.path.toLowerCase().includes('headshot.jpg');
           
@@ -148,11 +156,15 @@ export async function GET(
           };
 
           return new NextResponse(new Uint8Array(finalBuffer), { headers });
+        } else {
+          console.error(`[Headshot API] Actress ${actressId}: fetchFromStorage returned null for path: ${headshotImage.path}`);
         }
       } catch (fetchError) {
-        console.error(`Error fetching headshot from storage for actress ${actressId}:`, fetchError);
+        console.error(`[Headshot API] Actress ${actressId}: Error fetching headshot from storage:`, fetchError);
         // Fall through to placeholder
       }
+    } else {
+      console.log(`[Headshot API] Actress ${actressId}: No headshot found in database, using placeholder`);
     }
 
     // No headshot found - return appropriate placeholder

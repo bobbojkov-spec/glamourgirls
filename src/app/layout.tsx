@@ -9,6 +9,7 @@ import SearchIndexPreloaderWrapper from "@/components/common/SearchIndexPreloade
 import SearchMetadataPreloaderWrapper from "@/components/common/SearchMetadataPreloaderWrapper";
 import "./globals.css";
 import { headers } from "next/headers";
+import { inter, sourceSans, dmSans, montserrat } from "./fonts";
 
 export const metadata: Metadata = {
   title: "Glamour Girls of the Silver Screen",
@@ -51,29 +52,9 @@ export default async function RootLayout({
   // Admin pages use their own layout and CSS (no website header/sidebar)
   if (isAdmin) {
     return (
-      <html lang="en">
+      <html lang="en" className={montserrat.variable}>
         <head>
-          {/* Preload Montserrat font to prevent FOUT */}
-          <link
-            rel="preload"
-            href="/fonts/Montserrat/Montserrat-VariableFont_wght.ttf"
-            as="font"
-            crossOrigin="anonymous"
-          />
-          <link
-            rel="preload"
-            href="/fonts/Montserrat/Montserrat-Italic-VariableFont_wght.ttf"
-            as="font"
-            crossOrigin="anonymous"
-          />
-          {/* Preconnect for Outfit Google Font */}
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          {/* Outfit font for admin UI - using block to prevent FOUT */}
-          <link
-            href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=block"
-            rel="stylesheet"
-          />
+          {/* Montserrat font loaded via next/font - no <link> tags needed */}
         </head>
         <body className="antialiased bg-gray-50">
           {children}
@@ -85,9 +66,12 @@ export default async function RootLayout({
   // New design pages, actress pages, explore page, checkout, download, and search pages use their own layout (completely separate)
   if (isNewDesign || isActress || isExplore || isCheckout || isDownload || isSearch) {
     return (
-      <html lang="en" className="new-design">
+      <html 
+        lang="en" 
+        className={`new-design ${inter.variable} ${sourceSans.variable}`}
+      >
         <head>
-          {/* Preload critical fonts to prevent FOUT */}
+          {/* Preload critical decorative fonts only */}
           <link
             rel="preload"
             href="/fonts/dubba-dubba-nf/DubbaDubbaNF.otf"
@@ -116,7 +100,6 @@ export default async function RootLayout({
             type="font/otf"
             crossOrigin="anonymous"
           />
-          {/* Preload LEMON MILK font */}
           <link
             rel="preload"
             href="/fonts/lemonmilk-cufonfonts/LemonMilk.otf"
@@ -124,19 +107,15 @@ export default async function RootLayout({
             type="font/otf"
             crossOrigin="anonymous"
           />
-          {/* Preconnect for faster Google Font loading */}
+          {/* Preconnect for Google Fonts (only for decorative fonts: Great Vibes, Alex Brush) */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          {/* Display fonts (Great Vibes, Alex Brush) - using block to prevent FOUC */}
+          {/* Display fonts (Great Vibes, Alex Brush) - decorative only */}
           <link
-            href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Alex+Brush&display=block"
+            href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Alex+Brush&display=optional"
             rel="stylesheet"
           />
-          {/* Body and UI fonts - using swap (acceptable for non-display fonts) */}
-          <link
-            href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap"
-            rel="stylesheet"
-          />
+          {/* UI fonts (Inter, Source Sans 3) loaded via next/font - no <link> tags needed */}
         </head>
         <body className="antialiased min-h-screen" style={{ backgroundColor: 'var(--bg-page)' }}>
           <CartProvider>
@@ -157,14 +136,14 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en">
+    <html lang="en" className={`${dmSans.variable} ${inter.variable}`}>
       <head>
-        {/* Preconnect for faster font loading */}
+        {/* Preconnect for Google Fonts (only for decorative fonts) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Vintage Typography Fonts + Base UI Font */}
+        {/* Vintage Typography Fonts (decorative only) - UI font (DM Sans) loaded via next/font */}
         <link 
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Cinzel+Decorative:wght@400;700;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Playfair+Display+SC:ital,wght@0,400;0,700;0,900;1,400&family=Great+Vibes&family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Protest+Strike&display=swap" 
+          href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Playfair+Display+SC:ital,wght@0,400;0,700;0,900;1,400&family=Great+Vibes&family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Protest+Strike&display=optional" 
           rel="stylesheet" 
         />
       </head>

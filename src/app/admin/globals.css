@@ -1,21 +1,7 @@
 @import 'tailwindcss';
 
-/* Custom Fonts from /fonts directory */
-@font-face {
-  font-family: 'Montserrat';
-  src: url('/fonts/Montserrat/Montserrat-VariableFont_wght.ttf') format('truetype-variations');
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: optional; /* Prevents layout shift - uses fallback if font not ready */
-}
-
-@font-face {
-  font-family: 'Montserrat';
-  src: url('/fonts/Montserrat/Montserrat-Italic-VariableFont_wght.ttf') format('truetype-variations');
-  font-weight: 100 900;
-  font-style: italic;
-  font-display: optional; /* Prevents layout shift - uses fallback if font not ready */
-}
+/* Montserrat font loaded via next/font/google - use CSS variable */
+/* Local @font-face removed - using optimized next/font version */
 
 /* Avenir is a system font on macOS, no @font-face needed */
 
@@ -24,6 +10,7 @@
 @theme {
   --font-*: initial;
   --font-outfit: Outfit, sans-serif;
+  --font-montserrat: var(--font-montserrat), system-ui, sans-serif;
 
   --breakpoint-*: initial;
   --breakpoint-2xsm: 375px;
