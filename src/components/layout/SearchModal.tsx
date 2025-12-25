@@ -23,10 +23,16 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       totalHQImages: 0,
     };
   });
+  const [isMounted, setIsMounted] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Track mount state to prevent hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Reset and focus when modal opens - use requestAnimationFrame for reliable timing
   useEffect(() => {
@@ -318,35 +324,37 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
               </div>
             </form>
 
-            {/* Stats Section */}
-            <div className="mt-6 pt-6 border-t border-[var(--border-subtle)]">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 rounded-lg bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)]">
-                  <div className="text-2xl font-bold text-[var(--accent-gold)] mb-1" style={{ fontFamily: 'var(--font-ui)' }}>
-                    {stats.totalEntries.toLocaleString()}
+            {/* Stats Section - Only render after mount to prevent hydration mismatch */}
+            {isMounted && (
+              <div className="mt-6 pt-6 border-t border-[var(--border-subtle)]">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-4 rounded-lg bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)]">
+                    <div className="text-2xl font-bold text-[var(--accent-gold)] mb-1" style={{ fontFamily: 'var(--font-ui)' }}>
+                      {stats.totalEntries.toLocaleString()}
+                    </div>
+                    <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-ui)' }}>
+                      Actresses
+                    </div>
                   </div>
-                  <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-ui)' }}>
-                    Actresses
+                  <div className="text-center p-4 rounded-lg bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)]">
+                    <div className="text-2xl font-bold text-[var(--accent-gold)] mb-1" style={{ fontFamily: 'var(--font-ui)' }}>
+                      {stats.totalImages.toLocaleString()}
+                    </div>
+                    <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-ui)' }}>
+                      Photos
+                    </div>
                   </div>
-                </div>
-                <div className="text-center p-4 rounded-lg bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)]">
-                  <div className="text-2xl font-bold text-[var(--accent-gold)] mb-1" style={{ fontFamily: 'var(--font-ui)' }}>
-                    {stats.totalImages.toLocaleString()}
-                  </div>
-                  <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-ui)' }}>
-                    Photos
-                  </div>
-                </div>
-                <div className="text-center p-4 rounded-lg bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)]">
-                  <div className="text-2xl font-bold text-[var(--accent-gold)] mb-1" style={{ fontFamily: 'var(--font-ui)' }}>
-                    {stats.totalHQImages.toLocaleString()}
-                  </div>
-                  <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-ui)' }}>
-                    HQ Images
+                  <div className="text-center p-4 rounded-lg bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)]">
+                    <div className="text-2xl font-bold text-[var(--accent-gold)] mb-1" style={{ fontFamily: 'var(--font-ui)' }}>
+                      {stats.totalHQImages.toLocaleString()}
+                    </div>
+                    <div className="text-xs uppercase tracking-wider text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-ui)' }}>
+                      HQ Images
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Quick Tips */}
             <div className="mt-6 p-4 rounded-lg bg-gradient-to-br from-[var(--accent-gold-soft)]/20 to-transparent border border-[var(--border-subtle)]">

@@ -88,7 +88,7 @@ export default function Lightbox({
       fileSizeMB: image.fileSizeMB,
     });
     
-    openCart();
+    // Don't open cart automatically - let user continue browsing
   };
 
   // Use full-size gallery image (not thumbnail)

@@ -202,8 +202,9 @@ export default function ActressFinder() {
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
               onFocus={handleFocus}
-              placeholder="Type at least 3 letters to search..."
+              placeholder="Type 3 letters..."
               className="flex-1 pl-12 pr-0 py-3 border-0 rounded-l-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none"
+              style={{ fontSize: '15px' }}
             />
             
             {/* Loading indicator */}
