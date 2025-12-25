@@ -22,10 +22,11 @@ interface GalleryGridProps {
   images: GalleryImage[];
   actressId: string;
   actressName: string;
+  actressSlug: string;
   theirMan?: boolean;
 }
 
-export default function GalleryGrid({ images, actressId, actressName, theirMan }: GalleryGridProps) {
+export default function GalleryGrid({ images, actressId, actressName, actressSlug, theirMan }: GalleryGridProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const handleImageClick = (image: GalleryImage) => {
@@ -77,6 +78,7 @@ export default function GalleryGrid({ images, actressId, actressName, theirMan }
           currentIndex={selectedIndex}
           actressId={actressId}
           actressName={actressName}
+          actressSlug={actressSlug}
           onNext={handleNext}
           onPrev={handlePrev}
           onClose={handleClose}

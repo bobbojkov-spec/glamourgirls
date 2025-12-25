@@ -215,7 +215,8 @@ export default async function GalleryPage({ params }: PageProps) {
             <GalleryGrid 
               images={galleryImages} 
               actressId={actressData.id.toString()}
-              actressName={actressData.name} 
+              actressName={actressData.name}
+              actressSlug={actressData.slug || `${actressData.id}`}
             />
           ) : (
             <div className="text-center py-12">

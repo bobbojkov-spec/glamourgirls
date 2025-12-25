@@ -7,6 +7,7 @@ export interface CartItem {
   id: string;
   actressId: string;
   actressName: string;
+  actressSlug: string;
   thumbnailUrl: string;
   price: number;
   width: number;
@@ -48,9 +49,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const parsed = JSON.parse(cookieData);
         if (Array.isArray(parsed)) {
           // Normalize IDs to strings when loading from cookie
-          const normalizedItems = parsed.map((item: CartItem) => ({
+          // Handle backward compatibility: add actressSlug if missing (use actressId as fallback)
+          const normalizedItems = parsed.map((item: any) => ({
             ...item,
             id: String(item.id).trim(),
+            actressSlug: item.actressSlug || String(item.actressId || item.id),
           }));
           setItems(normalizedItems);
         }

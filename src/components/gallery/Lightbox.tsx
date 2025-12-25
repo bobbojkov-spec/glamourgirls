@@ -11,6 +11,7 @@ interface LightboxProps {
   currentIndex: number;
   actressId: string;
   actressName: string;
+  actressSlug: string;
   onNext: () => void;
   onPrev: () => void;
   onClose: () => void;
@@ -21,7 +22,8 @@ export default function Lightbox({
   images, 
   currentIndex, 
   actressId, 
-  actressName, 
+  actressName,
+  actressSlug,
   onNext, 
   onPrev,
   onClose 
@@ -78,6 +80,7 @@ export default function Lightbox({
       id: image.id,
       actressId,
       actressName,
+      actressSlug,
       thumbnailUrl: image.thumbnailUrl,
       price: image.price,
       width: image.hqWidth || image.width,
@@ -271,16 +274,11 @@ export default function Lightbox({
                     e.stopPropagation();
                     handleAddToCart();
                   }}
-                  className="interactive-button inline-flex items-center justify-center bg-[var(--accent-gold)] text-white rounded-md hover:bg-[var(--accent-gold)]/90 hover:shadow-lg font-medium text-sm shadow-sm"
+                  className="interactive-button inline-flex items-center justify-center gap-2 bg-[var(--accent-gold)] text-white rounded-md hover:bg-[var(--accent-gold)]/90 hover:shadow-lg font-medium text-sm shadow-sm h-11 w-11 min-[500px]:w-auto min-[500px]:px-4"
                   style={{ 
                     fontFamily: 'DM Sans, sans-serif',
-                    height: '44px',
-                    width: '44px',
                     minHeight: '44px',
                     minWidth: '44px',
-                    maxHeight: '44px',
-                    maxWidth: '60px',
-                    padding: '0',
                     flexShrink: 0,
                   }}
                   aria-label="Add to cart"
@@ -301,6 +299,9 @@ export default function Lightbox({
                     <circle cx="20" cy="21" r="1" />
                     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                   </svg>
+                  <span className="hidden min-[500px]:inline whitespace-nowrap">
+                    Add to cart
+                  </span>
                 </button>
               )}
             </div>

@@ -239,6 +239,7 @@ export default function EraGridGalleryModal({
       id: hqImageInfo.imageId,
       actressId: currentItem.actressId.toString(),
       actressName: currentItem.actressName,
+      actressSlug: currentItem.actressSlug,
       thumbnailUrl: currentItem.thumbnailUrl || '',
       price: hqImageInfo.price,
       width: hqImageInfo.width,

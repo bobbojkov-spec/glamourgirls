@@ -15,9 +15,10 @@ interface FeaturedPhotoProps {
   };
   actressId: string;
   actressName: string;
+  actressSlug: string;
 }
 
-export default function FeaturedPhoto({ image, actressId, actressName }: FeaturedPhotoProps) {
+export default function FeaturedPhoto({ image, actressId, actressName, actressSlug }: FeaturedPhotoProps) {
   const [isHovered, setIsHovered] = useState(false);
   const { addItem, isInCart } = useCart();
   const isAlreadyInCart = isInCart(image.id.toString());
@@ -30,6 +31,7 @@ export default function FeaturedPhoto({ image, actressId, actressName }: Feature
       id: image.id.toString(),
       actressId,
       actressName,
+      actressSlug,
       thumbnailUrl: image.displayUrl,
       price: image.price,
       width: image.width || 0,
@@ -71,7 +73,7 @@ export default function FeaturedPhoto({ image, actressId, actressName }: Feature
         >
           {image.price && !isAlreadyInCart && (
             <button
-              className="interactive-button inline-flex items-center justify-center w-10 h-10 rounded-full text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg shadow-sm"
+              className="interactive-button inline-flex items-center justify-center gap-2 rounded-full text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg shadow-sm w-10 h-10 min-[500px]:w-auto min-[500px]:px-4 min-[500px]:h-11"
               onClick={handleAddToCart}
               aria-label="Add to cart"
             >
@@ -85,11 +87,15 @@ export default function FeaturedPhoto({ image, actressId, actressName }: Feature
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                className="flex-shrink-0"
               >
                 <circle cx="9" cy="21" r="1" />
                 <circle cx="20" cy="21" r="1" />
                 <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
               </svg>
+              <span className="hidden min-[500px]:inline whitespace-nowrap text-sm font-medium">
+                Add to cart
+              </span>
             </button>
           )}
           {isAlreadyInCart && (

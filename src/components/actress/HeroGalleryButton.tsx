@@ -8,9 +8,10 @@ interface HeroGalleryButtonProps {
   galleryImages: GalleryImage[];
   actressId: string;
   actressName: string;
+  actressSlug: string;
 }
 
-export default function HeroGalleryButton({ galleryImages, actressId, actressName }: HeroGalleryButtonProps) {
+export default function HeroGalleryButton({ galleryImages, actressId, actressName, actressSlug }: HeroGalleryButtonProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const openGalleryImage = (index: number) => {
@@ -99,6 +100,7 @@ export default function HeroGalleryButton({ galleryImages, actressId, actressNam
           currentIndex={selectedIndex}
           actressId={actressId}
           actressName={actressName}
+          actressSlug={actressSlug}
           onNext={handleNext}
           onPrev={handlePrev}
           onClose={handleClose}

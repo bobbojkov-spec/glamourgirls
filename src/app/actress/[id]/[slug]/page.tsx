@@ -405,6 +405,7 @@ export default async function ActressPage({ params }: PageProps) {
                         galleryImages={galleryGridImages}
                         actressId={actressData.id.toString()}
                         actressName={actressName}
+                        actressSlug={actressData.slug || `${actressData.id}`}
                       />
                     </div>
                   </div>
@@ -464,6 +465,7 @@ export default async function ActressPage({ params }: PageProps) {
                     galleryImages={galleryGridImages}
                     actressId={actressData.id.toString()}
                     actressName={actressName}
+                    actressSlug={actressData.slug || `${actressData.id}`}
                   />
                 </div>
               </div>
@@ -574,6 +576,7 @@ export default async function ActressPage({ params }: PageProps) {
                               image={img}
                               actressId={actressData.id.toString()}
                               actressName={actressName}
+                              actressSlug={actressData.slug || `${actressData.id}`}
                             />
                           </div>
                         );
@@ -602,6 +605,7 @@ export default async function ActressPage({ params }: PageProps) {
                         images={galleryGridImages}
                         actressId={actressData.id.toString()}
                         actressName={actressName}
+                        actressSlug={actressData.slug || `${actressData.id}`}
                         theirMan={actressData.theirMan}
                       />
                     </div>
@@ -667,6 +671,7 @@ export default async function ActressPage({ params }: PageProps) {
                               image={img}
                               actressId={actressData.id.toString()}
                               actressName={actressName}
+                              actressSlug={actressData.slug || `${actressData.id}`}
                             />
                           </div>
                         );
