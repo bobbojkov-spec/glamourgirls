@@ -51,29 +51,42 @@ export async function GET(
     }
 
     // If no explicit headshot found, look for portrait-oriented gallery images (mytp = 4)
+    // BUT: Skip this fallback for "Their Man" entries - they should only use headshot.jpg or placeholder
     if (!headshotImage) {
       try {
-        const [portraitResults] = await pool.execute(
-          `SELECT path, width, height 
-           FROM images 
-           WHERE girlid = ? 
-             AND mytp = 4
-             AND path IS NOT NULL 
-             AND path != ''
-             AND width > 0 
-             AND height > 0
-             AND height > width
-           ORDER BY id ASC
-           LIMIT 1`,
+        // Check if this is a "Their Man" entry
+        const [theirManCheck] = await pool.execute(
+          `SELECT theirman FROM girls WHERE id = ?`,
           [actressId]
         ) as any[];
+        
+        const isTheirMan = Array.isArray(theirManCheck) && theirManCheck.length > 0 && 
+                          (theirManCheck[0].theirman === true || theirManCheck[0].theirman === 1);
+        
+        // Only fallback to gallery images for regular actresses, not "Their Man" entries
+        if (!isTheirMan) {
+          const [portraitResults] = await pool.execute(
+            `SELECT path, width, height 
+             FROM images 
+             WHERE girlid = ? 
+               AND mytp = 4
+               AND path IS NOT NULL 
+               AND path != ''
+               AND width > 0 
+               AND height > 0
+               AND height > width
+             ORDER BY id ASC
+             LIMIT 1`,
+            [actressId]
+          ) as any[];
 
-        if (Array.isArray(portraitResults) && portraitResults.length > 0) {
-          headshotImage = {
-            path: portraitResults[0].path,
-            width: portraitResults[0].width || 0,
-            height: portraitResults[0].height || 0,
-          };
+          if (Array.isArray(portraitResults) && portraitResults.length > 0) {
+            headshotImage = {
+              path: portraitResults[0].path,
+              width: portraitResults[0].width || 0,
+              height: portraitResults[0].height || 0,
+            };
+          }
         }
       } catch (dbError) {
         console.error('Error checking for portrait images:', dbError);

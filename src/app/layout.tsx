@@ -28,6 +28,7 @@ export default async function RootLayout({
   let isCheckout = false;
   let isDownload = false;
   let isSearch = false;
+  let isFront2 = false;
   try {
     const headersList = await headers();
     const pathname = headersList.get("x-pathname") || "";
@@ -38,6 +39,7 @@ export default async function RootLayout({
     isCheckout = pathname.startsWith("/checkout");
     isDownload = pathname.startsWith("/download");
     isSearch = pathname.startsWith("/search");
+    isFront2 = pathname.startsWith("/front2");
   } catch (e) {
     // If headers() fails, assume not admin or newdesign
     isAdmin = false;
@@ -47,6 +49,7 @@ export default async function RootLayout({
     isCheckout = false;
     isDownload = false;
     isSearch = false;
+    isFront2 = false;
   }
 
   // Admin pages use their own layout and CSS (no website header/sidebar)
@@ -63,8 +66,8 @@ export default async function RootLayout({
     );
   }
 
-  // New design pages, actress pages, explore page, checkout, download, and search pages use their own layout (completely separate)
-  if (isNewDesign || isActress || isExplore || isCheckout || isDownload || isSearch) {
+  // New design pages, actress pages, explore page, checkout, download, search, and front2 pages use their own layout (completely separate)
+  if (isNewDesign || isActress || isExplore || isCheckout || isDownload || isSearch || isFront2) {
     return (
       <html 
         lang="en" 

@@ -151,7 +151,7 @@ export default function ActressInfoCard({
       {/* Photo gallery link */}
       {photoCount > 0 && (
         <Link 
-          href={slug ? `/actress/${id}/${slug}/gallery` : `/actress/${id}/gallery`}
+          href={slug ? `/actress/${id}/${slug}/gallery` : `/actress/${id}`}
           className="inline-flex items-center gap-2 mt-4 text-sm hover:text-[#8b0000] transition-colors"
         >
           <span className="text-lg">📁</span>

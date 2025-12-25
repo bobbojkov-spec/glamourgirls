@@ -153,14 +153,16 @@ export async function GET(request: Request) {
       
       const years = eraMap[Number(row.godini)] || '50s';
       
-      // Get gallery image URL (first gallery image, mytp = 4)
-      let galleryImageUrl: string | undefined;
+      // Get preview image URL - always populate (gallery image or placeholder)
+      let previewImageUrl: string;
       if (row.galleryImagePath) {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const cleanPath = row.galleryImagePath.startsWith('/') ? row.galleryImagePath.slice(1) : row.galleryImagePath;
-        galleryImageUrl = supabaseUrl 
+        previewImageUrl = supabaseUrl 
           ? `${supabaseUrl}/storage/v1/object/public/glamourgirls_images/${cleanPath}`
-          : undefined;
+          : '/images/placeholder-portrait.png';
+      } else {
+        previewImageUrl = '/images/placeholder-portrait.png';
       }
       
       return {
@@ -176,7 +178,7 @@ export async function GET(request: Request) {
         isNew: Number(row.isnew) === 2,
         hasNewPhotos: Number(row.isnewpix) === 2,
         headshot: `/api/actresses/${row.id}/headshot`, // Keep for backward compatibility
-        galleryImageUrl: galleryImageUrl, // First gallery image URL
+        previewImageUrl: previewImageUrl, // Always populated - gallery image or placeholder
         theirMan: Boolean(row.theirman) === true, // Add theirMan flag
         isFeatured: Boolean(row.is_featured) === true, // Featured status
         featuredOrder: row.featured_order ? Number(row.featured_order) : null, // Featured order (1-4)

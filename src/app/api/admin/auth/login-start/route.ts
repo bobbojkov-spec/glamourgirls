@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import {
-  EXPOSE_LOGIN_CODE,
   generateSixDigitCode,
   getClientIp,
   getOtpExpiryIso,
@@ -120,7 +119,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       message: emailSent ? 'Authentication code sent to your email.' : 'Authentication code generated.',
       expires_at: expiresAt,
-      code: EXPOSE_LOGIN_CODE ? code : undefined,
     });
   } catch (err: any) {
     console.error(err);

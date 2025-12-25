@@ -293,92 +293,95 @@ export async function PUT(
     const seo = data?.seo;
     const has = (obj: any, key: string) => obj && Object.prototype.hasOwnProperty.call(obj, key);
 
-    // Update girl
-    await pool.execute(
-      `UPDATE girls SET
-        nm = ?,
-        firstname = ?,
-        middlenames = ?,
-        familiq = ?,
-        godini = ?,
-        isnew = ?,
-        published = ?,
-        isnewpix = ?,
-        theirman = ?,
-        sources = ?,
-        fnu = ?,
-        fmu = ?,
-        slug = ?,
-        seotitle = ?,
-        metadescription = ?,
-        metakeywords = ?,
-        ogtitle = ?,
-        ogdescription = ?,
-        ogimage = ?,
-        canonicalurl = ?,
-        h1title = ?
-       WHERE id = ?`,
-      [
-        fullName,
-        data.firstName || '',
-        data.middleNames || '',
-        data.lastName || '',
-        era,
-        data.isNew ? 2 : 1,
-        data.published ? 2 : 1,
-        data.hasNewPhotos ? 2 : 1,
-        theirMan,
-        sanitizeLimitedHtml(data.sources || ''),
-        (data.firstName?.[0] || '').toUpperCase(),
-        (data.middleNames?.[0] || data.firstName?.[0] || '').toUpperCase(),
-        data.slug || '',
-        has(seo, 'seoTitle') ? (seo?.seoTitle ?? null) : (existing.seotitle ?? null),
-        has(seo, 'seoDescription') ? (seo?.seoDescription ?? null) : (existing.metadescription ?? null),
-        has(seo, 'seoKeywords') ? (seo?.seoKeywords ?? null) : (existing.metakeywords ?? null),
-        has(seo, 'ogTitle') ? (seo?.ogTitle ?? null) : (existing.ogtitle ?? null),
-        has(seo, 'ogDescription') ? (seo?.ogDescription ?? null) : (existing.ogdescription ?? null),
-        has(seo, 'ogImageUrl') ? (seo?.ogImageUrl ?? null) : (existing.ogimage ?? null),
-        has(seo, 'canonicalUrl') ? (seo?.canonicalUrl ?? null) : (existing.canonicalurl ?? null),
-        has(seo, 'h1Title') ? (seo?.h1Title ?? null) : (existing.h1title ?? null),
-        girlId,
-      ]
-    );
-
-    // Delete existing timeline events
-    await pool.execute(`DELETE FROM girlinfos WHERE girlid = ?`, [girlId]);
-
-    // Insert updated timeline events
-    if (data.timeline && Array.isArray(data.timeline)) {
-      for (let i = 0; i < data.timeline.length; i++) {
-        const event = data.timeline[i];
-        if (event.date || event.event) {
-          await pool.execute(
-            `
-            INSERT INTO girlinfos (girlid, shrttext, lngtext, ord)
-            VALUES (?, ?, ?, ?)
-            ON CONFLICT ON CONSTRAINT girlinfos_pkey
-            DO UPDATE SET
-              shrttext = EXCLUDED.shrttext,
-              lngtext = EXCLUDED.lngtext,
-              ord = EXCLUDED.ord
-            `,
-            [
-              girlId,
-              sanitizeLimitedHtml(event.date || ''),
-              sanitizeLimitedHtml(event.event || ''),
-              Number(event.ord) > 0 ? Number(event.ord) : i + 1,
-            ]
-          );
-        }
-      }
-    }
-
-    // Delete existing links and books, then insert new ones in a transaction
-    // Use PostgreSQL advisory lock to prevent concurrent modifications for this specific girl
+    // Use a single transaction for all updates to ensure atomicity
+    // This prevents "transaction aborted" errors from partial failures
     const pgPool = getPool();
     const client = await pgPool.connect();
     try {
       await client.query('BEGIN');
+      
+      // Update girl
+      await client.query(
+        `UPDATE girls SET
+          nm = $1,
+          firstname = $2,
+          middlenames = $3,
+          familiq = $4,
+          godini = $5,
+          isnew = $6,
+          published = $7,
+          isnewpix = $8,
+          theirman = $9,
+          sources = $10,
+          fnu = $11,
+          fmu = $12,
+          slug = $13,
+          seotitle = $14,
+          metadescription = $15,
+          metakeywords = $16,
+          ogtitle = $17,
+          ogdescription = $18,
+          ogimage = $19,
+          canonicalurl = $20,
+          h1title = $21
+         WHERE id = $22`,
+        [
+          fullName,
+          data.firstName || '',
+          data.middleNames || '',
+          data.lastName || '',
+          era,
+          data.isNew ? 2 : 1,
+          data.published ? 2 : 1,
+          data.hasNewPhotos ? 2 : 1,
+          theirMan,
+          sanitizeLimitedHtml(data.sources || ''),
+          (data.firstName?.[0] || '').toUpperCase(),
+          (data.middleNames?.[0] || data.firstName?.[0] || '').toUpperCase(),
+          data.slug || '',
+          has(seo, 'seoTitle') ? (seo?.seoTitle ?? null) : (existing.seotitle ?? null),
+          has(seo, 'seoDescription') ? (seo?.seoDescription ?? null) : (existing.metadescription ?? null),
+          has(seo, 'seoKeywords') ? (seo?.seoKeywords ?? null) : (existing.metakeywords ?? null),
+          has(seo, 'ogTitle') ? (seo?.ogTitle ?? null) : (existing.ogtitle ?? null),
+          has(seo, 'ogDescription') ? (seo?.ogDescription ?? null) : (existing.ogdescription ?? null),
+          has(seo, 'ogImageUrl') ? (seo?.ogImageUrl ?? null) : (existing.ogimage ?? null),
+          has(seo, 'canonicalUrl') ? (seo?.canonicalUrl ?? null) : (existing.canonicalurl ?? null),
+          has(seo, 'h1Title') ? (seo?.h1Title ?? null) : (existing.h1title ?? null),
+          girlId,
+        ]
+      );
+
+      // Delete existing timeline events
+      await client.query(`DELETE FROM girlinfos WHERE girlid = $1`, [girlId]);
+
+      // Insert updated timeline events
+      if (data.timeline && Array.isArray(data.timeline)) {
+        for (let i = 0; i < data.timeline.length; i++) {
+          const event = data.timeline[i];
+          if (event.date || event.event) {
+            await client.query(
+              `
+              INSERT INTO girlinfos (girlid, shrttext, lngtext, ord)
+              VALUES ($1, $2, $3, $4)
+              ON CONFLICT ON CONSTRAINT girlinfos_pkey
+              DO UPDATE SET
+                shrttext = EXCLUDED.shrttext,
+                lngtext = EXCLUDED.lngtext,
+                ord = EXCLUDED.ord
+              `,
+              [
+                girlId,
+                sanitizeLimitedHtml(event.date || ''),
+                sanitizeLimitedHtml(event.event || ''),
+                Number(event.ord) > 0 ? Number(event.ord) : i + 1,
+              ]
+            );
+          }
+        }
+      }
+
+      // Delete existing links and books, then insert new ones
+      // Use PostgreSQL advisory lock to prevent concurrent modifications for this specific girl
       
       // Use advisory lock based on girlId to serialize access to this girl's links
       // This ensures only one transaction can modify links for this girl at a time
@@ -404,59 +407,24 @@ export async function PUT(
         }
       }
 
-      // Insert updated links (tp = 0) - catch duplicate key errors and retry with sequence reset
+      // Insert updated links (tp = 0)
       for (let i = 0; i < normLinks.length; i++) {
         const link = normLinks[i];
         if (!link.text || !link.url) continue;
-        try {
-          await client.query(
-            `INSERT INTO girllinks (girlid, caption, lnk, ord, tp) VALUES ($1, $2, $3, $4, 0)`,
-            [girlId, sanitizePlainText(link.text), trim(link.url), i + 1]
-          );
-        } catch (insertError: any) {
-          // If duplicate key error, the sequence might be out of sync - reset it
-          if (insertError.code === '23505' || insertError.message?.includes('duplicate key') || insertError.message?.includes('unique constraint')) {
-            console.warn(`Sequence conflict detected for girllinks, resetting sequence`);
-            // Get the max ID and set the sequence to it
-            const maxIdResult = await client.query(`SELECT COALESCE(MAX(id), 0) as max_id FROM girllinks`);
-            const maxId = parseInt(maxIdResult.rows[0]?.max_id || '0');
-            await client.query(`SELECT setval('girllinks_id_seq', $1, true)`, [maxId]);
-            // Retry the insert
-            await client.query(
-              `INSERT INTO girllinks (girlid, caption, lnk, ord, tp) VALUES ($1, $2, $3, $4, 0)`,
-              [girlId, sanitizePlainText(link.text), trim(link.url), i + 1]
-            );
-          } else {
-            throw insertError;
-          }
-        }
+        await client.query(
+          `INSERT INTO girllinks (girlid, caption, lnk, ord, tp) VALUES ($1, $2, $3, $4, 0)`,
+          [girlId, sanitizePlainText(link.text), trim(link.url), i + 1]
+        );
       }
 
       // Insert updated books (tp = 1)
       for (let i = 0; i < normBooks.length; i++) {
         const book = normBooks[i];
         if (!book.title || !book.url) continue;
-        try {
-          await client.query(
-            `INSERT INTO girllinks (girlid, caption, lnk, ord, tp) VALUES ($1, $2, $3, $4, 1)`,
-            [girlId, sanitizePlainText(book.title), trim(book.url), i + 1]
-          );
-        } catch (insertError: any) {
-          // If duplicate key error, reset sequence and retry
-          if (insertError.code === '23505' || insertError.message?.includes('duplicate key') || insertError.message?.includes('unique constraint')) {
-            console.warn(`Sequence conflict detected for girllinks, resetting sequence`);
-            const maxIdResult = await client.query(`SELECT COALESCE(MAX(id), 0) as max_id FROM girllinks`);
-            const maxId = parseInt(maxIdResult.rows[0]?.max_id || '0');
-            await client.query(`SELECT setval('girllinks_id_seq', $1, true)`, [maxId]);
-            // Retry the insert
-            await client.query(
-              `INSERT INTO girllinks (girlid, caption, lnk, ord, tp) VALUES ($1, $2, $3, $4, 1)`,
-              [girlId, sanitizePlainText(book.title), trim(book.url), i + 1]
-            );
-          } else {
-            throw insertError;
-          }
-        }
+        await client.query(
+          `INSERT INTO girllinks (girlid, caption, lnk, ord, tp) VALUES ($1, $2, $3, $4, 1)`,
+          [girlId, sanitizePlainText(book.title), trim(book.url), i + 1]
+        );
       }
 
       await client.query('COMMIT');
@@ -481,10 +449,22 @@ export async function PUT(
   } catch (error) {
     const err = error as any;
     console.error('Error updating girl:', err);
+    console.error('Error details:', {
+      message: err?.message,
+      code: err?.code,
+      detail: err?.detail,
+      hint: err?.hint,
+      stack: err?.stack,
+    });
     const isProd = process.env.NODE_ENV === 'production';
     return NextResponse.json(
       {
         error: isProd ? 'Failed to update girl' : `Failed to update girl: ${String(err?.message || err)}`,
+        details: !isProd ? {
+          code: err?.code,
+          detail: err?.detail,
+          hint: err?.hint,
+        } : undefined,
       },
       { status: 500 }
     );

@@ -178,7 +178,7 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.details) {
+        if (data.details && Array.isArray(data.details)) {
           setErrors(
             data.details.reduce((acc: Record<string, string>, err: any) => {
               acc[err.path[0]] = err.message;
@@ -186,7 +186,18 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
             }, {})
           );
         } else {
-          setErrors({ submit: data.error || 'Failed to save' });
+          // Show detailed error message including database error details if available
+          let errorMessage = data.error || 'Failed to save';
+          if (data.details && typeof data.details === 'object') {
+            const detailParts: string[] = [];
+            if (data.details.code) detailParts.push(`Code: ${data.details.code}`);
+            if (data.details.detail) detailParts.push(`Detail: ${data.details.detail}`);
+            if (data.details.hint) detailParts.push(`Hint: ${data.details.hint}`);
+            if (detailParts.length > 0) {
+              errorMessage += ` (${detailParts.join(', ')})`;
+            }
+          }
+          setErrors({ submit: errorMessage });
         }
         setIsSubmitting(false);
         return;

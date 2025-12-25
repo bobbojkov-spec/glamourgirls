@@ -278,13 +278,13 @@ export default function SearchPanel({
 
       {/* Keyword and search button */}
       <div className="flex flex-col items-center gap-4">
-        <div className="relative flex flex-col sm:flex-row items-stretch w-full border border-gray-300 rounded-lg overflow-hidden">
+        <div className="relative flex flex-col sm:flex-row items-stretch border border-gray-300 rounded-lg overflow-hidden" style={{ maxWidth: '520px', width: '100%' }}>
           {/* Input with icon inside */}
           <div className="relative flex-1">
             {/* Magnifying Glass Icon inside input */}
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex items-center">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex items-center" style={{ height: '44px' }}>
               <svg
-                className="w-5 h-5 text-gray-500"
+                className="w-4 h-4 text-gray-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -313,10 +313,13 @@ export default function SearchPanel({
                 }
               }}
               placeholder="input search text"
-              className="w-full pl-12 pr-0 py-3 border-0 bg-white text-gray-900 placeholder-gray-400 focus:outline-none search-form-input"
+              className="w-full pl-10 pr-0 border-0 bg-white text-gray-900 placeholder-gray-400 focus:outline-none search-form-input"
               style={{ 
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: '16px', /* Mobile: 16px, Desktop/tablet handled by CSS */
+                fontSize: '14px',
+                height: '44px',
+                paddingTop: '0',
+                paddingBottom: '0',
               }}
             />
           </div>
@@ -324,10 +327,14 @@ export default function SearchPanel({
           {/* Search Button - Darker Glamour Girls Colors */}
           <button
             type="submit"
-            className="interactive-button px-6 py-3 font-medium border-t sm:border-t-0 sm:border-l border-gray-300 flex items-center justify-center w-full sm:w-auto"
+            className="interactive-button px-5 font-medium border-t sm:border-t-0 sm:border-l border-gray-300 flex items-center justify-center w-full sm:w-auto"
             style={{
               backgroundColor: '#8b6f2a',
               color: '#ffffff',
+              fontSize: '14px',
+              height: '44px',
+              paddingTop: '0',
+              paddingBottom: '0',
             }}
             onMouseEnter={(e) => {
               if (window.innerWidth >= 768) {

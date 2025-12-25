@@ -23,7 +23,6 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [lastCode, setLastCode] = useState<string | null>(null); // only shown when EXPOSE_LOGIN_CODE=true
   const [hasAdmins, setHasAdmins] = useState<boolean | null>(null); // null = loading, true/false = loaded
 
   const deviceFingerprint = typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown-device';
@@ -70,7 +69,6 @@ export default function AdminLogin() {
       }
 
       messageApi.success('Code sent to your email');
-      setLastCode(body.code || null);
       setStep('code');
     } catch (err: any) {
       if (err?.message) messageApi.error(err.message);
@@ -172,7 +170,6 @@ export default function AdminLogin() {
             <Alert
               type="info"
               title="Enter the 6-digit code sent to your email."
-              description={lastCode ? `Local testing code: ${lastCode}` : undefined}
               showIcon
             />
             <Form layout="vertical" form={codeForm}>

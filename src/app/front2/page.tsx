@@ -67,8 +67,8 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
       className="grid"
       style={{
         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-        gap: 'clamp(0.75rem, 2vw, 1.875rem)', // Fluid gap: 12px mobile → 30px desktop
-        rowGap: 'clamp(1.25rem, 2.5vw, 2.25rem)', // Fluid row gap: 20px mobile → 36px desktop
+        gap: 'clamp(1rem, 2.5vw, 2rem)', // Fluid gap: 16px mobile → 32px desktop (24-32px)
+        rowGap: 'clamp(1.5rem, 3vw, 2rem)', // Fluid row gap: 24px mobile → 32px desktop
       }}
     >
       {displayedItems.map((actress) => {
@@ -84,14 +84,20 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
             key={actress.id}
             className="flex flex-col w-full"
           >
-            {/* Portrait Thumbnail - Strict 2:3 ratio, clickable to gallery */}
+            {/* Portrait Thumbnail - Strict 2:3 ratio, clickable to gallery - SIGNIFICANTLY smaller than Featured */}
             <Link
               href={galleryUrl}
-              className="w-full aspect-[2/3] bg-[var(--bg-surface-alt)] overflow-hidden mb-2 block lg:hover:scale-[1.03] transition-transform transition-shadow duration-200"
+              className="w-full bg-[var(--bg-surface-alt)] overflow-hidden block lg:hover:scale-[1.03] transition-transform transition-shadow duration-200"
               style={{
+                width: '100%',
+                aspectRatio: '2/3',
+                maxWidth: '100%',
+                maxHeight: 'clamp(160px, 20vw, 220px)', // Desktop: ~200-220px, Mobile: ~160-180px - SIGNIFICANTLY smaller than Featured
                 borderRadius: '7px',
                 boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
                 cursor: 'pointer',
+                marginBottom: 'clamp(10px, 1.2vw, 14px)', // Image → name spacing
+                position: 'relative',
               }}
               onMouseEnter={(e) => {
                 if (window.innerWidth >= 1024) {
@@ -103,11 +109,15 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
               }}
             >
               <img
-                src={actress.galleryImageUrl || '/images/placeholder-portrait.png'}
+                src={actress.previewImageUrl}
                 alt={`${actress.name} gallery image`}
-                className="w-full h-full object-cover object-center"
                 style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: 'center',
                   borderRadius: '7px',
+                  display: 'block',
                 }}
                 loading="lazy"
                 onError={(e) => {
@@ -119,14 +129,14 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
               />
             </Link>
             
-            {/* Actress Name - Always Visible, clickable to profile */}
-            <div className="flex flex-col" style={{ gap: '4px' }}>
+            {/* Actress Name - Always Visible, clickable to profile - Larger font relative to image */}
+            <div className="flex flex-col" style={{ gap: 'clamp(4px, 0.4vw, 6px)' }}>
               <Link
                 href={profileUrl}
                 className="text-[var(--text-primary)] text-center leading-tight"
                 style={{ 
                   fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
-                  fontSize: 'clamp(0.875rem, 0.3vw + 0.75rem, 0.9375rem)', // Fluid: 14px mobile → 15px desktop (+1px)
+                  fontSize: 'clamp(15px, 0.35vw + 14.5px, 16.5px)', // 1px bigger than before
                   fontWeight: 500,
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
@@ -145,7 +155,7 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
                   className="text-center"
                   style={{ 
                     fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
-                    fontSize: '12px',
+                    fontSize: '14px', // 2px bigger (was 12px)
                     color: 'var(--text-secondary)',
                     opacity: 0.7,
                     letterSpacing: '0.02em',
@@ -242,9 +252,9 @@ export default function Front2Page() {
     // Fetch only featured actresses
     fetchActresses({ years: ['all'], newEntry: 'all', newPhotos: 'all', nameStartsWith: '', surnameStartsWith: '', keyword: '' })
       .then((data) => {
-        // Filter to only featured actresses with gallery images, ordered by featured_order
+        // Filter to only featured actresses, ordered by featured_order
         const featured = data
-          .filter(a => a.isFeatured && a.galleryImageUrl)
+          .filter(a => a.isFeatured)
           .sort((a, b) => {
             // Sort by featured_order, then by name if order is null
             const aOrder = a.featuredOrder ?? null;
@@ -335,11 +345,11 @@ export default function Front2Page() {
         const unique = merged.filter((actress, index, self) => 
           index === self.findIndex(a => a.id === actress.id)
         );
-        // Filter to only actresses with gallery images
-        const withGalleryImages = unique.filter(a => a.galleryImageUrl);
+        // All actresses have previewImageUrl (always populated)
+        const withPreviewImages = unique;
         // Sort by ID descending (newer IDs are typically higher, works as fallback if created_at not available)
         // API should have already ordered by created_at DESC or id DESC
-        const sorted = withGalleryImages.sort((a, b) => b.id - a.id);
+        const sorted = withPreviewImages.sort((a, b) => b.id - a.id);
         // Limit to 6 for processing (we'll show max 4 based on even-count logic)
         setLatestActresses(sorted.slice(0, 6));
       } catch (error) {
@@ -442,20 +452,24 @@ export default function Front2Page() {
                     minWidth: 0,
                     width: '100%',
                     maxWidth: '100%',
+                    display: 'flex',
+                    justifyContent: 'center',
                   }}
                 >
-                  <SearchPanel 
-                    compact 
-                    initialFilters={{ 
-                      years: ['all'],
-                      newEntry: 'all',
-                      newPhotos: 'all',
-                      nameStartsWith: '',
-                      surnameStartsWith: '',
-                      keyword: ''
-                    }} 
-                    onSearch={handleSearch} 
-                  />
+                  <div style={{ width: '100%', maxWidth: '520px' }}>
+                    <SearchPanel 
+                      compact 
+                      initialFilters={{ 
+                        years: ['all'],
+                        newEntry: 'all',
+                        newPhotos: 'all',
+                        nameStartsWith: '',
+                        surnameStartsWith: '',
+                        keyword: ''
+                      }} 
+                      onSearch={handleSearch} 
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -500,9 +514,8 @@ export default function Front2Page() {
           <div className="max-w-7xl mx-auto" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
             {/* Section Title */}
             <div 
-              className="mb-4 md:mb-5 lg:mb-6"
+              className="mb-8 md:mb-10 lg:mb-10"
               style={{ 
-                height: '40px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -561,11 +574,17 @@ export default function Front2Page() {
                       {/* Portrait Thumbnail - Strict 2:3 ratio, clickable to gallery */}
                       <Link
                         href={galleryUrl}
-                        className="w-full aspect-[2/3] bg-[var(--bg-surface-alt)] overflow-hidden mb-2 block lg:hover:scale-[1.03] transition-transform transition-shadow duration-200"
+                        className="w-full bg-[var(--bg-surface-alt)] overflow-hidden block lg:hover:scale-[1.03] transition-transform transition-shadow duration-200"
                         style={{
+                          width: '100%',
+                          aspectRatio: '2/3',
+                          maxWidth: '100%',
+                          maxHeight: 'clamp(220px, 35vw, 360px)', // Desktop: ~320-360px, Mobile: ~220-260px
                           borderRadius: '7px', // Subtle rounded corners (6-8px range)
                           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)', // Very soft shadow for grounding
                           cursor: 'pointer',
+                          marginBottom: 'clamp(12px, 1.5vw, 16px)', // Image → name: 12-16px
+                          position: 'relative',
                         }}
                         onMouseEnter={(e) => {
                           // Desktop only: subtle shadow increase on hover
@@ -578,11 +597,15 @@ export default function Front2Page() {
                         }}
                       >
                         <img
-                          src={actress.galleryImageUrl || '/images/placeholder-portrait.png'}
+                          src={actress.previewImageUrl}
                           alt={`${actress.name} gallery image`}
-                          className="w-full h-full object-cover object-center"
                           style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            objectPosition: 'center',
                             borderRadius: '7px', // Match container radius
+                            display: 'block',
                           }}
                           loading="lazy"
                           onError={(e) => {
@@ -595,13 +618,13 @@ export default function Front2Page() {
                       </Link>
                       
                       {/* Actress Name - Always Visible, clickable to profile */}
-                      <div className="flex flex-col" style={{ gap: '4px' }}>
+                      <div className="flex flex-col" style={{ gap: 'clamp(6px, 0.5vw, 8px)' }}>
                         <Link
                           href={profileUrl}
                           className="text-[var(--text-primary)] text-center leading-tight"
                           style={{ 
                             fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
-                            fontSize: 'clamp(0.875rem, 0.3vw + 0.75rem, 0.9375rem)', // Fluid: 14px mobile → 15px desktop (+1px)
+                            fontSize: 'clamp(16px, 0.4vw + 16px, 18px)', // 1px bigger (was 15-17px)
                             fontWeight: 500,
                             display: '-webkit-box',
                             WebkitLineClamp: 2,
@@ -620,7 +643,7 @@ export default function Front2Page() {
                             className="text-center"
                             style={{ 
                               fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
-                              fontSize: '12px',
+                              fontSize: '14px', // 2px bigger (was 12px)
                               color: 'var(--text-secondary)',
                               opacity: 0.7,
                               letterSpacing: '0.02em',
@@ -655,9 +678,8 @@ export default function Front2Page() {
           <div className="max-w-7xl mx-auto" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
             {/* Section Title */}
             <div 
-              className="mb-4 md:mb-5 lg:mb-6"
+              className="mb-8 md:mb-10 lg:mb-10"
               style={{ 
-                height: '40px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -735,9 +757,8 @@ export default function Front2Page() {
           <div className="max-w-7xl mx-auto" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
             {/* Section Title */}
             <div 
-              className="mb-4 md:mb-5 lg:mb-6"
+              className="mb-8 md:mb-10 lg:mb-10"
               style={{ 
-                height: '40px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

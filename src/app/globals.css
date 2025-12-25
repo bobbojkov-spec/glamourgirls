@@ -82,6 +82,37 @@
    ======================================== */
 * {
   box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* Prevent any element from forcing minimum width */
+html {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Ensure all containers can shrink */
+main, section, div, article, aside, header, footer {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Force all flex containers to allow shrinking */
+.flex, [class*="flex"] {
+  min-width: 0;
+}
+
+/* Decade grid - Always 2 columns on mobile/tablet, 4 on desktop */
+.decade-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+@media (min-width: 1024px) {
+  .decade-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
 }
 
 body {
@@ -93,6 +124,11 @@ body {
   min-height: 100vh;
   margin: 0;
   font-weight: 400;
+  min-width: 0; /* Allow body to shrink below 320px */
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 a {
@@ -752,17 +788,17 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
   align-items: start;
 }
 
-/* Ensure at least 3 columns on mobile */
+/* Fluid grid - adapts to viewport width */
 @media (min-width: 0px) {
   .gallery-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   }
 }
 
 /* More columns on larger screens */
 @media (min-width: 640px) {
   .gallery-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
 }
 

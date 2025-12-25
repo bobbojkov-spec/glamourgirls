@@ -45,17 +45,34 @@ export default function Header() {
 
   return (
     <>
-      <header className="bg-[var(--bg-page)] border-b border-[var(--border-subtle)] sticky top-0 z-50 shadow-[0_2px_20px_rgba(0,0,0,0.06)]">
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
+      <header className="bg-[var(--bg-page)] border-b border-[var(--border-subtle)] sticky top-0 z-50 shadow-[0_2px_20px_rgba(0,0,0,0.06)]" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
+        <div className="flex items-center justify-between h-16 md:h-20 flex-wrap" style={{ minWidth: 0, width: '100%', gap: '8px' }}>
           {/* Logo - Dubba Dubba NF wordmark */}
-          <Link href="/" className="leading-none">
+          <Link href="/" className="leading-none flex-shrink" style={{ minWidth: 0, maxWidth: '100%', flex: '1 1 auto' }}>
             <span
-              className="text-[30px] md:text-[38px] tracking-[0.015em] text-[var(--text-primary)] uppercase"
+              className="tracking-[0.015em] text-[var(--text-primary)] uppercase"
               style={{ 
                 fontFamily: 'var(--font-logo-hero)',
+                // 20% bigger on mobile: 1.25rem * 1.2 = 1.5rem (24px)
+                // Smooth scaling from 24px (320px viewport) to 38px (1440px+ viewport)
+                // Formula: clamp(min, preferred, max) where preferred scales linearly
+                fontSize: 'clamp(1.5rem, 1.5rem + 1.25vw, 2.375rem)',
                 opacity: fontLoaded ? 1 : 0,
                 transition: 'opacity 0.2s ease-in',
+                whiteSpace: 'nowrap',
+                display: 'block',
+                maxWidth: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                // Prevent font rendering jumps and layout shifts
+                willChange: 'auto',
+                backfaceVisibility: 'hidden',
+                WebkitFontSmoothing: 'antialiased',
+                MozOsxFontSmoothing: 'grayscale',
+                textRendering: 'optimizeLegibility',
+                // Ensure stable rendering during resize
+                transform: 'translateZ(0)',
               }}
             >
               Glamour Girls
@@ -170,9 +187,10 @@ export default function Header() {
               style={{ 
                 width: '45px', 
                 height: '45px',
-                minWidth: '45px',
+                minWidth: '0',
                 minHeight: '45px',
                 pointerEvents: 'auto',
+                flexShrink: 0,
               }}
             >
               <svg 
@@ -197,7 +215,7 @@ export default function Header() {
             </button>
           </div>
 
-          <div className="md:hidden flex items-center" style={{ gap: '15px' }}>
+          <div className="md:hidden flex items-center flex-shrink-0" style={{ gap: '8px', minWidth: 0 }}>
             <button 
               onClick={(e) => {
                 e.preventDefault();
@@ -207,11 +225,12 @@ export default function Header() {
               aria-label={`Favorites (${favoriteCount} items)`}
               className="relative flex items-center justify-center active:scale-95 active:opacity-80 transition-all duration-150 cursor-pointer"
               style={{ 
-                width: '45px', 
-                height: '45px',
-                minWidth: '45px',
-                minHeight: '45px',
+                width: '40px', 
+                height: '40px',
+                minWidth: '0',
+                minHeight: '40px',
                 pointerEvents: 'auto',
+                flexShrink: 0,
               }}
             >
               <svg 
@@ -242,11 +261,12 @@ export default function Header() {
               aria-label={`Shopping cart with ${itemCount} items`}
               className="relative flex items-center justify-center active:scale-95 active:opacity-80 transition-all duration-150 cursor-pointer"
               style={{ 
-                width: '45px', 
-                height: '45px',
-                minWidth: '45px',
-                minHeight: '45px',
+                width: '40px', 
+                height: '40px',
+                minWidth: '0',
+                minHeight: '40px',
                 pointerEvents: 'auto',
+                flexShrink: 0,
               }}
             >
               <svg 
@@ -274,10 +294,11 @@ export default function Header() {
               aria-label="Toggle menu"
               className="flex items-center justify-center active:scale-95 active:opacity-80 transition-all duration-150"
               style={{ 
-                width: '45px', 
-                height: '45px',
-                minWidth: '45px',
-                minHeight: '45px',
+                width: '40px', 
+                height: '40px',
+                minWidth: '0',
+                minHeight: '40px',
+                flexShrink: 0,
               }}
             >
               <svg 

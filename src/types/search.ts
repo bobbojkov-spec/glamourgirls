@@ -15,7 +15,10 @@ export interface SearchActressResult {
   hqPhotoCount?: number;
   isNew?: boolean;
   hasNewPhotos?: boolean;
-  headshot?: string; // Optional headshot URL
+  headshot?: string; // Optional headshot URL (for backward compatibility)
+  previewImageUrl: string; // Preview image URL - always populated (gallery image or placeholder)
   theirMan?: boolean; // Flag for "their men" category
+  isFeatured?: boolean; // Featured on homepage
+  featuredOrder?: number | null; // Display order (1-4) if featured
 }
 

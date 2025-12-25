@@ -9,6 +9,7 @@ import {
   DollarOutlined, 
   EyeOutlined,
   TeamOutlined,
+  StarOutlined,
 } from '@ant-design/icons';
 
 const menuItems = [
@@ -21,6 +22,11 @@ const menuItems = [
     icon: <UserOutlined />,
     name: 'Girls Database',
     path: '/admin/girls',
+  },
+  {
+    icon: <StarOutlined />,
+    name: 'Featured Actresses',
+    path: '/admin/featured-actresses',
   },
   {
     icon: <TeamOutlined />,
