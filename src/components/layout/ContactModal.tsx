@@ -112,12 +112,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
         (window as any).turnstile.reset(turnstileWidgetId.current);
       }
       
-      // Auto close after 3 seconds
-      setTimeout(() => {
-        onClose();
-        setSubmitStatus('idle');
-        setErrorMessage('');
-      }, 3000);
+      // Don't auto-close - let user click "Send another message" or close button
     } catch (error: any) {
       setSubmitStatus('error');
       setErrorMessage(error.message || 'Something went wrong. Please try again.');
@@ -168,7 +163,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
             </h2>
             <button
               onClick={onClose}
-              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+              className="interactive-icon text-[var(--text-muted)] hover:text-[var(--text-primary)]"
               aria-label="Close contact form"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -181,17 +176,51 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
           <form onSubmit={handleSubmit} className="space-y-4" style={{ fontFamily: 'DM Sans, sans-serif' }}>
             {submitStatus === 'success' ? (
               <div className="text-center py-8">
-                <div className="mb-4">
-                  <svg className="w-16 h-16 text-green-600 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--accent-gold)] flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </div>
-                <p className="text-lg text-[var(--text-primary)] font-medium mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                  Message Sent!
+                <h2
+                  className="text-[var(--text-primary)]"
+                  style={{
+                    fontFamily: 'var(--font-headline)',
+                    fontSize: 'var(--h2-size)',
+                    lineHeight: 'var(--h2-line-height)',
+                    letterSpacing: 'var(--h2-letter-spacing)',
+                    marginBottom: '30px',
+                  }}
+                >
+                  MESSAGE SENT!
+                </h2>
+                <p className="text-[var(--text-secondary)] mb-6" style={{ fontFamily: 'var(--font-ui)' }}>
+                  Thank you for contacting us. We&apos;ll get back to you as soon as possible.
                 </p>
-                <p className="text-sm text-[var(--text-secondary)]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                  We'll get back to you soon.
-                </p>
+                <button
+                  onClick={() => {
+                    setSubmitStatus('idle');
+                    setFormData({ name: '', email: '', message: '' });
+                    setErrorMessage('');
+                    // Reset Turnstile widget
+                    if (turnstileWidgetId.current && (window as any).turnstile) {
+                      (window as any).turnstile.reset(turnstileWidgetId.current);
+                    }
+                  }}
+                  className="text-[var(--accent-gold)] hover:text-[var(--text-primary)] transition-colors"
+                  style={{ fontFamily: 'var(--font-ui)' }}
+                >
+                  Send another message
+                </button>
               </div>
             ) : (
               <>
@@ -265,7 +294,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   <button
                     type="button"
                     onClick={onClose}
-                    className="flex-1 px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)] rounded-lg hover:bg-[var(--bg-surface)] transition-colors"
+                    className="interactive-button flex-1 px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] bg-[var(--bg-surface-alt)] border border-[var(--border-subtle)] rounded-lg hover:bg-[var(--bg-surface)]"
                     style={{ fontFamily: 'DM Sans, sans-serif' }}
                   >
                     Cancel
@@ -273,7 +302,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[var(--accent-gold)] rounded-lg hover:bg-[var(--accent-gold)]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 active:opacity-90"
+                    className="interactive-button flex-1 px-4 py-2.5 text-sm font-medium text-white bg-[var(--accent-gold)] rounded-lg hover:bg-[var(--accent-gold)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ fontFamily: 'DM Sans, sans-serif' }}
                   >
                     {isSubmitting ? 'Sending...' : 'Send Message'}

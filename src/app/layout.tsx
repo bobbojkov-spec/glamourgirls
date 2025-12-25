@@ -3,6 +3,10 @@ import Header from "@/components/layout/Header";
 import { CartDrawer } from "@/components/cart";
 import { CartProvider } from "@/context/CartContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
+import { ContactModalProvider } from "@/context/ContactModalContext";
+import ContactModalWrapper from "@/components/common/ContactModalWrapper";
+import SearchIndexPreloaderWrapper from "@/components/common/SearchIndexPreloaderWrapper";
+import SearchMetadataPreloaderWrapper from "@/components/common/SearchMetadataPreloaderWrapper";
 import "./globals.css";
 import { headers } from "next/headers";
 
@@ -137,9 +141,14 @@ export default async function RootLayout({
         <body className="antialiased min-h-screen" style={{ backgroundColor: 'var(--bg-page)' }}>
           <CartProvider>
             <FavoritesProvider>
-              {children}
-              {/* Cart Drawer - always available */}
-              <CartDrawer />
+              <ContactModalProvider>
+                <SearchIndexPreloaderWrapper />
+                <SearchMetadataPreloaderWrapper />
+                {children}
+                {/* Cart Drawer - always available */}
+                <CartDrawer />
+                <ContactModalWrapper />
+              </ContactModalProvider>
             </FavoritesProvider>
           </CartProvider>
         </body>
@@ -162,16 +171,21 @@ export default async function RootLayout({
       <body className="antialiased min-h-screen flex flex-col">
         <CartProvider>
           <FavoritesProvider>
-            {/* Header */}
-            <Header />
+            <ContactModalProvider>
+              <SearchIndexPreloaderWrapper />
+              <SearchMetadataPreloaderWrapper />
+              {/* Header */}
+              <Header />
 
-            {/* Main content */}
-            <main className="flex-1 min-w-0">
-              {children}
-            </main>
+              {/* Main content */}
+              <main className="flex-1 min-w-0">
+                {children}
+              </main>
 
-            {/* Cart Drawer */}
-            <CartDrawer />
+              {/* Cart Drawer */}
+              <CartDrawer />
+              <ContactModalWrapper />
+            </ContactModalProvider>
           </FavoritesProvider>
         </CartProvider>
       </body>

@@ -120,7 +120,7 @@ export default function Lightbox({
           e.stopPropagation();
           onClose();
         }}
-        className="absolute top-4 right-4 text-white hover:bg-white/20 transition-all duration-200 z-[10000] bg-black/60 backdrop-blur-sm rounded-md px-4 py-2 shadow-lg font-medium"
+        className="interactive-button absolute top-4 right-4 text-white hover:bg-white/20 z-[10000] bg-black/60 backdrop-blur-sm rounded-md px-4 py-2 shadow-lg font-medium"
         style={{ fontFamily: 'DM Sans, sans-serif', zIndex: 10000 }}
         aria-label="Close lightbox"
         title="Close (Esc)"
@@ -136,7 +136,7 @@ export default function Lightbox({
         {images.length > 1 && (
           <button
             onClick={onPrev}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-3 shadow-lg"
+            className="interactive-icon absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-3 shadow-lg"
             style={{ zIndex: 10000 }}
             aria-label="Previous image"
           >
@@ -174,7 +174,7 @@ export default function Lightbox({
         {images.length > 1 && (
           <button
             onClick={onNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-3 shadow-lg"
+            className="interactive-icon absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-3 shadow-lg"
             style={{ zIndex: 10000 }}
             aria-label="Next image"
           >
@@ -236,7 +236,7 @@ export default function Lightbox({
                     e.stopPropagation();
                     openCart();
                   }}
-                  className="inline-flex items-center justify-center bg-[var(--accent-gold)] text-white rounded-md hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-all duration-200 font-medium text-sm shadow-sm active:scale-[0.92] active:shadow-md active:opacity-80"
+                  className="interactive-button inline-flex items-center justify-center bg-[var(--accent-gold)] text-white rounded-md hover:bg-[var(--accent-gold)]/90 hover:shadow-lg font-medium text-sm shadow-sm"
                   style={{ 
                     fontFamily: 'DM Sans, sans-serif',
                     height: '44px',
@@ -271,7 +271,7 @@ export default function Lightbox({
                     e.stopPropagation();
                     handleAddToCart();
                   }}
-                  className="inline-flex items-center justify-center bg-[var(--accent-gold)] text-white rounded-md hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-all duration-200 font-medium text-sm shadow-sm active:scale-[0.92] active:shadow-md active:opacity-80"
+                  className="interactive-button inline-flex items-center justify-center bg-[var(--accent-gold)] text-white rounded-md hover:bg-[var(--accent-gold)]/90 hover:shadow-lg font-medium text-sm shadow-sm"
                   style={{ 
                     fontFamily: 'DM Sans, sans-serif',
                     height: '44px',

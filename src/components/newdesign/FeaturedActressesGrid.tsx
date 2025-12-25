@@ -49,7 +49,7 @@ export default function FeaturedActressesGrid({
             <Link
               key={actress.id}
               href={href}
-              className="group rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-alt)] overflow-hidden hover:border-[var(--accent-gold)] transition-colors"
+              className="group interactive-row rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-alt)] overflow-hidden hover:border-[var(--accent-gold)]"
             >
               <div className="relative aspect-[3/4] overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/25 pointer-events-none z-10" />

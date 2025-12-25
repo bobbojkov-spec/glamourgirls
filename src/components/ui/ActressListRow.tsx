@@ -18,6 +18,8 @@ export interface ActressListRowProps {
   onClick?: () => void;
   /** Custom href (if provided, uses this instead of default) */
   href?: string;
+  /** If true, row is not clickable (e.g., cart items) */
+  nonClickable?: boolean;
 }
 
 /**
@@ -38,12 +40,13 @@ export default function ActressListRow({
   theirMan = false,
   onClick,
   href,
+  nonClickable = false,
 }: ActressListRowProps) {
   const defaultHref = slug ? `/actress/${id}/${slug}` : `/actress/${id}`;
   const finalHref = href || defaultHref;
 
   const rowContent = (
-    <div className="flex items-center gap-4 p-3 rounded-lg transition-all duration-200 cursor-pointer hover:bg-[var(--bg-surface-alt)] hover:shadow-sm active:scale-[0.98] active:shadow-none">
+    <div className={`${nonClickable ? '' : 'interactive-row'} flex items-center gap-4 rounded-lg ${nonClickable ? '' : 'hover:bg-[var(--bg-surface-alt)] hover:shadow-sm'}`} style={{ padding: 'clamp(12px, 2vh, 16px)' }}>
       {/* Thumbnail */}
       <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-surface-alt)]">
         {thumbnailUrl.startsWith('/api/') || thumbnailUrl.startsWith('http') ? (
@@ -103,6 +106,10 @@ export default function ActressListRow({
       )}
     </div>
   );
+
+  if (nonClickable) {
+    return <div>{rowContent}</div>;
+  }
 
   if (onClick) {
     return (

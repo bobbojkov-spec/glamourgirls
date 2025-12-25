@@ -652,12 +652,20 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
   align-items: center;
   justify-content: center;
   letter-spacing: 0.05em;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: all 0.12s ease;
 }
 
 .alphabet-nav a:hover {
   background: #6b3410;
   color: #ffffff;
+}
+
+.alphabet-nav a:active {
+  transform: scale(0.92);
+  transition: transform 0.08s ease;
 }
 
 .alphabet-nav a.active {
@@ -678,11 +686,18 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
   cursor: pointer;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  transition: background 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.15s ease, transform 0.12s ease, opacity 0.12s ease;
 }
 
 .btn-vintage:hover {
   background: #a68521;
+}
+
+.btn-vintage:active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
 }
 
 /* ========================================
@@ -710,11 +725,20 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
 
 .results-table tbody tr {
   cursor: pointer;
-  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.15s ease, transform 0.12s ease;
 }
 
-.results-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.7);
+@media (hover: hover) and (pointer: fine) {
+  .results-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.7);
+  }
+}
+
+.results-table tbody tr:active {
+  transform: scale(0.98);
+  transition: transform 0.08s ease;
 }
 
 /* ========================================
@@ -745,12 +769,22 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
   background: transparent;
   padding: 0;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform 0.12s ease, opacity 0.12s ease;
   width: 100%;
 }
 
-.gallery-thumb:hover {
-  transform: scale(1.03);
+@media (hover: hover) and (pointer: fine) {
+  .gallery-thumb:hover {
+    transform: scale(1.03);
+  }
+}
+
+.gallery-thumb:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+  transition: transform 0.08s ease, opacity 0.08s ease;
 }
 
 .gallery-thumb img {
@@ -1080,4 +1114,135 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
     opacity: 1;
     transform: scale(1) rotate(0deg);
   }
+}
+
+/* ========================================
+   INTERACTION FEEDBACK UTILITIES
+   Consistent hover, click, and tap feedback
+   ======================================== */
+
+/* Base interactive element - ensures pointer cursor */
+.interactive {
+  cursor: pointer;
+  transition: all 0.12s ease;
+  -webkit-tap-highlight-color: transparent; /* Remove default mobile tap highlight */
+  touch-action: manipulation; /* Optimize touch interactions */
+}
+
+/* Button interactions - Desktop hover + click, Mobile tap */
+.interactive-button {
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Desktop: Hover - subtle lift */
+@media (hover: hover) and (pointer: fine) {
+  .interactive-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Desktop: Active/Click - scale down */
+.interactive-button:active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
+}
+
+/* Mobile: Touch feedback */
+@media (max-width: 768px) {
+  .interactive-button:active {
+    transform: scale(0.95);
+    opacity: 0.85;
+  }
+}
+
+/* Row/Card interactions - hover background or shadow */
+.interactive-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Desktop: Hover - background or shadow */
+@media (hover: hover) and (pointer: fine) {
+  .interactive-row:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* Desktop: Active/Click - slight scale */
+.interactive-row:active {
+  transform: scale(0.98);
+  transition: transform 0.08s ease;
+}
+
+/* Mobile: Touch feedback */
+@media (max-width: 768px) {
+  .interactive-row:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+    background-color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* Icon button interactions - subtle hover + click */
+.interactive-icon {
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.12s ease, color 0.15s ease, background-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Desktop: Hover */
+@media (hover: hover) and (pointer: fine) {
+  .interactive-icon:hover {
+    transform: scale(1.05);
+  }
+}
+
+/* Active/Click */
+.interactive-icon:active {
+  transform: scale(0.92);
+  transition: transform 0.08s ease;
+}
+
+/* Mobile: Touch feedback */
+@media (max-width: 768px) {
+  .interactive-icon:active {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+}
+
+/* Link interactions */
+a.interactive,
+.interactive-link {
+  cursor: pointer;
+  transition: color 0.15s ease, opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.interactive-link:active {
+  opacity: 0.7;
+  transition: opacity 0.08s ease;
+}
+
+/* Ensure all buttons have pointer cursor */
+button {
+  cursor: pointer;
+}
+
+/* Ensure all clickable elements have pointer cursor */
+button,
+a,
+[role="button"],
+[onclick],
+[tabindex="0"] {
+  cursor: pointer;
 }

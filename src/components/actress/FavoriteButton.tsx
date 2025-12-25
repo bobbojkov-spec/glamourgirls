@@ -36,7 +36,7 @@ export default function FavoriteButton({
   return (
     <button
       onClick={handleClick}
-      className="flex items-center justify-center w-12 h-12 rounded-full bg-white/90 hover:bg-white transition-all duration-200 shadow-md hover:shadow-lg border-2 border-[var(--border-subtle)] hover:border-[var(--accent-gold)]"
+      className="interactive-button flex items-center justify-center w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-md hover:shadow-lg border-2 border-[var(--border-subtle)] hover:border-[var(--accent-gold)]"
       aria-label={favorited ? `Remove ${actressName} from favorites` : `Add ${actressName} to favorites`}
     >
       <svg

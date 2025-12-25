@@ -194,7 +194,7 @@ export default function GridGallery() {
           return (
             <div
               key={`${item.actressId}-${index}`}
-              className={`relative group cursor-pointer transition-all duration-300 ${
+              className={`interactive-row relative group ${
                 isVisible 
                   ? 'opacity-100 scale-100' 
                   : 'opacity-0 scale-95'

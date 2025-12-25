@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import CartItem from './CartItem';
+import ModalHeader from '@/components/ui/ModalHeader';
 
 export default function CartDrawer() {
   const router = useRouter();
@@ -41,56 +42,46 @@ export default function CartDrawer() {
       {/* Drawer */}
       <div className="fixed top-0 right-0 h-full w-full max-w-md bg-[var(--bg-surface)] shadow-[var(--shadow-lift)] z-[999] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 mb-6 border-b border-[var(--border-subtle)] pb-5">
-          <h2
-            className="text-[var(--text-primary)]"
-            style={{
-              fontFamily: 'var(--font-headline)',
-              fontSize: 'var(--h2-size)',
-              letterSpacing: 'var(--h2-letter-spacing)',
-              lineHeight: 'var(--h2-line-height)',
-            }}
-          >
-            Your Cart
-          </h2>
-          <button
-            onClick={closeCart}
-            className="interactive-icon text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1.5 rounded-md hover:bg-[var(--state-hover-wash)]"
-            aria-label="Close cart"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
+        <ModalHeader 
+          title="Your Cart" 
+          onClose={closeCart}
+          closeAriaLabel="Close cart"
+        />
 
         {/* Cart items */}
         <div className="flex-1 overflow-y-auto px-6">
           {items.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-[var(--text-secondary)] mb-2 font-medium" style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--body-size)' }}>
-                Your cart is empty
-              </p>
-              <p className="text-sm text-[var(--text-muted)]" style={{ fontFamily: 'var(--font-ui)' }}>
-                Browse our galleries and add HQ photos to your cart
-              </p>
+            <div className="flex-1 flex items-center justify-center py-16">
+              <div className="text-center">
+                <p 
+                  className="text-[var(--text-secondary)] mb-2 font-medium" 
+                  style={{ 
+                    fontFamily: 'var(--font-ui)', 
+                    fontSize: 'var(--body-size)',
+                    lineHeight: 'var(--body-line-height)',
+                  }}
+                >
+                  Your cart is empty
+                </p>
+                <p 
+                  className="text-[var(--text-muted)]" 
+                  style={{ 
+                    fontFamily: 'var(--font-ui)',
+                    fontSize: 'var(--meta-size)',
+                    lineHeight: 'var(--meta-line-height)',
+                  }}
+                >
+                  Browse our galleries and add HQ photos to your cart
+                </p>
+              </div>
             </div>
           ) : (
-            <div className="space-y-0 py-4">
-              {items.map((item) => (
-                <CartItem key={item.id} item={item} />
-              ))}
+            <div className="py-4">
+              <div className="space-y-0">
+                {items.map((item) => (
+                  <CartItem key={item.id} item={item} />
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -100,8 +91,22 @@ export default function CartDrawer() {
           <div className="px-6 py-5 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-alt)]">
             {/* Subtotal */}
             <div className="flex items-center justify-between mb-2" style={{ fontFamily: 'var(--font-ui)' }}>
-              <span className="text-sm text-[var(--text-secondary)]">Subtotal ({items.length} {items.length === 1 ? 'item' : 'items'})</span>
-              <span className="text-sm font-medium text-[var(--text-primary)]">
+              <span 
+                className="text-[var(--text-secondary)]" 
+                style={{ 
+                  fontSize: 'var(--meta-size)',
+                  lineHeight: 'var(--meta-line-height)',
+                }}
+              >
+                Subtotal ({items.length} {items.length === 1 ? 'item' : 'items'})
+              </span>
+              <span 
+                className="font-medium text-[var(--text-primary)]" 
+                style={{ 
+                  fontSize: 'var(--meta-size)',
+                  lineHeight: 'var(--meta-line-height)',
+                }}
+              >
                 ${subtotal.toFixed(2)}
               </span>
             </div>
@@ -109,10 +114,22 @@ export default function CartDrawer() {
             {/* Discount */}
             {discountRate > 0 && (
               <div className="flex items-center justify-between mb-2" style={{ fontFamily: 'var(--font-ui)' }}>
-                <span className="text-sm text-green-700 font-medium">
+                <span 
+                  className="text-green-700 font-medium" 
+                  style={{ 
+                    fontSize: 'var(--meta-size)',
+                    lineHeight: 'var(--meta-line-height)',
+                  }}
+                >
                   Discount ({Math.round(discountRate * 100)}%)
                 </span>
-                <span className="text-sm text-green-700 font-semibold">
+                <span 
+                  className="text-green-700 font-semibold" 
+                  style={{ 
+                    fontSize: 'var(--meta-size)',
+                    lineHeight: 'var(--meta-line-height)',
+                  }}
+                >
                   -${discountAmount.toFixed(2)}
                 </span>
               </div>
@@ -120,8 +137,22 @@ export default function CartDrawer() {
             
             {/* Total */}
             <div className="flex items-center justify-between mb-5 pt-3 border-t border-[var(--border-subtle)]" style={{ fontFamily: 'var(--font-ui)' }}>
-              <span className="text-base font-semibold text-[var(--text-primary)]">Total</span>
-              <span className="text-xl font-bold text-[var(--text-primary)]">
+              <span 
+                className="font-semibold text-[var(--text-primary)]" 
+                style={{ 
+                  fontSize: 'var(--body-size)',
+                  lineHeight: 'var(--body-line-height)',
+                }}
+              >
+                Total
+              </span>
+              <span 
+                className="font-bold text-[var(--text-primary)]" 
+                style={{ 
+                  fontSize: 'var(--h3-size)',
+                  lineHeight: 'var(--h3-line-height)',
+                }}
+              >
                 ${totalPrice.toFixed(2)}
               </span>
             </div>
@@ -130,12 +161,14 @@ export default function CartDrawer() {
             <div className="space-y-3">
               <button
                 onClick={handleCheckout}
-                className="interactive-button w-full py-3.5 px-4 rounded-lg font-medium text-sm tracking-wide uppercase relative overflow-hidden group"
+                className="interactive-button w-full py-3.5 px-4 rounded-lg font-medium tracking-wide uppercase relative overflow-hidden group"
                 style={{
                   backgroundColor: '#f6e5c0',
                   border: '1px solid #6f5718',
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
                   fontFamily: 'var(--font-ui)',
+                  fontSize: 'var(--meta-size)',
+                  lineHeight: 'var(--meta-line-height)',
                   color: 'var(--text-primary)',
                 }}
                 onMouseEnter={(e) => {
@@ -153,8 +186,12 @@ export default function CartDrawer() {
               </button>
               <button
                 onClick={clearCart}
-                className="interactive-link w-full text-sm text-[var(--text-muted)] hover:text-red-600 py-2 font-medium"
-                style={{ fontFamily: 'var(--font-ui)' }}
+                className="interactive-link w-full text-[var(--text-muted)] hover:text-red-600 py-2 font-medium"
+                style={{ 
+                  fontFamily: 'var(--font-ui)',
+                  fontSize: 'var(--meta-size)',
+                  lineHeight: 'var(--meta-line-height)',
+                }}
               >
                 Clear Cart
               </button>

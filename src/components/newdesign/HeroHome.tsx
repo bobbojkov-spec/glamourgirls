@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import GalleriesModal from './GalleriesModal';
 
 interface HeroHomeProps {
   backgroundImageUrl?: string;
@@ -10,6 +10,7 @@ interface HeroHomeProps {
 
 export default function HeroHome({ backgroundImageUrl = '/images/hero-image.png' }: HeroHomeProps) {
   const [fontLoaded, setFontLoaded] = useState(false);
+  const [galleriesModalOpen, setGalleriesModalOpen] = useState(false);
 
   useEffect(() => {
     // Check if font is loaded
@@ -86,29 +87,22 @@ export default function HeroHome({ backgroundImageUrl = '/images/hero-image.png'
             of the Silver Screen
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
-            {/* Primary: cream bg + dark border + dark text */}
-            <Link href="/newdesign/archive">
-              <button 
-                className="px-6 py-3 rounded-md font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[var(--state-focus-ring)] bg-[var(--bg-surface)] border-2 border-[var(--text-primary)] text-[var(--text-primary)] hover:bg-[var(--state-hover-wash)] hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.15)] w-full sm:w-auto uppercase tracking-[0.25em]"
-                style={{ fontFamily: 'DM Sans, sans-serif' }}
-              >
-                EXPLORE THE ARCHIVE
-              </button>
-            </Link>
-            {/* Secondary: dark bg + cream border + cream text */}
-            <Link href="/newdesign/photos">
-              <button 
-                className="px-6 py-3 rounded-md font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[var(--state-focus-ring)] bg-[#1E1E1E] border-2 border-[var(--text-inverse)] text-[var(--text-inverse)] hover:opacity-90 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)] w-full sm:w-auto uppercase tracking-[0.25em]"
-                style={{ fontFamily: 'DM Sans, sans-serif' }}
-              >
-                BROWSE PHOTO ARCHIVE
-              </button>
-            </Link>
+          {/* CTA Button */}
+          <div className="flex justify-center w-full">
+            {/* Dark bg + cream border + cream text */}
+            <button 
+              onClick={() => setGalleriesModalOpen(true)}
+              className="interactive-button px-6 py-3 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-[var(--state-focus-ring)] bg-[#1E1E1E] border-2 border-[var(--text-inverse)] text-[var(--text-inverse)] hover:opacity-90 w-full sm:w-auto uppercase tracking-[0.25em]"
+              style={{ fontFamily: 'DM Sans, sans-serif' }}
+            >
+              BROWSE PHOTO ARCHIVE
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Galleries Modal */}
+      <GalleriesModal isOpen={galleriesModalOpen} onClose={() => setGalleriesModalOpen(false)} />
     </section>
   );
 }

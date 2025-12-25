@@ -252,3 +252,51 @@ body.new-design {
   gap: 1.5rem;
   flex: 1;
 }
+
+/* ========================================
+   MOBILE ERGONOMICS & SPACING OPTIMIZATIONS
+   Mobile-only improvements for better UX
+   ======================================== */
+
+/* ========================================
+   MOBILE ERGONOMICS & SPACING OPTIMIZATIONS
+   Mobile-only improvements for better UX
+   ======================================== */
+
+@media (max-width: 767px) {
+  /* List rows - ensure comfortable tap targets and spacing */
+  .interactive-row {
+    min-height: 56px; /* Comfortable tap target */
+  }
+  
+  /* Modal content - reduce spacing between items on mobile */
+  .modal-content ul {
+    gap: 12px !important;
+  }
+  
+  /* Action buttons in modals - ensure good tap targets */
+  .interactive-icon {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Long content sections - reduce excessive spacing */
+  .actress-bio,
+  .timeline {
+    margin-top: 0;
+  }
+  
+  /* Section gaps - tighter on mobile for less scrolling */
+  .space-y-6 > * + * {
+    margin-top: 1rem !important;
+  }
+  
+  /* Hero sections - reduce padding on mobile */
+  section[style*="paddingTop"] {
+    padding-top: clamp(24px, 4vh, 40px) !important;
+    padding-bottom: clamp(24px, 4vh, 40px) !important;
+  }
+}

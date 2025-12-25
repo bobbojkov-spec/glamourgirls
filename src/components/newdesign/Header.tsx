@@ -8,15 +8,16 @@ import GalleriesModal from './GalleriesModal';
 import FavoritesModal from './FavoritesModal';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
+import { useContactModal } from '@/context/ContactModalContext';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [contactModalOpen, setContactModalOpen] = useState(false);
   const [galleriesModalOpen, setGalleriesModalOpen] = useState(false);
   const [fontLoaded, setFontLoaded] = useState(false);
   const { toggleCart, itemCount } = useCart();
   const { toggleFavorites, favoriteCount } = useFavorites();
+  const { isOpen: contactModalOpen, openModal: openContactModal, closeModal: closeContactModal } = useContactModal();
 
   useEffect(() => {
     // Check if font is loaded
@@ -84,13 +85,15 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setGalleriesModalOpen(true)}
-              className="text-[var(--text-primary)] font-medium transition-all duration-200 relative px-2 py-1 rounded"
+              className="interactive-link text-[var(--text-primary)] font-medium relative px-2 py-1 rounded"
               style={{ 
                 fontFamily: 'DM Sans, sans-serif',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = 'var(--accent-gold)';
-                e.currentTarget.style.textShadow = '0 2px 4px rgba(200, 164, 93, 0.3)';
+                if (window.innerWidth >= 768) {
+                  e.currentTarget.style.color = 'var(--accent-gold)';
+                  e.currentTarget.style.textShadow = '0 2px 4px rgba(200, 164, 93, 0.3)';
+                }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.color = 'var(--text-primary)';
@@ -99,16 +102,17 @@ export default function Header() {
             >
               GALLERIES
             </button>
-            <button
-              type="button"
-              onClick={() => setContactModalOpen(true)}
-              className="text-[var(--text-primary)] font-medium transition-all duration-200 relative px-2 py-1 rounded"
+            <Link
+              href="/contact"
+              className="interactive-link text-[var(--text-primary)] font-medium relative px-2 py-1 rounded"
               style={{ 
                 fontFamily: 'DM Sans, sans-serif',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.color = 'var(--accent-gold)';
-                e.currentTarget.style.textShadow = '0 2px 4px rgba(200, 164, 93, 0.3)';
+                if (window.innerWidth >= 768) {
+                  e.currentTarget.style.color = 'var(--accent-gold)';
+                  e.currentTarget.style.textShadow = '0 2px 4px rgba(200, 164, 93, 0.3)';
+                }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.color = 'var(--text-primary)';
@@ -116,7 +120,7 @@ export default function Header() {
               }}
             >
               CONTACT
-            </button>
+            </Link>
           </nav>
 
           <div className="hidden md:flex items-center" style={{ gap: '15px' }}>
@@ -127,7 +131,7 @@ export default function Header() {
                 toggleFavorites();
               }}
               aria-label={`Favorites (${favoriteCount} items)`}
-              className="relative flex items-center justify-center active:scale-95 active:opacity-80 transition-all duration-150 hover:text-[var(--accent-gold)] cursor-pointer"
+              className="interactive-icon relative flex items-center justify-center hover:text-[var(--accent-gold)]"
               style={{ 
                 width: '45px', 
                 height: '45px',
@@ -319,16 +323,16 @@ export default function Header() {
               >
                 GALLERIES
               </button>
-              <button
+              <Link
+                href="/contact"
                 className="text-[var(--text-primary)] hover:text-[var(--accent-gold)] transition-colors text-left uppercase font-medium"
                 style={{ fontFamily: 'DM Sans, sans-serif' }}
                 onClick={() => {
-                  setContactModalOpen(true);
                   setMobileMenuOpen(false);
                 }}
               >
                 CONTACT
-              </button>
+              </Link>
             </div>
           </nav>
         )}
@@ -337,7 +341,7 @@ export default function Header() {
 
       {/* Modals */}
       <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
-      <ContactModal isOpen={contactModalOpen} onClose={() => setContactModalOpen(false)} />
+      <ContactModal isOpen={contactModalOpen} onClose={closeContactModal} />
       <GalleriesModal isOpen={galleriesModalOpen} onClose={() => setGalleriesModalOpen(false)} />
       <FavoritesModal />
     </>

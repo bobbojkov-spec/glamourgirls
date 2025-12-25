@@ -475,8 +475,8 @@ export default async function ActressPage({ params }: PageProps) {
         <section 
           className="bg-[var(--bg-page)] px-4 md:px-6 lg:px-8"
           style={{ 
-            paddingTop: '2rem',
-            paddingBottom: '2.5rem', /* Mobile: 2.5rem */
+            paddingTop: 'clamp(20px, 3vh, 32px)',
+            paddingBottom: 'clamp(20px, 3vh, 32px)',
           }}
         >
           <div 
@@ -689,7 +689,7 @@ export default async function ActressPage({ params }: PageProps) {
         </section>
 
         {/* Footer Info - Full Width, At the very bottom */}
-        <section className="w-full bg-[var(--bg-page)] py-8 px-4 md:px-6 lg:px-8 border-t border-[var(--border-subtle)]">
+        <section className="w-full bg-[var(--bg-page)] px-4 md:px-6 lg:px-8 border-t border-[var(--border-subtle)]" style={{ paddingTop: 'clamp(20px, 3vh, 32px)', paddingBottom: 'clamp(20px, 3vh, 32px)' }}>
           <div className="max-w-[1600px] mx-auto text-xs text-[var(--text-secondary)] space-y-2">
             <p>
               This site and its contents are for private use only. Reproduction of any kind of the{' '}

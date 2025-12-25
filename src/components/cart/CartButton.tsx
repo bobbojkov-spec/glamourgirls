@@ -8,7 +8,7 @@ export default function CartButton() {
   return (
     <button
       onClick={toggleCart}
-      className="relative flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
+      className="interactive-icon relative flex items-center gap-2 text-gray-300 hover:text-white"
       aria-label={`Shopping cart with ${itemCount} items`}
     >
       {/* Cart icon */}

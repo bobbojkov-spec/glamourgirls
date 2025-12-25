@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { searchIndexService } from '@/lib/searchIndex';
+import { searchMetadataService } from '@/lib/searchMetadata';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -11,101 +13,158 @@ interface SearchModalProps {
 export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState('');
   const [selectedEra, setSelectedEra] = useState<string>('all');
-  const [stats, setStats] = useState({
-    totalEntries: 0,
-    totalImages: 0,
-    totalHQImages: 0,
+  // Initialize stats from cache immediately (if available)
+  const [stats, setStats] = useState(() => {
+    // Try to get cached metadata synchronously
+    const cached = searchMetadataService.getMetadataSync();
+    return cached || {
+      totalEntries: 0,
+      totalImages: 0,
+      totalHQImages: 0,
+    };
   });
+  const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
+  // Reset and focus when modal opens - use requestAnimationFrame for reliable timing
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-    } else if (!isOpen) {
-      // Reset form when modal closes
+    if (isOpen) {
+      // Reset search state when modal opens (fresh start)
       setQuery('');
       setSelectedEra('all');
+      setIsSearching(false);
+      
+      // Preload search index (non-blocking)
+      searchIndexService.preload();
+      
+      // Ensure input is enabled when modal opens
+      if (inputRef.current) {
+        inputRef.current.disabled = false;
+      }
+      
+      // Focus input immediately using requestAnimationFrame to ensure DOM is ready
+      // Use double RAF for maximum reliability across browsers
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (inputRef.current && isOpen) {
+            inputRef.current.focus();
+          }
+        });
+      });
+    } else {
+      // Reset form when modal closes as well
+      const timeoutId = setTimeout(() => {
+        setQuery('');
+        setSelectedEra('all');
+        setIsSearching(false);
+      }, 100);
+      return () => clearTimeout(timeoutId);
     }
   }, [isOpen]);
 
+  // Load metadata when modal opens (non-blocking, uses cache first)
   useEffect(() => {
-    async function fetchStats() {
-      try {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
-        const res = await fetch(`${baseUrl}/api/stats`);
-        if (res.ok) {
-          const data = await res.json();
-          setStats(data);
-        }
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-      }
-    }
     if (isOpen) {
-      fetchStats();
+      // Preload metadata (non-blocking)
+      searchMetadataService.getMetadata().then((metadata) => {
+        setStats(metadata);
+      }).catch((error) => {
+        console.warn('Error loading search metadata:', error);
+        // Keep existing stats (from cache or defaults)
+      });
     }
   }, [isOpen]);
+
 
   // Check if search is allowed (at least 3 characters OR era is selected)
   const canSearch = query.trim().length >= 3 || (selectedEra && selectedEra !== 'all');
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     const trimmedQuery = query.trim();
     // Allow search if: (1) at least 3 characters, OR (2) era is selected
     if (trimmedQuery.length >= 3 || (selectedEra && selectedEra !== 'all')) {
+      // IMMEDIATE visual feedback - synchronous, no async operations
+      setIsSearching(true);
+      if (inputRef.current) {
+        inputRef.current.blur();
+        // Disable input immediately to prevent further typing
+        inputRef.current.disabled = true;
+      }
+
+      // Build search params synchronously - NEW SEARCH: only include what user selected
+      // This explicitly clears all other filters (isNew, hasNewPhotos, nameStartsWith, surnameStartsWith)
       const params = new URLSearchParams();
-      // Only add keyword if it has at least 3 characters
       if (trimmedQuery.length >= 3) {
         params.set('keyword', trimmedQuery);
       }
-      // Add era filter if not "all"
       if (selectedEra && selectedEra !== 'all') {
-        params.set('era', selectedEra);
+        // Handle "Their Men" filter - use theirMan param instead of era
+        if (selectedEra === 'men') {
+          params.set('theirMan', 'true');
+        } else {
+          params.set('era', selectedEra);
+        }
       }
-      router.push(`/search?${params.toString()}`);
+
+      // Navigate IMMEDIATELY - use replace if already on search page to avoid back button issues
+      // This is a NEW SEARCH, so it replaces the current URL completely
+      const searchUrl = `/search?${params.toString()}`;
+      if (pathname === '/search') {
+        router.replace(searchUrl);
+      } else {
+        router.push(searchUrl);
+      }
+      
+      // Close modal immediately after navigation is triggered
       onClose();
-      setQuery('');
-      setSelectedEra('all');
     }
-  };
+  }, [query, selectedEra, router, onClose]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Only submit if we have at least 3 characters
-    if (canSearch) {
-      handleSearch();
-    }
+    // Always call handleSearch - it will check canSearch internally
+    // This ensures Enter key always gets acknowledged
+    handleSearch();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      // Only allow search if at least 3 characters
-      if (canSearch) {
-        handleSearch();
-      }
+      e.stopPropagation();
+      // Always call handleSearch - it checks canSearch internally
+      // This ensures Enter is ALWAYS captured and acknowledged
+      handleSearch();
     }
     if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
       onClose();
     }
   };
 
-  if (!isOpen) return null;
-
+  // Always render modal structure but conditionally show it
+  // This prevents re-mounting and ensures input is always ready
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998] transition-opacity"
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998] transition-opacity ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none px-4 sm:px-[20%]">
+      <div className={`fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none px-4 sm:px-[20%] ${
+        isOpen ? 'pointer-events-auto' : ''
+      }`}>
         <div
-          className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-lift)] w-full pointer-events-auto transform transition-all"
+          className={`bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-lift)] w-full pointer-events-auto transform transition-all ${
+            isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
+          }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -124,7 +183,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
               </h2>
               <button
                 onClick={onClose}
-                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-2 rounded-lg hover:bg-[var(--bg-surface-alt)]"
+                className="interactive-icon text-[var(--text-muted)] hover:text-[var(--text-primary)] p-2 rounded-lg hover:bg-[var(--bg-surface-alt)]"
                 aria-label="Close"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -156,7 +215,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                         onChange={(e) => setSelectedEra(e.target.value)}
                         className="sr-only peer"
                       />
-                      <span className={`px-3 py-1 text-sm rounded transition-all ${
+                      <span className={`interactive-button px-3 py-1 text-sm rounded ${
                         selectedEra === era
                           ? 'bg-[#E6D9B3] text-gray-900 border border-[#d1c4a0]'
                           : 'text-gray-700 hover:bg-gray-50'
@@ -193,41 +252,62 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     ref={inputRef}
                     type="text"
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={(e) => {
+                      // Only update if not searching - prevent state updates during navigation
+                      if (!isSearching) {
+                        setQuery(e.target.value);
+                      }
+                    }}
                     onKeyDown={handleKeyDown}
                     placeholder="input search text"
-                    className="flex-1 pl-12 pr-0 py-3 border-0 rounded-l-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none"
+                    disabled={isSearching || !isOpen}
+                    autoComplete="off"
+                    autoFocus={false}
+                    tabIndex={isOpen ? 0 : -1}
+                    className="flex-1 pl-12 pr-0 py-3 border-0 rounded-l-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none disabled:opacity-70 disabled:cursor-wait"
                     style={{ fontFamily: 'var(--font-ui)', fontSize: '1rem' }}
                   />
 
                   {/* Search Button - Darker Glamour Girls Colors */}
                   <button
                     type="submit"
-                    disabled={!canSearch}
-                    className="px-6 py-3 rounded-r-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#6f5718] active:scale-95 active:shadow-md active:opacity-90"
+                    disabled={!canSearch || isSearching}
+                    className="interactive-button px-6 py-3 rounded-r-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     style={{
                       backgroundColor: canSearch ? '#8b6f2a' : '#6f5718',
                       color: '#ffffff',
                       borderLeft: '1px solid #6f5718',
                     }}
                     onMouseEnter={(e) => {
-                      if (canSearch) {
+                      if (canSearch && !isSearching && window.innerWidth >= 768) {
                         e.currentTarget.style.backgroundColor = '#6f5718';
                       }
                     }}
                     onMouseLeave={(e) => {
-                      if (canSearch) {
+                      if (canSearch && !isSearching) {
                         e.currentTarget.style.backgroundColor = '#8b6f2a';
                       }
                     }}
                   >
-                    Search
+                    {isSearching ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Searching...</span>
+                      </>
+                    ) : (
+                      'Search'
+                    )}
                   </button>
                 </div>
 
                 {/* Helper text */}
                 <p className="text-xs text-[var(--text-muted)] mt-2 ml-1" style={{ fontFamily: 'var(--font-ui)' }}>
-                  {canSearch ? (
+                  {isSearching ? (
+                    <span className="text-[var(--accent-gold)]">Searching...</span>
+                  ) : canSearch ? (
                     <>
                       Press <kbd className="px-1.5 py-0.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded text-[10px]">Enter</kbd> or click Search to find results
                     </>

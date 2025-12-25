@@ -78,11 +78,11 @@ export default function ActressTable({
         </thead>
         <tbody>
           {actresses.map((actress) => (
-            <tr key={actress.id} className="interactive-row border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-alt)]">
+            <tr key={actress.id} className="border-b border-[var(--border-subtle)]">
               <td className="py-3">
                 <Link 
                   href={actress.slug ? `/actress/${actress.id}/${actress.slug}` : `/actress/${actress.id}`}
-                  className="flex items-center gap-4 interactive-link"
+                  className="flex items-center gap-4 interactive-row p-3 rounded-lg hover:bg-[var(--bg-surface-alt)] hover:shadow-sm -m-3"
                 >
                   {/* Thumbnail - Match ActressListRow exactly */}
                   <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-surface-alt)]">

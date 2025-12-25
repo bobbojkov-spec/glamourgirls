@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import ContactModal from './ContactModal';
 import SearchModal from './SearchModal';
+import { searchIndexService } from '@/lib/searchIndex';
 
 export default function Header() {
   const pathname = usePathname();
@@ -13,8 +14,16 @@ export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
 
-  // Hide header in admin routes
-  if (pathname?.startsWith('/admin')) {
+  // Preload search index on mount
+  useEffect(() => {
+    searchIndexService.preload().catch((error) => {
+      // Silently fail - search will still work with server queries
+      console.debug('Search index preload failed (non-critical):', error);
+    });
+  }, []);
+
+  // Hide header in admin routes and contact page (contact page has its own header)
+  if (pathname?.startsWith('/admin') || pathname === '/contact') {
     return null;
   }
 

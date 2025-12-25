@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import AlphabetNav from '../ui/AlphabetNav';
 import VintageButton from '../ui/VintageButton';
+import { searchIndexService } from '@/lib/searchIndex';
 
 interface SearchPanelProps {
   /** Compact mode for non-homepage use */
@@ -23,8 +24,8 @@ export interface SearchFilters {
 }
 
 const defaultFilters: SearchFilters = {
-  newEntry: 'no',
-  newPhotos: 'no',
+  newEntry: 'all',
+  newPhotos: 'all',
   years: ['all'],
   nameStartsWith: '',
   surnameStartsWith: '',
@@ -36,11 +37,77 @@ export default function SearchPanel({
   initialFilters,
   onSearch 
 }: SearchPanelProps) {
+  // Reset filters when initialFilters change (e.g., when URL params change)
   const [filters, setFilters] = useState<SearchFilters>(initialFilters || defaultFilters);
+  
+  // Update filters when initialFilters prop changes (from URL params)
+  useEffect(() => {
+    if (initialFilters) {
+      setFilters(initialFilters);
+    }
+  }, [initialFilters]);
+  const [hasResults, setHasResults] = useState<boolean | null>(null);
+  const [hasIndexLoaded, setHasIndexLoaded] = useState(false);
+  const keywordInputRef = useRef<HTMLInputElement>(null);
+
+  // Preload search index on first focus
+  const handleKeywordFocus = useCallback(() => {
+    if (!hasIndexLoaded) {
+      searchIndexService.preload().then(() => {
+        setHasIndexLoaded(true);
+      }).catch(() => {
+        // Silently fail - will fall back to server search
+      });
+    }
+  }, [hasIndexLoaded]);
+
+  // Client-side instant feedback for search results
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkResults() {
+      const trimmedKeyword = filters.keyword.trim();
+      const hasKeyword = trimmedKeyword.length >= 3;
+      const selectedYear = filters.years[0];
+      const hasEra = selectedYear && selectedYear !== 'all';
+
+      if (!hasKeyword && !hasEra) {
+        setHasResults(null);
+        return;
+      }
+
+      try {
+        const result = await searchIndexService.hasResults({
+          keyword: hasKeyword ? trimmedKeyword : undefined,
+          era: selectedYear,
+        });
+
+        if (!cancelled) {
+          setHasResults(result);
+        }
+      } catch (error) {
+        console.warn('Error checking search results:', error);
+        if (!cancelled) {
+          setHasResults(null);
+        }
+      }
+    }
+
+    // Debounce the check
+    const timeoutId = setTimeout(checkResults, 150);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [filters.keyword, filters.years]);
 
   // Years filter now uses radio buttons, so we just set the selected year
+  // Hero search: Auto-search immediately to narrow results
   const handleYearChange = (year: string) => {
-    setFilters(prev => ({ ...prev, years: [year] }));
+    const newFilters = { ...filters, years: [year] };
+    setFilters(newFilters);
+    // Immediately refine search with new year filter
+    onSearch?.(newFilters);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -99,7 +166,12 @@ export default function SearchPanel({
             <input
               type="checkbox"
               checked={filters.newEntry === 'yes'}
-              onChange={(e) => setFilters(prev => ({ ...prev, newEntry: e.target.checked ? 'yes' : 'no' }))}
+              onChange={(e) => {
+                // Hero search: Auto-search immediately to narrow results
+                const newFilters = { ...filters, newEntry: e.target.checked ? 'yes' : 'no' };
+                setFilters(newFilters);
+                onSearch?.(newFilters);
+              }}
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E6D9B3]"></div>
@@ -130,7 +202,12 @@ export default function SearchPanel({
             <input
               type="checkbox"
               checked={filters.newPhotos === 'yes'}
-              onChange={(e) => setFilters(prev => ({ ...prev, newPhotos: e.target.checked ? 'yes' : 'no' }))}
+              onChange={(e) => {
+                // Hero search: Auto-search immediately to narrow results
+                const newFilters = { ...filters, newPhotos: e.target.checked ? 'yes' : 'no' };
+                setFilters(newFilters);
+                onSearch?.(newFilters);
+              }}
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E6D9B3]"></div>
@@ -165,11 +242,11 @@ export default function SearchPanel({
                   name="years"
                   value={year}
                   checked={filters.years[0] === year}
-                  onChange={() => setFilters(prev => ({ ...prev, years: [year] }))}
+                  onChange={() => handleYearChange(year)}
                   className="sr-only peer"
                 />
                 <span 
-                  className={`px-3 py-1.5 rounded-md transition-all border ${
+                  className={`interactive-button px-3 py-1.5 rounded-md border ${
                     filters.years[0] === year
                       ? 'border-gray-600 text-gray-900 bg-transparent'
                       : 'border-gray-300 text-gray-700 bg-transparent hover:border-gray-400'
@@ -209,10 +286,12 @@ export default function SearchPanel({
 
           {/* Input */}
           <input
+            ref={keywordInputRef}
             id="keyword"
             type="text"
             value={filters.keyword}
             onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value }))}
+            onFocus={handleKeywordFocus}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -230,13 +309,15 @@ export default function SearchPanel({
           {/* Search Button - Darker Glamour Girls Colors */}
           <button
             type="submit"
-            className="px-6 py-3 font-medium transition-all duration-200 border-l border-gray-300 flex items-center"
+            className="interactive-button px-6 py-3 font-medium border-l border-gray-300 flex items-center"
             style={{
               backgroundColor: '#8b6f2a',
               color: '#ffffff',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#6f5718';
+              if (window.innerWidth >= 768) {
+                e.currentTarget.style.backgroundColor = '#6f5718';
+              }
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = '#8b6f2a';

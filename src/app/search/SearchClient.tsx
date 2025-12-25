@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Header, Footer } from '@/components/newdesign';
 import SearchPanel, { SearchFilters } from '@/components/search/SearchPanel';
 import ActressTable, { ActressRow } from '@/components/ui/ActressTable';
@@ -62,30 +62,49 @@ async function fetchActresses(filters: SearchFilters) {
 
 export default function SearchClient() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [actresses, setActresses] = useState<ActressRow[]>([]);
   const [loading, setLoading] = useState(true);
-  // Get era from URL params
-  const eraParam = searchParams.get('era');
-  const initialYears = eraParam ? [eraParam] : ['all'];
+  
+  // Helper to map URL param to filter value
+  const getNewEntryFilter = (isNewParam: string | null): 'all' | 'yes' | 'no' => {
+    if (isNewParam === 'yes') return 'yes';
+    if (isNewParam === 'no') return 'no';
+    return 'all';
+  };
+
+  const getNewPhotosFilter = (hasNewPhotosParam: string | null): 'all' | 'yes' | 'no' => {
+    if (hasNewPhotosParam === 'yes') return 'yes';
+    if (hasNewPhotosParam === 'no') return 'no';
+    return 'all';
+  };
+
+  // Helper to get years from URL params (handles both era and theirMan)
+  const getYearsFromParams = (searchParams: URLSearchParams): string[] => {
+    const theirMan = searchParams.get('theirMan');
+    if (theirMan === 'true') {
+      return ['men'];
+    }
+    const eraParam = searchParams.get('era');
+    return eraParam ? [eraParam] : ['all'];
+  };
 
   const [filters, setFilters] = useState<SearchFilters>({
-    newEntry: 'no',
-    newPhotos: 'no',
-    years: initialYears,
+    newEntry: getNewEntryFilter(searchParams.get('isNew')),
+    newPhotos: getNewPhotosFilter(searchParams.get('hasNewPhotos')),
+    years: getYearsFromParams(searchParams),
     nameStartsWith: searchParams.get('nameStartsWith') || '',
     surnameStartsWith: searchParams.get('surnameStartsWith') || '',
     keyword: searchParams.get('keyword') || '',
   });
 
-  // Update filters when URL params change
+  // Update filters when URL params change (e.g., from nav search or browser back/forward)
   useEffect(() => {
-    const eraParam = searchParams.get('era');
-    const years = eraParam ? [eraParam] : ['all'];
-
     setFilters({
-      newEntry: 'no',
-      newPhotos: 'no',
-      years: years,
+      newEntry: getNewEntryFilter(searchParams.get('isNew')),
+      newPhotos: getNewPhotosFilter(searchParams.get('hasNewPhotos')),
+      years: getYearsFromParams(searchParams),
       nameStartsWith: searchParams.get('nameStartsWith') || '',
       surnameStartsWith: searchParams.get('surnameStartsWith') || '',
       keyword: searchParams.get('keyword') || '',
@@ -126,8 +145,35 @@ export default function SearchClient() {
       });
   }, [filters]);
 
+  // Helper to convert filters to URL params
+  const filtersToUrlParams = (filters: SearchFilters): URLSearchParams => {
+    const params = new URLSearchParams();
+    
+    if (filters.nameStartsWith) params.set('nameStartsWith', filters.nameStartsWith);
+    if (filters.surnameStartsWith) params.set('surnameStartsWith', filters.surnameStartsWith);
+    if (filters.keyword) params.set('keyword', filters.keyword);
+    if (filters.newEntry && filters.newEntry !== 'all') params.set('isNew', filters.newEntry);
+    if (filters.newPhotos && filters.newPhotos !== 'all') params.set('hasNewPhotos', filters.newPhotos);
+    
+    // Handle years filter - convert to era or theirMan param
+    if (filters.years.length > 0 && !filters.years.includes('all')) {
+      const selectedYear = filters.years[0];
+      if (selectedYear === 'men') {
+        params.set('theirMan', 'true');
+      } else {
+        params.set('era', selectedYear);
+      }
+    }
+    
+    return params;
+  };
+
+  // Refine search: preserve existing filters and update URL (hero search behavior)
+  // URL update will trigger useEffect to sync filters state, avoiding duplicate updates
   const handleSearch = (newFilters: SearchFilters) => {
-    setFilters(newFilters);
+    const params = filtersToUrlParams(newFilters);
+    const newUrl = `/search?${params.toString()}`;
+    router.replace(newUrl, { scroll: false });
   };
 
   return (
@@ -168,7 +214,7 @@ export default function SearchClient() {
         </section>
 
         {/* Results Section */}
-        <section className="px-6 py-8 bg-[var(--bg-page)]">
+        <section className="px-6 bg-[var(--bg-page)] search-results-section" style={{ paddingTop: 'clamp(20px, 3vh, 32px)', paddingBottom: 'clamp(20px, 3vh, 32px)' }}>
           <div className="max-w-[1600px] mx-auto">
             <div className="w-full px-0 md:px-6">
               {!loading && (

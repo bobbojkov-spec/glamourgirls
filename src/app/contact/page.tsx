@@ -88,6 +88,9 @@ export default function ContactPage() {
               </button>
             </div>
           </div>
+          
+          {/* Spacing below success message */}
+          <div style={{ height: '30px' }} />
         </main>
         <Footer />
       </div>
@@ -207,7 +210,7 @@ export default function ContactPage() {
               <div className="text-center pt-4">
                 <button 
                   type="submit" 
-                  className="px-8 py-3 rounded-lg font-medium tracking-wide uppercase text-[var(--text-primary)] transition-all duration-300 relative overflow-hidden group"
+                  className="interactive-button px-8 py-3 rounded-lg font-medium tracking-wide uppercase text-[var(--text-primary)] transition-all duration-200 relative overflow-hidden group focus:outline-none focus:ring-2 focus:ring-[var(--state-focus-ring)] disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 active:opacity-80"
                   style={{
                     backgroundColor: '#f6e5c0',
                     border: '1px solid #6f5718',
@@ -215,16 +218,16 @@ export default function ContactPage() {
                     fontFamily: 'DM Sans, sans-serif',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
-                    e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
-                    e.currentTarget.style.backgroundColor = '#fff5e1';
-                    e.currentTarget.style.borderColor = '#8b6f2a';
+                    if (window.innerWidth >= 768 && !e.currentTarget.disabled) {
+                      e.currentTarget.style.backgroundColor = '#fff5e1';
+                      e.currentTarget.style.borderColor = '#8b6f2a';
+                      e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1)';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)';
                     e.currentTarget.style.backgroundColor = '#f6e5c0';
                     e.currentTarget.style.borderColor = '#6f5718';
+                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)';
                   }}
                   disabled={isSubmitting || !captchaVerified}
                 >
@@ -233,6 +236,9 @@ export default function ContactPage() {
               </div>
             </form>
           </div>
+          
+          {/* Spacing below contact form */}
+          <div style={{ height: '30px' }} />
         </div>
       </main>
       <Footer />

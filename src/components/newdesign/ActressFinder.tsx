@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { searchIndexService } from '@/lib/searchIndex';
 
 interface AutocompleteSuggestion {
   id: number;
@@ -17,12 +18,27 @@ export default function ActressFinder() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasIndexLoaded, setHasIndexLoaded] = useState(false);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Debounced autocomplete fetch
+  // Preload search index on first focus
+  const handleFocus = useCallback(() => {
+    if (!hasIndexLoaded) {
+      searchIndexService.preload().then(() => {
+        setHasIndexLoaded(true);
+      }).catch(() => {
+        // Silently fail - will fall back to server search
+      });
+    }
+    if (suggestions.length > 0 && searchQuery.length >= 3) {
+      setShowSuggestions(true);
+    }
+  }, [hasIndexLoaded, suggestions.length, searchQuery.length]);
+
+  // Client-side filtering using search index
   const fetchSuggestions = useCallback(async (query: string) => {
     if (query.length < 3) {
       setSuggestions([]);
@@ -32,15 +48,26 @@ export default function ActressFinder() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/actresses/autocomplete?q=${encodeURIComponent(query)}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSuggestions(data);
-        setShowSuggestions(data.length > 0);
-        setSelectedIndex(-1);
-      }
+      const { matches } = await searchIndexService.filter({
+        keyword: query,
+      });
+
+      // Limit to top 10 suggestions for performance
+      const limitedMatches = matches.slice(0, 10);
+
+      const formattedSuggestions: AutocompleteSuggestion[] = limitedMatches.map((actress) => ({
+        id: actress.id,
+        name: `${actress.firstname} ${actress.middlenames ? actress.middlenames + ' ' : ''}${actress.familiq}`.trim(),
+        firstName: actress.firstname,
+        lastName: actress.familiq,
+        slug: actress.slug,
+      }));
+
+      setSuggestions(formattedSuggestions);
+      setShowSuggestions(formattedSuggestions.length > 0);
+      setSelectedIndex(-1);
     } catch (error) {
-      console.error('Error fetching autocomplete:', error);
+      console.error('Error filtering suggestions:', error);
       setSuggestions([]);
       setShowSuggestions(false);
     } finally {
@@ -77,13 +104,17 @@ export default function ActressFinder() {
     }
   };
 
-  // Handle search button click or Enter key
-  const handleSearch = () => {
-    if (searchQuery.trim().length >= 3) {
+  // Handle search button click or Enter key - navigate immediately using client-side index
+  const handleSearch = useCallback(async () => {
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery.length >= 3) {
       setShowSuggestions(false);
-      router.push(`/search?keyword=${encodeURIComponent(searchQuery.trim())}`);
+      
+      // Navigate immediately - don't wait for server response
+      // Server-side search will refine results after navigation
+      router.push(`/search?keyword=${encodeURIComponent(trimmedQuery)}`);
     }
-  };
+  }, [searchQuery, router]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -170,11 +201,7 @@ export default function ActressFinder() {
               value={searchQuery}
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              onFocus={() => {
-                if (suggestions.length > 0 && searchQuery.length >= 3) {
-                  setShowSuggestions(true);
-                }
-              }}
+              onFocus={handleFocus}
               placeholder="Type at least 3 letters to search..."
               className="flex-1 pl-12 pr-0 py-3 border-0 rounded-l-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none"
             />

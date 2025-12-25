@@ -19,7 +19,7 @@ interface FeaturedPhotoProps {
 
 export default function FeaturedPhoto({ image, actressId, actressName }: FeaturedPhotoProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const { addItem, openCart, isInCart } = useCart();
+  const { addItem, isInCart } = useCart();
   const isAlreadyInCart = isInCart(image.id.toString());
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -37,7 +37,7 @@ export default function FeaturedPhoto({ image, actressId, actressName }: Feature
       fileSizeMB: image.fileSizeMB,
     });
     
-    openCart();
+    // Don't open cart - just add item silently
   };
 
   return (
@@ -71,7 +71,7 @@ export default function FeaturedPhoto({ image, actressId, actressName }: Feature
         >
           {image.price && !isAlreadyInCart && (
             <button
-              className="inline-flex items-center justify-center w-10 h-10 rounded-full text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-all duration-200 shadow-sm active:scale-[0.92] active:shadow-md active:opacity-80"
+              className="interactive-button inline-flex items-center justify-center w-10 h-10 rounded-full text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg shadow-sm"
               onClick={handleAddToCart}
               aria-label="Add to cart"
             >

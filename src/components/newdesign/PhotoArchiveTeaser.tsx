@@ -66,7 +66,7 @@ export default function PhotoArchiveTeaser({
       <div className={layout === 'card' ? 'text-left' : 'text-center'}>
         <Link href="/newdesign/photos">
           <button
-            className="inline-flex items-center justify-center rounded-lg px-8 py-3 text-sm font-medium tracking-wide uppercase text-[var(--text-primary)] transition-all duration-300 relative overflow-hidden group"
+            className="interactive-button inline-flex items-center justify-center rounded-lg px-8 py-3 text-sm font-medium tracking-wide uppercase text-[var(--text-primary)] relative overflow-hidden group"
             style={{
               backgroundColor: '#f6e5c0',
               border: '1px solid #6f5718',
@@ -74,14 +74,12 @@ export default function PhotoArchiveTeaser({
               fontFamily: 'DM Sans, sans-serif',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
-              e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
-              e.currentTarget.style.backgroundColor = '#fff5e1';
-              e.currentTarget.style.borderColor = '#8b6f2a';
+              if (window.innerWidth >= 768) {
+                e.currentTarget.style.backgroundColor = '#fff5e1';
+                e.currentTarget.style.borderColor = '#8b6f2a';
+              }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)';
               e.currentTarget.style.backgroundColor = '#f6e5c0';
               e.currentTarget.style.borderColor = '#6f5718';
             }}

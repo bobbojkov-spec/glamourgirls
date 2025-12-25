@@ -11,7 +11,7 @@ interface ActressThumbProps {
 
 export default function ActressThumb({ id, name, photoUrl, slug, era }: ActressThumbProps) {
   return (
-    <Link href={slug ? `/actress/${id}/${slug}` : `/actress/${id}`} className="block">
+    <Link href={slug ? `/actress/${id}/${slug}` : `/actress/${id}`} className="block interactive-link">
       <div className="actress-thumb text-center">
         <div className="actress-thumb-photo relative overflow-hidden">
           <Image
