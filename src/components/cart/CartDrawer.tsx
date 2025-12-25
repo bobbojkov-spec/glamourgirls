@@ -39,7 +39,7 @@ export default function CartDrawer() {
       />
 
       {/* Drawer */}
-      <div className="fixed top-0 right-0 h-full w-full max-w-md bg-[var(--bg-surface)] shadow-[var(--shadow-lift)] z-[999] flex flex-col" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+      <div className="fixed top-0 right-0 h-full w-full max-w-md bg-[var(--bg-surface)] shadow-[var(--shadow-lift)] z-[999] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 mb-6 border-b border-[var(--border-subtle)] pb-5">
           <h2
@@ -55,7 +55,7 @@ export default function CartDrawer() {
           </h2>
           <button
             onClick={closeCart}
-            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors p-1.5 rounded-md hover:bg-[var(--state-hover-wash)]"
+            className="interactive-icon text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1.5 rounded-md hover:bg-[var(--state-hover-wash)]"
             aria-label="Close cart"
           >
             <svg
@@ -76,18 +76,18 @@ export default function CartDrawer() {
         </div>
 
         {/* Cart items */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6">
           {items.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-[var(--text-secondary)] mb-2 font-medium" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '16px' }}>
+              <p className="text-[var(--text-secondary)] mb-2 font-medium" style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--body-size)' }}>
                 Your cart is empty
               </p>
-              <p className="text-sm text-[var(--text-muted)]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              <p className="text-sm text-[var(--text-muted)]" style={{ fontFamily: 'var(--font-ui)' }}>
                 Browse our galleries and add HQ photos to your cart
               </p>
             </div>
           ) : (
-            <div className="space-y-0">
+            <div className="space-y-0 py-4">
               {items.map((item) => (
                 <CartItem key={item.id} item={item} />
               ))}
@@ -99,7 +99,7 @@ export default function CartDrawer() {
         {items.length > 0 && (
           <div className="px-6 py-5 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-alt)]">
             {/* Subtotal */}
-            <div className="flex items-center justify-between mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            <div className="flex items-center justify-between mb-2" style={{ fontFamily: 'var(--font-ui)' }}>
               <span className="text-sm text-[var(--text-secondary)]">Subtotal ({items.length} {items.length === 1 ? 'item' : 'items'})</span>
               <span className="text-sm font-medium text-[var(--text-primary)]">
                 ${subtotal.toFixed(2)}
@@ -108,7 +108,7 @@ export default function CartDrawer() {
             
             {/* Discount */}
             {discountRate > 0 && (
-              <div className="flex items-center justify-between mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              <div className="flex items-center justify-between mb-2" style={{ fontFamily: 'var(--font-ui)' }}>
                 <span className="text-sm text-green-700 font-medium">
                   Discount ({Math.round(discountRate * 100)}%)
                 </span>
@@ -119,7 +119,7 @@ export default function CartDrawer() {
             )}
             
             {/* Total */}
-            <div className="flex items-center justify-between mb-5 pt-3 border-t border-[var(--border-subtle)]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            <div className="flex items-center justify-between mb-5 pt-3 border-t border-[var(--border-subtle)]" style={{ fontFamily: 'var(--font-ui)' }}>
               <span className="text-base font-semibold text-[var(--text-primary)]">Total</span>
               <span className="text-xl font-bold text-[var(--text-primary)]">
                 ${totalPrice.toFixed(2)}
@@ -130,41 +130,31 @@ export default function CartDrawer() {
             <div className="space-y-3">
               <button
                 onClick={handleCheckout}
-                className="w-full py-3.5 px-4 rounded-lg font-medium text-sm tracking-wide uppercase transition-all duration-300 relative overflow-hidden group"
+                className="interactive-button w-full py-3.5 px-4 rounded-lg font-medium text-sm tracking-wide uppercase relative overflow-hidden group"
                 style={{
                   backgroundColor: '#f6e5c0',
                   border: '1px solid #6f5718',
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: 'var(--font-ui)',
                   color: 'var(--text-primary)',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
-                  e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
-                  e.currentTarget.style.backgroundColor = '#fff5e1';
-                  e.currentTarget.style.borderColor = '#8b6f2a';
+                  if (window.innerWidth >= 768) {
+                    e.currentTarget.style.backgroundColor = '#fff5e1';
+                    e.currentTarget.style.borderColor = '#8b6f2a';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)';
                   e.currentTarget.style.backgroundColor = '#f6e5c0';
                   e.currentTarget.style.borderColor = '#6f5718';
-                }}
-                onMouseDown={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-1px) scale(0.98)';
-                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
-                }}
-                onMouseUp={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
-                  e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
                 }}
               >
                 Proceed to Checkout
               </button>
               <button
                 onClick={clearCart}
-                className="w-full text-sm text-[var(--text-muted)] hover:text-red-600 transition-colors py-2 font-medium"
-                style={{ fontFamily: 'DM Sans, sans-serif' }}
+                className="interactive-link w-full text-sm text-[var(--text-muted)] hover:text-red-600 py-2 font-medium"
+                style={{ fontFamily: 'var(--font-ui)' }}
               >
                 Clear Cart
               </button>

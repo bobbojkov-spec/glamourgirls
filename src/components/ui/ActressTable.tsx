@@ -31,7 +31,7 @@ export default function ActressTable({
   return (
     <div className="overflow-x-auto">
       {/* Desktop Table */}
-      <table className="results-table hidden md:table w-full" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+      <table className="results-table hidden md:table w-full" style={{ fontFamily: 'var(--font-ui)' }}>
         <thead>
           <tr className="border-b-2 border-gray-800">
             <th className="pb-3 text-left" style={{ 
@@ -78,14 +78,14 @@ export default function ActressTable({
         </thead>
         <tbody>
           {actresses.map((actress) => (
-            <tr key={actress.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-alt)] transition-all duration-200 active:scale-[0.99]">
+            <tr key={actress.id} className="interactive-row border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-alt)]">
               <td className="py-3">
                 <Link 
                   href={actress.slug ? `/actress/${actress.id}/${actress.slug}` : `/actress/${actress.id}`}
-                  className="flex items-center gap-3 hover:text-[var(--accent-gold)] transition-colors cursor-pointer"
+                  className="flex items-center gap-4 interactive-link"
                 >
-                  {/* Thumbnail */}
-                  <div className="w-12 h-16 flex-shrink-0 bg-[var(--bg-surface-alt)] rounded overflow-hidden border border-[var(--border-subtle)]">
+                  {/* Thumbnail - Match ActressListRow exactly */}
+                  <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-surface-alt)]">
                     <img
                       src={`/api/actresses/${actress.id}/headshot`}
                       alt={actress.name}
@@ -103,9 +103,9 @@ export default function ActressTable({
                       }}
                     />
                   </div>
-                  {/* Name */}
+                  {/* Name - Match ActressListRow exactly */}
                   <span 
-                    className="uppercase search-actress-name" 
+                    className="text-base text-[var(--text-primary)] leading-tight uppercase font-bold truncate" 
                     style={{ 
                       fontFamily: "'Kabel Black', sans-serif",
                     }}
@@ -117,10 +117,9 @@ export default function ActressTable({
               <td 
                 className="py-3 text-[var(--text-secondary)]" 
                 style={{ 
-                  fontFamily: 'DM Sans, sans-serif',
-                  fontSize: '13px', /* 13-14px range */
+                  fontFamily: 'var(--font-ui)',
+                  fontSize: 'var(--meta-size)',
                   fontWeight: 400,
-                  opacity: 0.7, /* Lower contrast than names */
                 }}
               >
                 {actress.years}
@@ -128,10 +127,9 @@ export default function ActressTable({
               <td 
                 className="py-3 text-center text-[var(--text-secondary)]" 
                 style={{ 
-                  fontFamily: 'DM Sans, sans-serif',
-                  fontSize: '13px', /* 13-14px range */
+                  fontFamily: 'var(--font-ui)',
+                  fontSize: 'var(--meta-size)',
                   fontWeight: 400,
-                  opacity: 0.7, /* Lower contrast than names */
                 }}
               >
                 {actress.hasNewPhotos && (
@@ -142,10 +140,9 @@ export default function ActressTable({
               <td 
                 className="py-3 text-center text-[var(--text-secondary)]" 
                 style={{ 
-                  fontFamily: 'DM Sans, sans-serif',
-                  fontSize: '13px', /* 13-14px range */
+                  fontFamily: 'var(--font-ui)',
+                  fontSize: 'var(--meta-size)',
                   fontWeight: 400,
-                  opacity: 0.7, /* Lower contrast than names */
                 }}
               >
                 {actress.hqPhotoCount > 0 ? actress.hqPhotoCount : '-'}
@@ -169,10 +166,9 @@ export default function ActressTable({
               <div 
                 className="text-[var(--text-secondary)]" 
                 style={{ 
-                  fontFamily: 'DM Sans, sans-serif',
-                  fontSize: '13px',
+                  fontFamily: 'var(--font-ui)',
+                  fontSize: 'var(--meta-size)',
                   fontWeight: 400,
-                  opacity: 0.7,
                 }}
               >
                 {actress.years} • {actress.photoCount} photos

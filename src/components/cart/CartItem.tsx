@@ -16,15 +16,15 @@ function CartItem({ item }: CartItemProps) {
   }, [removeItem, item.id]);
 
   return (
-    <div className="flex gap-4 py-4 border-b border-[var(--border-subtle)] last:border-b-0 hover:bg-[var(--bg-surface-alt)] transition-colors px-2 -mx-2 rounded-md" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-      {/* Thumbnail */}
-      <div className="w-20 h-24 flex-shrink-0 bg-[var(--bg-surface-alt)] rounded-md overflow-hidden border border-[var(--border-subtle)] shadow-sm">
+    <div className="interactive-row flex items-center gap-4 p-3 rounded-lg hover:bg-[var(--bg-surface-alt)] hover:shadow-sm border-b border-[var(--border-subtle)] last:border-b-0">
+      {/* Thumbnail - Match ActressListRow exactly */}
+      <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-surface-alt)]">
         <Image
           src={item.thumbnailUrl}
           alt={`${item.actressName} photo`}
-          width={80}
-          height={96}
-          className="w-full h-full object-cover"
+          fill
+          className="object-cover"
+          sizes="64px"
           loading="lazy"
           unoptimized={item.thumbnailUrl.startsWith('http')}
         />
@@ -33,17 +33,18 @@ function CartItem({ item }: CartItemProps) {
       {/* Details */}
       <div className="flex-1 min-w-0 flex flex-col justify-between">
         <div>
-          <h3 className="text-[22px] font-bold text-[var(--text-primary)] truncate mb-1 uppercase leading-tight" style={{ fontFamily: "'Kabel Black', 'Arial Black', 'Arial Bold', Arial, sans-serif", fontSize: '22px', fontWeight: '900' }}>
+          {/* Actress Name - Match ActressListRow exactly */}
+          <p className="text-base text-[var(--text-primary)] leading-tight uppercase font-bold truncate" style={{ fontFamily: "'Kabel Black', sans-serif" }}>
             {item.actressName}
-          </h3>
-          <p className="text-xs text-[var(--text-muted)] mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+          </p>
+          <p className="text-xs text-[var(--text-muted)] mt-1" style={{ fontFamily: 'var(--font-ui)' }}>
             {item.width} × {item.height} px
             {item.fileSizeMB !== undefined && item.fileSizeMB !== null && (
               <span className="text-[var(--text-muted)]/80"> / {item.fileSizeMB} MB</span>
             )}
           </p>
         </div>
-        <p className={`${item.fileSizeMB !== undefined && item.fileSizeMB !== null ? 'text-base font-bold text-[var(--text-primary)]' : 'text-sm font-semibold text-[var(--text-primary)]'}`} style={{ fontFamily: 'DM Sans, sans-serif' }}>
+        <p className={`${item.fileSizeMB !== undefined && item.fileSizeMB !== null ? 'text-base font-bold text-[var(--text-primary)]' : 'text-sm font-semibold text-[var(--text-primary)]'} mt-2`} style={{ fontFamily: 'var(--font-ui)' }}>
           ${item.price.toFixed(2)}
         </p>
       </div>
@@ -51,13 +52,13 @@ function CartItem({ item }: CartItemProps) {
       {/* Remove button */}
       <button
         onClick={handleRemove}
-        className="self-start text-[var(--text-muted)] hover:text-red-600 transition-colors p-1.5 rounded-md hover:bg-red-50"
+        className="interactive-icon flex-shrink-0 text-[var(--text-muted)] hover:text-red-500 p-2"
         aria-label="Remove item"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
