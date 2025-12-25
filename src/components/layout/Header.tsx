@@ -79,9 +79,14 @@ export default function Header() {
 
             {/* Cart Button */}
             <button
-              onClick={toggleCart}
-              className="relative text-gray-300 hover:text-white transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleCart();
+              }}
+              className="relative text-gray-300 hover:text-white transition-colors cursor-pointer"
               aria-label={`Shopping cart with ${itemCount} items`}
+              style={{ pointerEvents: 'auto' }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

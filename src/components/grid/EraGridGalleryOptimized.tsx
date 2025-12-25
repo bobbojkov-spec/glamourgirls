@@ -2,8 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import EraGridGalleryModal from './EraGridGalleryModal';
+
+// Dynamically import the modal to avoid SSR issues
+const EraGridGalleryModal = dynamic(() => import('./EraGridGalleryModal'), {
+  ssr: false,
+});
 
 interface GridItem {
   actressId: number;

@@ -88,6 +88,7 @@ export default function ConfirmationClient() {
                   actressName: item.actressName,
                   hqUrl: item.hqUrl,
                   imageUrl: item.imageUrl,
+                  thumbnailUrl: item.thumbnailUrl || item.imageUrl || '',
                   width: item.width,
                   height: item.height,
                   fileSizeMB: item.fileSizeMB,
@@ -249,77 +250,14 @@ export default function ConfirmationClient() {
             </p>
           </div>
 
-          {/* Order Details */}
+          {/* Order Summary */}
           <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-6 md:p-8 mb-6">
-            <h2
-              className="text-[var(--text-primary)] mb-4"
-              style={{
-                fontFamily: 'var(--font-headline)',
-                fontSize: 'var(--h2-size)',
-                lineHeight: 'var(--h2-line-height)',
-                letterSpacing: 'var(--h2-letter-spacing)',
-              }}
-            >
-              Order Details
-            </h2>
-            <div className="space-y-2 text-sm mb-4" style={{ fontFamily: 'var(--font-ui)' }}>
-              <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Order ID:</span>
-                <span className="font-mono text-[var(--text-primary)]">{orderData.orderId}</span>
-              </div>
-              <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Email:</span>
-                <span className="text-[var(--text-primary)]">{orderData.email}</span>
-              </div>
-              <div className="flex justify-between text-[var(--text-secondary)]">
-                <span>Items:</span>
-                <span className="text-[var(--text-primary)]">
-                  {orderData.items.length} HQ {orderData.items.length === 1 ? 'Image' : 'Images'}
-                </span>
-              </div>
-              <div className="flex justify-between font-semibold text-lg pt-2 border-t border-[var(--border-subtle)]">
-                <span className="text-[var(--text-primary)]">Total Paid:</span>
-                <span className="text-[var(--accent-gold)]">${orderData.total.toFixed(2)}</span>
+            <div className="space-y-2 text-sm pt-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              <div className="flex justify-between items-center pt-2 border-t border-[var(--border-subtle)]">
+                <span className="text-lg font-semibold text-[var(--text-primary)]">Total</span>
+                <span className="text-2xl font-bold text-[var(--text-primary)]">${orderData.total.toFixed(2)}</span>
               </div>
             </div>
-
-            {/* Item List with Details */}
-            {orderData.items.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
-                <h3
-                  className="text-[var(--text-primary)] mb-3"
-                  style={{
-                    fontFamily: 'var(--font-headline)',
-                    fontSize: 'var(--h3-size)',
-                    lineHeight: 'var(--h3-line-height)',
-                    letterSpacing: 'var(--h3-letter-spacing)',
-                  }}
-                >
-                  Purchased Images:
-                </h3>
-                <div className="space-y-2">
-                  {orderData.items.map((item, index) => (
-                    <div key={index} className="flex justify-between items-start text-xs">
-                      <div className="flex-1">
-                        <p
-                          className="font-bold text-[var(--text-primary)]"
-                          style={{ fontFamily: "'Kabel Black', sans-serif" }}
-                        >
-                          {item.actressName}
-                        </p>
-                        {(item.width || item.height || item.fileSizeMB) && (
-                          <p className="text-[var(--text-muted)] mt-0.5" style={{ fontFamily: 'var(--font-ui)' }}>
-                            {item.width && item.height && `${item.width} × ${item.height} px`}
-                            {item.width && item.height && item.fileSizeMB && ' • '}
-                            {item.fileSizeMB && `${item.fileSizeMB} MB`}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Download Instructions */}
@@ -397,10 +335,29 @@ export default function ConfirmationClient() {
                   style={{
                     backgroundColor: '#f6e5c0',
                     border: '1px solid #6f5718',
-                    boxShadow:
-                      '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
                     fontFamily: 'DM Sans, sans-serif',
                     color: 'var(--text-primary)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
+                    e.currentTarget.style.backgroundColor = '#fff5e1';
+                    e.currentTarget.style.borderColor = '#8b6f2a';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)';
+                    e.currentTarget.style.backgroundColor = '#f6e5c0';
+                    e.currentTarget.style.borderColor = '#6f5718';
+                  }}
+                  onMouseDown={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px) scale(0.98)';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                  }}
+                  onMouseUp={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
+                    e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
                   }}
                 >
                   Go to Download Page →
@@ -418,26 +375,6 @@ export default function ConfirmationClient() {
             </div>
           </div>
 
-          {/* Next Steps */}
-          <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-6 md:p-8">
-            <h3
-              className="text-[var(--text-primary)] mb-3"
-              style={{
-                fontFamily: 'var(--font-headline)',
-                fontSize: 'var(--h3-size)',
-                lineHeight: 'var(--h3-line-height)',
-                letterSpacing: 'var(--h3-letter-spacing)',
-              }}
-            >
-              What's Next?
-            </h3>
-            <ol className="list-decimal list-inside space-y-2 text-sm text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-ui)' }}>
-              <li>Click the download link above or use the code on the download page</li>
-              <li>Enter your download code when prompted</li>
-              <li>Your HQ images will automatically start downloading</li>
-              <li>Check your email ({orderData.email}) for a confirmation with these details</li>
-            </ol>
-          </div>
 
           {/* Action Buttons */}
           <div className="mt-6 flex gap-4">
@@ -454,10 +391,29 @@ export default function ConfirmationClient() {
               style={{
                 backgroundColor: '#f6e5c0',
                 border: '1px solid #6f5718',
-                boxShadow:
-                  '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
                 fontFamily: 'DM Sans, sans-serif',
                 color: 'var(--text-primary)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
+                e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
+                e.currentTarget.style.backgroundColor = '#fff5e1';
+                e.currentTarget.style.borderColor = '#8b6f2a';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)';
+                e.currentTarget.style.backgroundColor = '#f6e5c0';
+                e.currentTarget.style.borderColor = '#6f5718';
+              }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px) scale(0.98)';
+                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
+                e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
               }}
             >
               Download Now

@@ -42,18 +42,6 @@ export default function PhotoArchiveTeaser({
           {eyebrow}
         </p>
       )}
-      <h2
-        className={`text-[var(--text-primary)] ${headingAlignment}`}
-        style={{
-          fontFamily: 'var(--font-headline)',
-          fontSize: 'var(--h2-size)',
-          lineHeight: 'var(--h2-line-height)',
-          letterSpacing: 'var(--h2-letter-spacing)',
-        }}
-      >
-        Photo Archive
-      </h2>
-      <p style={{ marginBottom: '10px' }}></p>
 
       {description && (
         <p className="text-[var(--text-secondary)] mb-6 text-base leading-relaxed">

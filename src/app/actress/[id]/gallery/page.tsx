@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
 import { GalleryGrid, GalleryImage } from '@/components/gallery';
+import { fetchActressFromDb } from '@/lib/actress/fetchActress';
 
 // Era background colors
 const eraBackgrounds: Record<string, string> = {
@@ -10,30 +11,21 @@ const eraBackgrounds: Record<string, string> = {
   '60s': 'era-60s',
 };
 
-async function fetchActress(id: string) {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-    const res = await fetch(`${baseUrl}/api/actresses/${id}`, {
-      cache: 'no-store',
-    });
-    
-    if (!res.ok) {
-      throw new Error('Failed to fetch actress');
-    }
-    
-    return await res.json();
-  } catch (error) {
-    console.error('Error fetching actress:', error);
-    return null;
-  }
-}
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 
 // Helper to find HQ image for a gallery image
 function findHQ(galleryImageId: number, hqImages: any[]): any {
   // HQ is usually galleryImageId - 1
   return hqImages.find((hq: any) => hq.id === galleryImageId - 1) || 
          hqImages.find((hq: any) => hq.id === galleryImageId + 1);
+}
+
+// Helper function to check if image meets HQ requirements (minimum 1200px on long side)
+function isHQImage(width?: number, height?: number): boolean {
+  if (!width || !height) return false;
+  const longSide = Math.max(width, height);
+  return longSide >= 1200;
 }
 
 interface PageProps {
@@ -43,20 +35,26 @@ interface PageProps {
 export default async function GalleryPage({ params }: PageProps) {
   const { id } = await params;
   
-  // Fetch actress data from API
-  const actressData = await fetchActress(id);
+  // Validate and convert id to number
+  const actressId = parseInt(id);
+  if (isNaN(actressId) || actressId <= 0) {
+    notFound();
+    return;
+  }
+  
+  // Fetch directly from database (no HTTP call)
+  let actressData = null;
+  try {
+    actressData = await fetchActressFromDb(actressId);
+  } catch (error) {
+    console.error(`Error fetching actress ${actressId}:`, error);
+    notFound();
+    return;
+  }
   
   if (!actressData) {
-    return (
-      <div className="min-h-full flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl mb-4">Actress not found</h1>
-          <Link href="/search" className="text-vintage-brown hover:underline">
-            Return to Search
-          </Link>
-        </div>
-      </div>
-    );
+    notFound();
+    return;
   }
 
   // Redirect to slug-based URL if slug is available
@@ -70,8 +68,9 @@ export default async function GalleryPage({ params }: PageProps) {
   const galleryImages: GalleryImage[] = (actressData.images?.gallery || []).map((galleryImg: any) => {
     const hqImage = findHQ(galleryImg.id, actressData.images?.hq || []);
     
-    // Default price calculation (you can adjust this)
-    const price = hqImage ? 9.90 : undefined;
+    // Only mark as HQ if it meets the 1200px minimum requirement
+    const meetsHQRequirement = hqImage && isHQImage(hqImage.width, hqImage.height);
+    const price = meetsHQRequirement ? 9.90 : undefined;
     
     // Use thumbnailUrl from API, or fallback to gallery image
     const thumbnailUrl = galleryImg.thumbnailUrl || galleryImg.url;
@@ -83,10 +82,10 @@ export default async function GalleryPage({ params }: PageProps) {
       width: galleryImg.width,
       height: galleryImg.height,
       price,
-      hasHQ: !!hqImage,
-      hqWidth: hqImage?.width,
-      hqHeight: hqImage?.height,
-      hqUrl: hqImage?.url,
+      hasHQ: !!meetsHQRequirement,
+      hqWidth: meetsHQRequirement ? hqImage?.width : undefined,
+      hqHeight: meetsHQRequirement ? hqImage?.height : undefined,
+      hqUrl: meetsHQRequirement ? hqImage?.url : undefined,
     };
   });
 

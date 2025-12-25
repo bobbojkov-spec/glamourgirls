@@ -138,8 +138,8 @@ export default async function RootLayout({
           <CartProvider>
             <FavoritesProvider>
               {children}
-              {/* Cart Drawer for actress pages */}
-              {isActress && <CartDrawer />}
+              {/* Cart Drawer - always available */}
+              <CartDrawer />
             </FavoritesProvider>
           </CartProvider>
         </body>

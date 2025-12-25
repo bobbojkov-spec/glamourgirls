@@ -46,25 +46,39 @@ export default function HeroGalleryButton({ galleryImages, actressId, actressNam
   return (
     <>
       <button
-        className="mt-8 inline-flex items-center justify-center rounded-lg px-8 py-3 text-sm font-medium tracking-wide uppercase text-[var(--text-primary)] transition-all duration-300 relative overflow-hidden group"
+        className="w-full sm:w-auto sm:mt-8 inline-flex items-center justify-center rounded-lg py-2.5 sm:py-3 text-sm font-medium tracking-wide uppercase text-[var(--text-primary)] transition-all duration-300 relative overflow-hidden group"
         style={{
           backgroundColor: '#fef9eb',
           border: '1px solid #6f5718',
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
           fontFamily: 'DM Sans, sans-serif',
+          paddingLeft: '22px', // 30% less than 32px (px-8)
+          paddingRight: '22px', // 30% less than 32px (px-8)
         }}
         onClick={() => openGalleryImage(0)}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
-          e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
-          e.currentTarget.style.backgroundColor = '#fff5e1';
-          e.currentTarget.style.borderColor = '#8b6f2a';
+          if (window.innerWidth >= 768) {
+            e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
+            e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
+            e.currentTarget.style.backgroundColor = '#fff5e1';
+            e.currentTarget.style.borderColor = '#8b6f2a';
+          }
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'translateY(0) scale(1)';
           e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)';
           e.currentTarget.style.backgroundColor = '#fef9eb';
           e.currentTarget.style.borderColor = '#6f5718';
+        }}
+        onTouchStart={(e) => {
+          e.currentTarget.style.transform = 'scale(0.95)';
+          e.currentTarget.style.opacity = '0.9';
+        }}
+        onTouchEnd={(e) => {
+          setTimeout(() => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.opacity = '1';
+          }, 150);
         }}
       >
         <span className="relative z-10 flex items-center gap-2">
@@ -78,13 +92,14 @@ export default function HeroGalleryButton({ galleryImages, actressId, actressNam
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="group-hover:scale-110 transition-transform duration-300"
+            className="group-hover:scale-110 transition-transform duration-300 flex-shrink-0"
           >
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
             <circle cx="8.5" cy="8.5" r="1.5" />
             <polyline points="21 15 16 10 5 21" />
           </svg>
-          View Photo Archive
+          <span className="hidden sm:inline">View Photo Archive</span>
+          <span className="sm:hidden">PHOTOS</span>
         </span>
         <div 
           className="absolute inset-0 bg-gradient-to-r from-[#1890ff]/20 via-[#1890ff]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"

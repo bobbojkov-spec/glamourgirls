@@ -82,7 +82,7 @@ export async function GET(
 
     // Fetch images - match frontend filtering exactly: mytp IN (3, 4, 5) with valid paths and dimensions
     const [imageRows] = await pool.execute(
-      `SELECT id, path, width, height, mytp 
+      `SELECT id, path, width, height, mytp, description
        FROM images 
        WHERE girlid = ? 
          AND mytp IN (3, 4, 5)
@@ -93,10 +93,23 @@ export async function GET(
        ORDER BY id ASC`,
       [girlId]
     ) as any[];
+    
+    // Also fetch HQ images with description
+    const [hqImageRows] = await pool.execute(
+      `SELECT id, path, width, height, description
+       FROM images 
+       WHERE girlid = ? 
+         AND mytp = 5
+         AND path IS NOT NULL 
+         AND path != ''
+       ORDER BY id ASC`,
+      [girlId]
+    ) as any[];
 
     // Separate gallery and HQ images
     const galleryImages = imageRows.filter((img: any) => img.mytp === 4);
-    const hqImages = imageRows.filter((img: any) => img.mytp === 5);
+    // Use hqImageRows for HQ images to get description field
+    const hqImages = hqImageRows || [];
 
     // Create a map of HQ images by matching ID pattern
     const hqMap = new Map();
@@ -111,6 +124,21 @@ export async function GET(
       }
     });
 
+    // Helper function to convert database paths to Supabase Storage URLs
+    const getStorageUrl = (path: string | null | undefined): string => {
+      if (!path) return '';
+      if (path.startsWith('http')) return path; // Already a URL
+      
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl) {
+        // Fallback to local path if Supabase URL not set
+        return path.startsWith('/') ? path : `/${path}`;
+      }
+      
+      const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+      return `${supabaseUrl}/storage/v1/object/public/glamourgirls_images/${cleanPath}`;
+    };
+
     // Format images for the form
     const formattedImages = galleryImages.map((img: any) => {
       const imgPath = String(img.path || '');
@@ -119,15 +147,17 @@ export async function GET(
       return {
         id: Number(img.id) || 0,
         path: imgPath,
-        url: imgPath ? (imgPath.startsWith('/') ? imgPath : `/${imgPath}`) : '',
+        url: getStorageUrl(imgPath), // Convert to Supabase URL
         width: Number(img.width) || 0,
         height: Number(img.height) || 0,
+        description: img.description || null,
         type: Number(img.mytp) || 0,
         hq: hqImage ? {
           id: Number(hqImage.id) || 0,
           width: Number(hqImage.width) || 0,
           height: Number(hqImage.height) || 0,
-          url: String(hqImage.path || ''),
+          url: getStorageUrl(hqImage.path), // Convert to Supabase URL
+          description: hqImage.description || null,
         } : null,
       };
     });

@@ -1,84 +1,151 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-interface DecadeChipProps {
-  decade: string;
-  isActive: boolean;
-  onClick: () => void;
-}
-
-function DecadeChip({ decade, isActive, onClick }: DecadeChipProps) {
-  // Split decade into year and 's'
-  const year = decade.slice(0, -1); // e.g., "1920"
-  const suffix = decade.slice(-1); // e.g., "s"
-  
-  return (
-    <button
-      onClick={onClick}
-      className="inline-flex items-center justify-center rounded-lg px-3 py-2 text-[10px] font-medium tracking-wide uppercase text-[var(--text-primary)] transition-all duration-300 relative overflow-hidden group flex-1 min-w-0"
-      style={{
-        backgroundColor: isActive ? '#fff5e1' : '#fef9eb',
-        border: isActive ? '1px solid #8b6f2a' : '1px solid #6f5718',
-        boxShadow: isActive 
-          ? '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)' 
-          : '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
-        fontFamily: "'Kabel Black', sans-serif",
-        transform: isActive ? 'translateY(-3px) scale(1.02)' : 'translateY(0) scale(1)',
-      }}
-      onMouseEnter={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
-          e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
-          e.currentTarget.style.backgroundColor = '#fff5e1';
-          e.currentTarget.style.borderColor = '#8b6f2a';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isActive) {
-          e.currentTarget.style.transform = 'translateY(0) scale(1)';
-          e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)';
-          e.currentTarget.style.backgroundColor = '#fef9eb';
-          e.currentTarget.style.borderColor = '#6f5718';
-        }
-      }}
-    >
-      <span className="relative z-10 whitespace-nowrap">
-        <span style={{ fontSize: '11px' }}>{year}</span>
-        <span style={{ fontSize: '8px', fontVariant: 'small-caps' }}>{suffix}</span>
-      </span>
-      <div 
-        className="absolute inset-0 bg-gradient-to-r from-[#1890ff]/20 via-[#1890ff]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-      />
-    </button>
-  );
+interface AutocompleteSuggestion {
+  id: number;
+  name: string;
+  firstName: string;
+  lastName: string;
+  slug: string;
 }
 
 export default function ActressFinder() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeDecade, setActiveDecade] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<AutocompleteSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const decades = ['1920s', '1930s', '1940s', '1950s', '1960s'];
+  // Debounced autocomplete fetch
+  const fetchSuggestions = useCallback(async (query: string) => {
+    if (query.length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
 
-  // Map decade to era value used in search
-  const getEraFromDecade = (decade: string): string => {
-    const eraMap: Record<string, string> = {
-      '1920s': '20-30s',
-      '1930s': '20-30s',
-      '1940s': '40s',
-      '1950s': '50s',
-      '1960s': '60s',
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/actresses/autocomplete?q=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data);
+        setShowSuggestions(data.length > 0);
+        setSelectedIndex(-1);
+      }
+    } catch (error) {
+      console.error('Error fetching autocomplete:', error);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Handle input change with debouncing
+  const handleInputChange = (value: string) => {
+    setSearchQuery(value);
+    
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new timer
+    debounceTimerRef.current = setTimeout(() => {
+      fetchSuggestions(value);
+    }, 300);
+  };
+
+  // Handle suggestion selection
+  const handleSuggestionSelect = (suggestion: AutocompleteSuggestion) => {
+    setSearchQuery(suggestion.name);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    
+    // Navigate to actress page
+    if (suggestion.slug) {
+      router.push(`/actress/${suggestion.slug}`);
+    } else {
+      router.push(`/actress/${suggestion.id}`);
+    }
+  };
+
+  // Handle search button click or Enter key
+  const handleSearch = () => {
+    if (searchQuery.trim().length >= 3) {
+      setShowSuggestions(false);
+      router.push(`/search?keyword=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) {
+      if (e.key === 'Enter') {
+        handleSearch();
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex((prev) => 
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
+          handleSuggestionSelect(suggestions[selectedIndex]);
+        } else {
+          handleSearch();
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        break;
+    }
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
     };
-    return eraMap[decade] || '50s';
-  };
 
-  const handleDecadeClick = (decade: string) => {
-    const era = getEraFromDecade(decade);
-    // Navigate to search page with era filter
-    router.push(`/search?era=${era}`);
-  };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Cleanup debounce timer
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <section className="bg-[var(--bg-page)]">
@@ -86,15 +153,8 @@ export default function ActressFinder() {
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--text-muted)] mb-3">
           Search actresses
         </p>
-        <h2
-          className="text-[var(--text-primary)] mb-[var(--heading-gap)]"
-          style={{ fontFamily: 'var(--font-headline)', fontSize: 'var(--h2-size)', letterSpacing: 'var(--h2-letter-spacing)' }}
-        >
-          Explore legends
-        </h2>
-        <p style={{ marginBottom: '10px' }}></p>
 
-        <div className="flex flex-col gap-4">
+        <div className="relative">
           <div className="relative flex items-center rounded-lg overflow-hidden border border-gray-300">
             {/* Magnifying Glass Icon on Left */}
             <div className="absolute left-4 z-10 pointer-events-none">
@@ -105,41 +165,47 @@ export default function ActressFinder() {
             
             {/* Input */}
             <input
+              ref={inputRef}
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  if (searchQuery.trim()) {
-                    window.location.href = `/search?keyword=${encodeURIComponent(searchQuery)}`;
-                  }
+              onChange={(e) => handleInputChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => {
+                if (suggestions.length > 0 && searchQuery.length >= 3) {
+                  setShowSuggestions(true);
                 }
               }}
-              placeholder="input search text"
+              placeholder="Type at least 3 letters to search..."
               className="flex-1 pl-12 pr-0 py-3 border-0 rounded-l-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none"
             />
             
+            {/* Loading indicator */}
+            {isLoading && (
+              <div className="absolute right-20 z-10">
+                <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            )}
+            
             {/* Search Button - Darker Glamour Girls Colors */}
             <button
-              onClick={() => {
-                if (searchQuery.trim()) {
-                  window.location.href = `/search?keyword=${encodeURIComponent(searchQuery)}`;
-                }
-              }}
-              disabled={!searchQuery.trim()}
+              onClick={handleSearch}
+              disabled={!searchQuery.trim() || searchQuery.trim().length < 3}
               className="px-6 py-3 rounded-r-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
-                backgroundColor: searchQuery.trim() ? '#8b6f2a' : '#6f5718',
+                backgroundColor: searchQuery.trim().length >= 3 ? '#8b6f2a' : '#6f5718',
                 color: '#ffffff',
                 borderLeft: '1px solid #6f5718',
               }}
               onMouseEnter={(e) => {
-                if (searchQuery.trim()) {
+                if (searchQuery.trim().length >= 3) {
                   e.currentTarget.style.backgroundColor = '#6f5718';
                 }
               }}
               onMouseLeave={(e) => {
-                if (searchQuery.trim()) {
+                if (searchQuery.trim().length >= 3) {
                   e.currentTarget.style.backgroundColor = '#8b6f2a';
                 }
               }}
@@ -148,18 +214,35 @@ export default function ActressFinder() {
             </button>
           </div>
 
-          <div className="flex gap-2 w-full">
-            {decades.map((decade) => (
-              <DecadeChip
-                key={decade}
-                decade={decade}
-                isActive={activeDecade === decade}
-                onClick={() => handleDecadeClick(decade)}
-              />
-            ))}
-          </div>
+          {/* Autocomplete Suggestions Dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div
+              ref={suggestionsRef}
+              className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+            >
+              {suggestions.map((suggestion, index) => (
+                <button
+                  key={suggestion.id}
+                  type="button"
+                  onClick={() => handleSuggestionSelect(suggestion)}
+                  className={`w-full text-left px-4 py-3 hover:bg-gray-100 transition-colors ${
+                    index === selectedIndex ? 'bg-gray-100' : ''
+                  } ${index === 0 ? 'rounded-t-lg' : ''} ${
+                    index === suggestions.length - 1 ? 'rounded-b-lg' : ''
+                  }`}
+                  onMouseEnter={() => setSelectedIndex(index)}
+                >
+                  <div className="font-medium text-gray-900">{suggestion.name}</div>
+                  {(suggestion.firstName || suggestion.lastName) && (
+                    <div className="text-sm text-gray-500 mt-0.5">
+                      {suggestion.firstName} {suggestion.lastName}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-
       </div>
     </section>
   );

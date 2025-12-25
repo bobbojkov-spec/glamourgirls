@@ -15,6 +15,7 @@ export interface GalleryImage {
   hqWidth?: number;
   hqHeight?: number;
   hqUrl?: string;
+  fileSizeMB?: number;
 }
 
 interface GalleryGridProps {

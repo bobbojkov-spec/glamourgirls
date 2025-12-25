@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import CartItem from './CartItem';
@@ -8,25 +9,25 @@ export default function CartDrawer() {
   const router = useRouter();
   const { items, isOpen, closeCart, totalPrice, subtotal, discountRate, discountAmount, clearCart } = useCart();
 
-  if (!isOpen) return null;
-
-  const handleCheckout = () => {
-    console.log('Proceeding to checkout with items:', items.length);
-    console.log('Items:', items);
+  const handleCheckout = useCallback(() => {
+    if (items.length === 0) {
+      return;
+    }
     
-    // Save cart to localStorage before navigation
-    const itemsJson = JSON.stringify(items);
-    localStorage.setItem('hq_cart_items', itemsJson);
-    console.log('Saved to localStorage:', itemsJson.length, 'characters');
+    // Save cart to localStorage before navigation (non-blocking)
+    try {
+      const itemsJson = JSON.stringify(items);
+      localStorage.setItem('hq_cart_items', itemsJson);
+    } catch (error) {
+      console.error('Failed to save cart to localStorage:', error);
+    }
     
-    // Verify it was saved
-    const verify = localStorage.getItem('hq_cart_items');
-    console.log('Verified localStorage:', verify ? 'saved successfully' : 'FAILED');
-    
-    // Navigate to checkout
-    router.push('/checkout');
+    // Close cart and navigate immediately (no delay needed)
     closeCart();
-  };
+    router.push('/checkout');
+  }, [items, closeCart, router]);
+
+  if (!isOpen) return null;
 
   return (
     <>
@@ -40,13 +41,16 @@ export default function CartDrawer() {
       {/* Drawer */}
       <div className="fixed top-0 right-0 h-full w-full max-w-md bg-[var(--bg-surface)] shadow-[var(--shadow-lift)] z-[999] flex flex-col" style={{ fontFamily: 'DM Sans, sans-serif' }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-alt)]">
-          <h2 className="text-[var(--text-3xl)] text-[var(--text-primary)]" style={{ 
-            fontFamily: 'var(--font-vintage-headline)', 
-            letterSpacing: '0.06em',
-            lineHeight: '1.2',
-            textTransform: 'uppercase'
-          }}>
+        <div className="flex items-center justify-between px-6 py-5 mb-6 border-b border-[var(--border-subtle)] pb-5">
+          <h2
+            className="text-[var(--text-primary)]"
+            style={{
+              fontFamily: 'var(--font-headline)',
+              fontSize: 'var(--h2-size)',
+              letterSpacing: 'var(--h2-letter-spacing)',
+              lineHeight: 'var(--h2-line-height)',
+            }}
+          >
             Your Cart
           </h2>
           <button
@@ -117,7 +121,7 @@ export default function CartDrawer() {
             {/* Total */}
             <div className="flex items-center justify-between mb-5 pt-3 border-t border-[var(--border-subtle)]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
               <span className="text-base font-semibold text-[var(--text-primary)]">Total</span>
-              <span className="text-xl font-bold text-[var(--accent-gold)]">
+              <span className="text-xl font-bold text-[var(--text-primary)]">
                 ${totalPrice.toFixed(2)}
               </span>
             </div>
@@ -126,8 +130,34 @@ export default function CartDrawer() {
             <div className="space-y-3">
               <button
                 onClick={handleCheckout}
-                className="w-full bg-[var(--accent-gold)] text-white py-3.5 px-4 rounded-md font-medium text-sm hover:bg-[var(--accent-gold)]/90 transition-all duration-200 shadow-sm hover:shadow-md"
-                style={{ fontFamily: 'DM Sans, sans-serif' }}
+                className="w-full py-3.5 px-4 rounded-lg font-medium text-sm tracking-wide uppercase transition-all duration-300 relative overflow-hidden group"
+                style={{
+                  backgroundColor: '#f6e5c0',
+                  border: '1px solid #6f5718',
+                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
+                  fontFamily: 'DM Sans, sans-serif',
+                  color: 'var(--text-primary)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
+                  e.currentTarget.style.backgroundColor = '#fff5e1';
+                  e.currentTarget.style.borderColor = '#8b6f2a';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)';
+                  e.currentTarget.style.backgroundColor = '#f6e5c0';
+                  e.currentTarget.style.borderColor = '#6f5718';
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px) scale(0.98)';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
+                  e.currentTarget.style.boxShadow = '0 10px 20px rgba(0, 0, 0, 0.15), 0 6px 10px rgba(0, 0, 0, 0.1)';
+                }}
               >
                 Proceed to Checkout
               </button>

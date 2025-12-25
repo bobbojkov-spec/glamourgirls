@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from 'react';
 import { getCookie, setCookie } from '@/lib/cookies';
 
 export interface CartItem {
@@ -11,13 +11,14 @@ export interface CartItem {
   price: number;
   width: number;
   height: number;
+  fileSizeMB?: number;
 }
 
 interface CartContextType {
   items: CartItem[];
   isOpen: boolean;
   addItem: (item: CartItem) => void;
-  removeItem: (id: string) => void;
+  removeItem: (id: string | number) => void;
   clearCart: () => void;
   openCart: () => void;
   closeCart: () => void;
@@ -27,7 +28,7 @@ interface CartContextType {
   discountRate: number;
   discountAmount: number;
   itemCount: number;
-  isInCart: (id: string) => boolean;
+  isInCart: (id: string | number) => boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -46,7 +47,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (cookieData) {
         const parsed = JSON.parse(cookieData);
         if (Array.isArray(parsed)) {
-          setItems(parsed);
+          // Normalize IDs to strings when loading from cookie
+          const normalizedItems = parsed.map((item: CartItem) => ({
+            ...item,
+            id: String(item.id).trim(),
+          }));
+          setItems(normalizedItems);
         }
       }
     } catch (error) {
@@ -56,29 +62,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Save cart to cookie whenever it changes
+  // Save cart to cookie whenever it changes (debounced to avoid excessive writes)
   useEffect(() => {
     if (isInitialized) {
-      try {
-        setCookie(CART_COOKIE_NAME, JSON.stringify(items), 365);
-      } catch (error) {
-        console.error('Error saving cart to cookie:', error);
-      }
+      // Debounce cookie saves to avoid excessive writes
+      const timeoutId = setTimeout(() => {
+        try {
+          setCookie(CART_COOKIE_NAME, JSON.stringify(items), 365);
+        } catch (error) {
+          console.error('Error saving cart to cookie:', error);
+        }
+      }, 300); // Wait 300ms after last change
+
+      return () => clearTimeout(timeoutId);
     }
   }, [items, isInitialized]);
 
   const addItem = useCallback((item: CartItem) => {
     setItems((prev) => {
-      // Don't add duplicates
-      if (prev.some((i) => i.id === item.id)) {
+      // Normalize ID to string and trim whitespace for consistent comparison
+      const normalizedId = String(item.id).trim();
+      const normalizedItem = { ...item, id: normalizedId };
+      
+      // Don't add duplicates - check if item with same ID already exists
+      // Use strict comparison after normalizing both sides
+      const existingIndex = prev.findIndex((i) => String(i.id).trim() === normalizedId);
+      if (existingIndex !== -1) {
+        // Item already exists, return previous state unchanged
         return prev;
       }
-      return [...prev, item];
+      return [...prev, normalizedItem];
     });
   }, []);
 
-  const removeItem = useCallback((id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+  const removeItem = useCallback((id: string | number) => {
+    const normalizedId = String(id).trim();
+    setItems((prev) => prev.filter((item) => String(item.id).trim() !== normalizedId));
   }, []);
 
   const clearCart = useCallback(() => {
@@ -89,22 +108,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const closeCart = useCallback(() => setIsOpen(false), []);
   const toggleCart = useCallback(() => setIsOpen((prev) => !prev), []);
 
-  const isInCart = useCallback((id: string) => {
-    return items.some((item) => item.id === id);
+  const isInCart = useCallback((id: string | number) => {
+    const normalizedId = String(id).trim();
+    return items.some((item) => String(item.id).trim() === normalizedId);
   }, [items]);
 
   // Calculate discount based on item count
-  const calculateDiscount = (count: number): number => {
+  const calculateDiscount = useCallback((count: number): number => {
     if (count >= 10) return 0.20; // 20% discount for 10+ images
     if (count >= 5) return 0.10; // 10% discount for 5+ images
     return 0; // No discount
-  };
+  }, []);
 
-  const subtotal = items.reduce((sum, item) => sum + item.price, 0);
-  const discountRate = calculateDiscount(items.length);
-  const discountAmount = subtotal * discountRate;
-  const totalPrice = subtotal - discountAmount;
-  const itemCount = items.length;
+  // Memoize calculations to avoid recalculating on every render
+  const { subtotal, discountRate, discountAmount, totalPrice, itemCount } = useMemo(() => {
+    const sub = items.reduce((sum, item) => sum + item.price, 0);
+    const rate = calculateDiscount(items.length);
+    const discount = sub * rate;
+    const total = sub - discount;
+    return {
+      subtotal: sub,
+      discountRate: rate,
+      discountAmount: discount,
+      totalPrice: total,
+      itemCount: items.length,
+    };
+  }, [items, calculateDiscount]);
 
   return (
     <CartContext.Provider

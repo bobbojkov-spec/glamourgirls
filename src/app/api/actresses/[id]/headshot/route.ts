@@ -94,29 +94,49 @@ export async function GET(
           let finalHeight = headshotImage.height;
 
           if (needsProcessing) {
-            // Process the image: crop 40px from top, 40px from bottom, 25px from left, 28px from right
+            // Process headshot to exact size: 190px width × 245px height
+            // Rule: Make height 245px, crop width to 190px (centered)
+            // If image is smaller, resize to height 245px (blow up), then crop width to 190px
+            const TARGET_WIDTH = 190;
+            const TARGET_HEIGHT = 245;
             const metadata = await sharp(imageBuffer).metadata();
             
             if (metadata.width && metadata.height) {
-              const left = 25;
-              const top = 40;
-              const width = metadata.width - 53; // 25px from left, 28px from right
-              const height = metadata.height - 80; // 40px from top and bottom
+              // Step 1: Resize height to 225px (maintain aspect ratio, allow enlarging if smaller)
+              let processedImage = sharp(imageBuffer).resize(null, TARGET_HEIGHT, {
+                fit: 'inside',
+                withoutEnlargement: false, // Allow enlarging smaller images
+              });
+              
+              // Step 2: Get dimensions after height resize
+              const resizedBuffer = await processedImage.toBuffer();
+              const resizedMeta = await sharp(resizedBuffer).metadata();
+              const resizedWidth = resizedMeta.width || TARGET_WIDTH;
+              
+              // Step 3: Crop width to 180px (centered) if needed
+              if (resizedWidth > TARGET_WIDTH) {
+                const cropLeft = Math.floor((resizedWidth - TARGET_WIDTH) / 2);
+                processedImage = sharp(resizedBuffer).extract({
+                  left: cropLeft,
+                  top: 0,
+                  width: TARGET_WIDTH,
+                  height: TARGET_HEIGHT,
+                });
+              } else if (resizedWidth < TARGET_WIDTH) {
+                // If width is smaller, resize to exact dimensions (cover mode)
+                processedImage = sharp(resizedBuffer).resize(TARGET_WIDTH, TARGET_HEIGHT, {
+                  fit: 'cover', // Cover the area, may crop
+                });
+              }
 
-              // Crop and convert to JPEG
-              finalBuffer = await sharp(imageBuffer)
-                .extract({
-                  left,
-                  top,
-                  width,
-                  height,
-                })
+              // Convert to JPEG
+              finalBuffer = await processedImage
                 .jpeg({ quality: 90, mozjpeg: true })
                 .toBuffer();
 
               const finalMetadata = await sharp(finalBuffer).metadata();
-              finalWidth = finalMetadata.width || width;
-              finalHeight = finalMetadata.height || height;
+              finalWidth = finalMetadata.width || TARGET_WIDTH;
+              finalHeight = finalMetadata.height || TARGET_HEIGHT;
             }
           }
 

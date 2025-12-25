@@ -39,18 +39,6 @@ export default function TheirMen() {
       <section className="bg-[var(--bg-page)]">
         <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-5 md:p-6">
           <p className="text-xs uppercase tracking-[0.35em] text-[var(--text-muted)] mb-2">Their Men</p>
-          <h3
-            className="text-[var(--text-primary)]"
-            style={{
-              fontFamily: 'var(--font-headline)',
-              fontSize: 'var(--h2-size)',
-              lineHeight: 'var(--h2-line-height)',
-              letterSpacing: 'var(--h2-letter-spacing)',
-            }}
-          >
-            Behind the Scenes
-          </h3>
-          <p style={{ marginBottom: '10px' }}></p>
           <div className="text-center py-4">
             <p className="text-sm text-[var(--text-secondary)]">Loading...</p>
           </div>
@@ -65,34 +53,44 @@ export default function TheirMen() {
     <section className="bg-[var(--bg-page)]">
       <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-5 md:p-6">
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--text-muted)] mb-2">Their Men</p>
-        <h3
-          className="text-[var(--text-primary)]"
-          style={{
-            fontFamily: 'var(--font-headline)',
-            fontSize: 'var(--h2-size)',
-            lineHeight: 'var(--h2-line-height)',
-            letterSpacing: 'var(--h2-letter-spacing)',
-          }}
-        >
-          Behind the Scenes
-        </h3>
-        <p style={{ marginBottom: '10px' }}></p>
-        <ul className="space-y-4">
-          {men.map((man) => (
-            <li key={man.id}>
-              <Link
-                href={`/actress/${man.id}/${man.slug}`}
-                className="block border-b border-[var(--border-subtle)] pb-4 last:border-0 last:pb-0 hover:opacity-80 transition-opacity"
-              >
-                <p className="text-base text-[var(--text-primary)] leading-tight uppercase font-bold mb-1" style={{ fontFamily: "'Kabel Black', sans-serif" }}>
-                  {man.name}
-                </p>
-                <p className="text-xs uppercase tracking-[0.25em] text-[var(--text-muted)]">
-                  {man.description}
-                </p>
-              </Link>
-            </li>
-          ))}
+        
+        {/* Vertical list - matching RelatedActressesGrid style */}
+        <ul className="space-y-0 mt-[15px]">
+          {men.map((man) => {
+            const headshotUrl = `/api/actresses/${man.id}/headshot`;
+            return (
+              <li key={man.id}>
+                <Link
+                  href={`/actress/${man.id}/${man.slug}`}
+                  className="flex items-center gap-3 py-3 px-2 rounded-lg border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-alt)] transition-all duration-200 active:scale-[0.99] group"
+                >
+                  {/* Small headshot on the left */}
+                  <div className="w-12 h-16 flex-shrink-0 bg-[var(--bg-surface-alt)] rounded overflow-hidden border border-[var(--border-subtle)]">
+                    <img
+                      src={headshotUrl}
+                      alt={man.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        // Hide broken image
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Name on the right */}
+                  <span
+                    className="uppercase flex-1 group-hover:text-[var(--accent-gold)] transition-colors"
+                    style={{
+                      fontFamily: "'Kabel Black', sans-serif",
+                    }}
+                  >
+                    {man.name}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </section>

@@ -1,11 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
 import pool, { getPool } from '@/lib/db';
 import { requireAdminApi } from '@/app/api/admin/_auth';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
+
+// Helper function to upload to Supabase storage
+async function uploadToSupabase(
+  supabase: any,
+  bucket: string,
+  filePath: string,
+  buffer: Buffer,
+  contentType: string = 'image/jpeg'
+): Promise<string> {
+  const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
+  
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(cleanPath, buffer, {
+      contentType,
+      upsert: true, // Overwrite if exists
+    });
+
+  if (error) {
+    throw new Error(`Supabase upload failed: ${error.message}`);
+  }
+
+  return cleanPath;
+}
+
+// Helper function to format image description: "2557 × 3308 px (24.2 MB)"
+function formatImageDescription(width: number, height: number, fileSizeBytes: number): string {
+  const fileSizeMB = (fileSizeBytes / (1024 * 1024)).toFixed(1);
+  return `${width} × ${height} px (${fileSizeMB} MB)`;
+}
 
 // Helper function to create watermark using SVG (Vercel-compatible)
 function createWatermarkSVG(text: string, imageWidth: number, imageHeight: number): Buffer {
@@ -117,12 +147,21 @@ export async function POST(request: NextRequest) {
       const GALLERY_MAX_SIZE = 900; // Gallery images max 900px on longer side
       const HQ_THRESHOLD = 1500; // Images > 1500px get HQ version
 
-      // Determine folder (use newpic for new uploads, or check if securepic exists)
+      // Determine folder (use newpic for new uploads)
       const folderName = 'newpic'; // Default to newpic
-      const actressFolder = path.join(process.cwd(), 'public', folderName, actressId.toString());
+
+      // Initialize Supabase client for storage uploads (REQUIRED)
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       
-      // Create folder if it doesn't exist
-      await mkdir(actressFolder, { recursive: true });
+      if (!supabaseUrl || !supabaseKey) {
+        return NextResponse.json(
+          { error: 'Supabase configuration missing. Cannot upload images.' },
+          { status: 500 }
+        );
+      }
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
       // Generate unique filename (timestamp + random)
       const timestamp = Date.now();
@@ -135,25 +174,31 @@ export async function POST(request: NextRequest) {
       let galleryWidth = width;
       let galleryHeight = height;
       let hqImageId: number | null = null;
+      let galleryBuffer: Buffer; // Declare outside if/else for thumbnail creation
 
       // If longer side > 1500px, save original as HQ and create resized gallery image
       if (longerSide > HQ_THRESHOLD) {
-        // Save original as HQ (mytp = 5)
+        // Upload original as HQ (mytp = 5) to Supabase storage (images_raw bucket for HQ)
         const hqFileName = `${baseFileName}_hq${fileExt}`;
-        const hqPath = path.join(actressFolder, hqFileName);
-        await writeFile(hqPath, buffer);
         const hqDbPath = `/${folderName}/${actressId}/${hqFileName}`;
+        const hqStoragePath = `${folderName}/${actressId}/${hqFileName}`;
+        
+        // Upload HQ to Supabase storage
+        await uploadToSupabase(supabase, 'images_raw', hqStoragePath, buffer, file.type || 'image/jpeg');
         
         // Get file size in bytes
         const hqFileSize = buffer.length;
+        
+        // Generate description for HQ images if longer side > 1200px
+        const hqDescription = longerSide > 1200 ? formatImageDescription(width, height, hqFileSize) : null;
 
         // Insert HQ image into database
         let hqRows: any;
         try {
           const result = await fileClient.query(
-            `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
-             VALUES ($1, $2, $3, $4, 5, $5, $6) RETURNING id`,
-            [actressId, hqDbPath, width, height, file.type || 'image/jpeg', hqFileSize]
+            `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz, description) 
+             VALUES ($1, $2, $3, $4, 5, $5, $6, $7) RETURNING id`,
+            [actressId, hqDbPath, width, height, file.type || 'image/jpeg', hqFileSize, hqDescription]
           );
           hqRows = { rows: result.rows };
         } catch (insertError: any) {
@@ -168,9 +213,9 @@ export async function POST(request: NextRequest) {
             // Start new transaction and retry
             await fileClient.query('BEGIN');
             const result = await fileClient.query(
-              `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
-               VALUES ($1, $2, $3, $4, 5, $5, $6) RETURNING id`,
-              [actressId, hqDbPath, width, height, file.type || 'image/jpeg', hqFileSize]
+              `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz, description) 
+               VALUES ($1, $2, $3, $4, 5, $5, $6, $7) RETURNING id`,
+              [actressId, hqDbPath, width, height, file.type || 'image/jpeg', hqFileSize, hqDescription]
             );
             hqRows = { rows: result.rows };
           } else {
@@ -198,7 +243,7 @@ export async function POST(request: NextRequest) {
         const watermarkSVG = createWatermarkSVG(watermarkText, resizedWidth, resizedHeight);
         
         // Composite watermark onto gallery image
-        const galleryBuffer = await galleryImage
+        galleryBuffer = await galleryImage
           .composite([{
             input: watermarkSVG,
             top: 0,
@@ -208,9 +253,11 @@ export async function POST(request: NextRequest) {
           .toBuffer();
 
         const galleryFileName = `${baseFileName}${fileExt}`;
-        const galleryPath = path.join(actressFolder, galleryFileName);
-        await writeFile(galleryPath, galleryBuffer);
         galleryDbPath = `/${folderName}/${actressId}/${galleryFileName}`;
+        const galleryStoragePath = `${folderName}/${actressId}/${galleryFileName}`;
+        
+        // Upload gallery image to Supabase storage (glamourgirls_images bucket)
+        await uploadToSupabase(supabase, 'glamourgirls_images', galleryStoragePath, galleryBuffer, 'image/jpeg');
 
         // Get gallery image dimensions
         const galleryMeta = await sharp(galleryBuffer).metadata();
@@ -219,14 +266,17 @@ export async function POST(request: NextRequest) {
 
         // Get gallery file size
         const galleryFileSize = galleryBuffer.length;
+        
+        // Generate description for gallery images if original longer side > 1200px
+        const galleryDescription = longerSide > 1200 ? formatImageDescription(galleryWidth, galleryHeight, galleryFileSize) : null;
 
         // Insert gallery image into database
         let galleryRows: any;
         try {
           const result = await fileClient.query(
-            `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
-             VALUES ($1, $2, $3, $4, 4, $5, $6) RETURNING id`,
-            [actressId, galleryDbPath, galleryWidth, galleryHeight, file.type || 'image/jpeg', galleryFileSize]
+            `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz, description) 
+             VALUES ($1, $2, $3, $4, 4, $5, $6, $7) RETURNING id`,
+            [actressId, galleryDbPath, galleryWidth, galleryHeight, file.type || 'image/jpeg', galleryFileSize, galleryDescription]
           );
           galleryRows = { rows: result.rows };
         } catch (insertError: any) {
@@ -241,9 +291,9 @@ export async function POST(request: NextRequest) {
             // Start new transaction and retry
             await fileClient.query('BEGIN');
             const result = await fileClient.query(
-              `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
-               VALUES ($1, $2, $3, $4, 4, $5, $6) RETURNING id`,
-              [actressId, galleryDbPath, galleryWidth, galleryHeight, file.type || 'image/jpeg', galleryFileSize]
+              `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz, description) 
+               VALUES ($1, $2, $3, $4, 4, $5, $6, $7) RETURNING id`,
+              [actressId, galleryDbPath, galleryWidth, galleryHeight, file.type || 'image/jpeg', galleryFileSize, galleryDescription]
             );
             galleryRows = { rows: result.rows };
           } else {
@@ -255,7 +305,7 @@ export async function POST(request: NextRequest) {
       } else {
         // Image is <= 1500px, resize to gallery size (900px max) and save as gallery image only
         // If image is already <= 900px, keep original size
-        let galleryBuffer = buffer;
+        galleryBuffer = buffer;
         let finalGalleryWidth = width;
         let finalGalleryHeight = height;
         
@@ -306,20 +356,25 @@ export async function POST(request: NextRequest) {
         }
         
         const galleryFileName = `${baseFileName}${fileExt}`;
-        const galleryPath = path.join(actressFolder, galleryFileName);
-        await writeFile(galleryPath, galleryBuffer);
         galleryDbPath = `/${folderName}/${actressId}/${galleryFileName}`;
+        const galleryStoragePath = `${folderName}/${actressId}/${galleryFileName}`;
+        
+        // Upload gallery image to Supabase storage (glamourgirls_images bucket)
+        await uploadToSupabase(supabase, 'glamourgirls_images', galleryStoragePath, galleryBuffer, 'image/jpeg');
 
         // Get gallery file size
         const galleryFileSize = galleryBuffer.length;
+        
+        // Generate description for gallery images if original longer side > 1200px
+        const galleryDescription = longerSide > 1200 ? formatImageDescription(finalGalleryWidth, finalGalleryHeight, galleryFileSize) : null;
 
         // Insert gallery image into database
         let galleryRows: any;
         try {
           const result = await fileClient.query(
-            `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
-             VALUES ($1, $2, $3, $4, 4, $5, $6) RETURNING id`,
-            [actressId, galleryDbPath, finalGalleryWidth, finalGalleryHeight, file.type || 'image/jpeg', galleryFileSize]
+            `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz, description) 
+             VALUES ($1, $2, $3, $4, 4, $5, $6, $7) RETURNING id`,
+            [actressId, galleryDbPath, finalGalleryWidth, finalGalleryHeight, file.type || 'image/jpeg', galleryFileSize, galleryDescription]
           );
           galleryRows = { rows: result.rows };
         } catch (insertError: any) {
@@ -334,9 +389,9 @@ export async function POST(request: NextRequest) {
             // Start new transaction and retry
             await fileClient.query('BEGIN');
             const result = await fileClient.query(
-              `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
-               VALUES ($1, $2, $3, $4, 4, $5, $6) RETURNING id`,
-              [actressId, galleryDbPath, finalGalleryWidth, finalGalleryHeight, file.type || 'image/jpeg', galleryFileSize]
+              `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz, description) 
+               VALUES ($1, $2, $3, $4, 4, $5, $6, $7) RETURNING id`,
+              [actressId, galleryDbPath, finalGalleryWidth, finalGalleryHeight, file.type || 'image/jpeg', galleryFileSize, galleryDescription]
             );
             galleryRows = { rows: result.rows };
           } else {
@@ -347,11 +402,9 @@ export async function POST(request: NextRequest) {
         galleryImageId = galleryRows.rows[0]?.id;
       }
 
-      // Create thumbnail (mytp = 3) from gallery image
-      // Read the saved gallery image file (which is already resized to 900px max if needed)
-      const galleryImageBuffer = await sharp(path.join(actressFolder, `${baseFileName}${fileExt}`)).toBuffer();
-      
-      const thumbnailBuffer = await sharp(galleryImageBuffer)
+      // Create thumbnail (mytp = 3) from gallery image buffer
+      // Use the gallery buffer we already have in memory
+      const thumbnailBuffer = await sharp(galleryBuffer)
         .resize(200, 250, {
           fit: 'inside',
           withoutEnlargement: true,
@@ -360,9 +413,11 @@ export async function POST(request: NextRequest) {
         .toBuffer();
 
       const thumbFileName = `thumb${baseFileName}.jpg`;
-      const thumbPath = path.join(actressFolder, thumbFileName);
-      await writeFile(thumbPath, thumbnailBuffer);
       const thumbDbPath = `/${folderName}/${actressId}/${thumbFileName}`;
+      const thumbStoragePath = `${folderName}/${actressId}/${thumbFileName}`;
+      
+      // Upload thumbnail to Supabase storage (glamourgirls_images bucket)
+      await uploadToSupabase(supabase, 'glamourgirls_images', thumbStoragePath, thumbnailBuffer, 'image/jpeg');
 
       // Get thumbnail dimensions
       const thumbMeta = await sharp(thumbnailBuffer).metadata();

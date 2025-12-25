@@ -55,6 +55,12 @@ function createWatermarkSVG(text: string, imageWidth: number, imageHeight: numbe
   return svg;
 }
 
+// Helper function to format image description: "2557 × 3308 px (24.2 MB)"
+function formatImageDescription(width: number, height: number, fileSizeBytes: number): string {
+  const fileSizeMB = (fileSizeBytes / (1024 * 1024)).toFixed(1);
+  return `${width} × ${height} px (${fileSizeMB} MB)`;
+}
+
 async function uploadToSupabase(
   supabase: any,
   bucket: string,
@@ -171,11 +177,14 @@ async function reuploadActressImages(actressId: number) {
           await uploadToSupabase(supabase, 'images_raw', hqStoragePath, buffer);
           const hqDbPath = `/${folderName}/${actressId}/${hqFileName}`;
 
+          // Generate description for HQ images if longer side > 1200px
+          const hqDescription = longerSide > 1200 ? formatImageDescription(width, height, buffer.length) : null;
+          
           // Insert HQ image into database
           const hqResult = await client.query(
-            `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
-             VALUES ($1, $2, $3, $4, 5, $5, $6) RETURNING id`,
-            [actressId, hqDbPath, width, height, 'image/jpeg', buffer.length]
+            `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz, description) 
+             VALUES ($1, $2, $3, $4, 5, $5, $6, $7) RETURNING id`,
+            [actressId, hqDbPath, width, height, 'image/jpeg', buffer.length, hqDescription]
           );
           
           hqImageId = hqResult.rows[0]?.id;
@@ -218,11 +227,14 @@ async function reuploadActressImages(actressId: number) {
           galleryWidth = galleryMeta.width || width;
           galleryHeight = galleryMeta.height || height;
 
+          // Generate description for gallery images if original longer side > 1200px
+          const galleryDescription = longerSide > 1200 ? formatImageDescription(galleryWidth, galleryHeight, galleryBuffer.length) : null;
+          
           // Insert gallery image into database
           const galleryResult = await client.query(
-            `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
-             VALUES ($1, $2, $3, $4, 4, $5, $6) RETURNING id`,
-            [actressId, galleryDbPath, galleryWidth, galleryHeight, 'image/jpeg', galleryBuffer.length]
+            `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz, description) 
+             VALUES ($1, $2, $3, $4, 4, $5, $6, $7) RETURNING id`,
+            [actressId, galleryDbPath, galleryWidth, galleryHeight, 'image/jpeg', galleryBuffer.length, galleryDescription]
           );
 
           galleryImageId = galleryResult.rows[0]?.id;
@@ -280,11 +292,14 @@ async function reuploadActressImages(actressId: number) {
           await uploadToSupabase(supabase, 'glamourgirls_images', galleryStoragePath, galleryBuffer);
           galleryDbPath = `/${folderName}/${actressId}/${galleryFileName}`;
 
+          // Generate description for gallery images if original longer side > 1200px
+          const galleryDescription = longerSide > 1200 ? formatImageDescription(finalGalleryWidth, finalGalleryHeight, galleryBuffer.length) : null;
+          
           // Insert gallery image into database
           const galleryResult = await client.query(
-            `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
-             VALUES ($1, $2, $3, $4, 4, $5, $6) RETURNING id`,
-            [actressId, galleryDbPath, finalGalleryWidth, finalGalleryHeight, 'image/jpeg', galleryBuffer.length]
+            `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz, description) 
+             VALUES ($1, $2, $3, $4, 4, $5, $6, $7) RETURNING id`,
+            [actressId, galleryDbPath, finalGalleryWidth, finalGalleryHeight, 'image/jpeg', galleryBuffer.length, galleryDescription]
           );
 
           galleryImageId = galleryResult.rows[0]?.id;

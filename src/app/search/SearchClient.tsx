@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Header, Footer } from '@/components/newdesign';
 import SearchPanel, { SearchFilters } from '@/components/search/SearchPanel';
 import ActressTable, { ActressRow } from '@/components/ui/ActressTable';
+import ScrollToTop from '@/components/ui/ScrollToTop';
 import type { SearchActressResult } from '@/types/search';
 import '../newdesign/design-tokens.css';
 
@@ -140,7 +141,7 @@ export default function SearchClient() {
             backgroundColor: '#f6e5c0',
           }}
         >
-          <div className="mx-auto max-w-7xl px-6 flex flex-col justify-center items-center">
+          <div className="mx-auto max-w-7xl px-6 flex flex-col justify-center items-center py-3 md:py-6">
             <div className="flex flex-col items-center text-center" style={{ marginBottom: 'clamp(8px, 1.5vh, 16px)' }}>
               <h1
                 className="search-hero-title"
@@ -158,7 +159,7 @@ export default function SearchClient() {
               </h1>
             </div>
 
-            <div className="w-full max-w-4xl">
+            <div className="w-full max-w-[600px]">
               <div className="bg-[#E6D9B3] rounded-lg shadow-lg p-6 md:p-8 border border-black/10">
                 <SearchPanel compact initialFilters={filters} onSearch={handleSearch} />
               </div>
@@ -169,7 +170,7 @@ export default function SearchClient() {
         {/* Results Section */}
         <section className="px-6 py-8 bg-[var(--bg-page)]">
           <div className="max-w-[1600px] mx-auto">
-            <div className="w-full px-6">
+            <div className="w-full px-0 md:px-6">
               {!loading && (
                 <div className="text-center mb-6">
                   <p 
@@ -209,6 +210,7 @@ export default function SearchClient() {
         </section>
       </main>
       <Footer />
+      <ScrollToTop />
     </div>
   );
 }

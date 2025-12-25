@@ -34,6 +34,7 @@ export async function GET(
           actressName: item.actressName,
           hqUrl: item.hqUrl,
           imageUrl: item.imageUrl,
+          thumbnailUrl: item.thumbnailUrl || item.imageUrl || '',
           width: item.width,
           height: item.height,
           fileSizeMB: item.fileSizeMB,

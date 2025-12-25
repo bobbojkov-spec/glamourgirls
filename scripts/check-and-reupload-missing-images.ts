@@ -65,6 +65,12 @@ function createWatermarkSVG(text: string, imageWidth: number, imageHeight: numbe
   return svg;
 }
 
+// Helper function to format image description: "2557 × 3308 px (24.2 MB)"
+function formatImageDescription(width: number, height: number, fileSizeBytes: number): string {
+  const fileSizeMB = (fileSizeBytes / (1024 * 1024)).toFixed(1);
+  return `${width} × ${height} px (${fileSizeMB} MB)`;
+}
+
 async function uploadToSupabase(
   supabase: any,
   bucket: string,
@@ -186,26 +192,38 @@ async function uploadHeadshot(
       return false;
     }
 
-    // Process headshot with crop (same as upload route)
-    const cropLeft = 25;
-    const cropTop = 40;
-    const cropRight = 28;
-    const cropBottom = 40;
+    // Process headshot to exact size: 190px width × 245px height
+    // Rule: Make height 245px, crop width to 190px (centered)
+    // If image is smaller, resize to height 245px (blow up), then crop width to 190px
+    const TARGET_WIDTH = 190;
+    const TARGET_HEIGHT = 245;
     
-    const width = metadata.width - cropLeft - cropRight;
-    const height = metadata.height - cropTop - cropBottom;
-    
-    if (width <= 0 || height <= 0) {
-      console.error(`  ✗ Invalid crop dimensions for headshot`);
-      return false;
-    }
-
-    const processedImage = image.extract({
-      left: cropLeft,
-      top: cropTop,
-      width,
-      height,
+    // Step 1: Resize height to 225px (maintain aspect ratio, allow enlarging if smaller)
+    let processedImage = image.resize(null, TARGET_HEIGHT, {
+      fit: 'inside',
+      withoutEnlargement: false, // Allow enlarging smaller images
     });
+    
+    // Step 2: Get dimensions after height resize
+    const resizedBuffer = await processedImage.toBuffer();
+    const resizedMeta = await sharp(resizedBuffer).metadata();
+    const resizedWidth = resizedMeta.width || TARGET_WIDTH;
+    
+    // Step 3: Crop width to 180px (centered) if needed
+    if (resizedWidth > TARGET_WIDTH) {
+      const cropLeft = Math.floor((resizedWidth - TARGET_WIDTH) / 2);
+      processedImage = sharp(resizedBuffer).extract({
+        left: cropLeft,
+        top: 0,
+        width: TARGET_WIDTH,
+        height: TARGET_HEIGHT,
+      });
+    } else if (resizedWidth < TARGET_WIDTH) {
+      // If width is smaller, resize to exact dimensions (cover mode)
+      processedImage = sharp(resizedBuffer).resize(TARGET_WIDTH, TARGET_HEIGHT, {
+        fit: 'cover', // Cover the area, may crop
+      });
+    }
 
     const headshotBuffer = await processedImage
       .jpeg({ quality: 90, mozjpeg: true })
@@ -226,7 +244,7 @@ async function uploadHeadshot(
     await client.query(
       `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
        VALUES ($1, $2, $3, $4, 3, $5, $6)`,
-      [actressId, dbPath, finalMetadata.width || width, finalMetadata.height || height, 'image/jpeg', headshotBuffer.length]
+      [actressId, dbPath, finalMetadata.width || TARGET_WIDTH, finalMetadata.height || TARGET_HEIGHT, 'image/jpeg', headshotBuffer.length]
     );
 
     await client.query('COMMIT');
@@ -307,10 +325,13 @@ async function reuploadGalleryImages(
             await uploadToSupabase(supabase, 'images_raw', hqStoragePath, buffer);
             const hqDbPath = `/${folderName}/${actressId}/${hqFileName}`;
 
+            // Generate description for HQ images if longer side > 1200px
+            const hqDescription = longerSide > 1200 ? formatImageDescription(width, height, buffer.length) : null;
+            
             const hqResult = await client.query(
-              `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
-               VALUES ($1, $2, $3, $4, 5, $5, $6) RETURNING id`,
-              [actressId, hqDbPath, width, height, 'image/jpeg', buffer.length]
+              `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz, description) 
+               VALUES ($1, $2, $3, $4, 5, $5, $6, $7) RETURNING id`,
+              [actressId, hqDbPath, width, height, 'image/jpeg', buffer.length, hqDescription]
             );
             
             hqImageId = hqResult.rows[0]?.id;
@@ -349,10 +370,13 @@ async function reuploadGalleryImages(
             galleryWidth = galleryMeta.width || width;
             galleryHeight = galleryMeta.height || height;
 
+            // Generate description for gallery images if original longer side > 1200px
+            const galleryDescription = longerSide > 1200 ? formatImageDescription(galleryWidth, galleryHeight, galleryBuffer.length) : null;
+            
             const galleryResult = await client.query(
-              `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
-               VALUES ($1, $2, $3, $4, 4, $5, $6) RETURNING id`,
-              [actressId, galleryDbPath, galleryWidth, galleryHeight, 'image/jpeg', galleryBuffer.length]
+              `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz, description) 
+               VALUES ($1, $2, $3, $4, 4, $5, $6, $7) RETURNING id`,
+              [actressId, galleryDbPath, galleryWidth, galleryHeight, 'image/jpeg', galleryBuffer.length, galleryDescription]
             );
 
             galleryImageId = galleryResult.rows[0]?.id;
@@ -405,10 +429,13 @@ async function reuploadGalleryImages(
             await uploadToSupabase(supabase, 'glamourgirls_images', galleryStoragePath, galleryBuffer);
             galleryDbPath = `/${folderName}/${actressId}/${galleryFileName}`;
 
+            // Generate description for gallery images if original longer side > 1200px
+            const galleryDescription = longerSide > 1200 ? formatImageDescription(finalGalleryWidth, finalGalleryHeight, galleryBuffer.length) : null;
+            
             const galleryResult = await client.query(
-              `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz) 
-               VALUES ($1, $2, $3, $4, 4, $5, $6) RETURNING id`,
-              [actressId, galleryDbPath, finalGalleryWidth, finalGalleryHeight, 'image/jpeg', galleryBuffer.length]
+              `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz, description) 
+               VALUES ($1, $2, $3, $4, 4, $5, $6, $7) RETURNING id`,
+              [actressId, galleryDbPath, finalGalleryWidth, finalGalleryHeight, 'image/jpeg', galleryBuffer.length, galleryDescription]
             );
 
             galleryImageId = galleryResult.rows[0]?.id;

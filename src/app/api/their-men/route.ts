@@ -12,7 +12,7 @@ export async function GET() {
       WHERE g.published = 2 
         AND g.theirman = true
       ORDER BY g.familiq, g.firstname
-      LIMIT 20`
+      LIMIT 30`
     ) as any[];
 
     if (!Array.isArray(results) || results.length === 0) {
@@ -78,8 +78,9 @@ export async function GET() {
       }
     });
 
-    // Return at least 3 entries (or all if less than 3 available)
-    const result = men.length >= 3 ? men.slice(0, 3) : men;
+    // Shuffle and return 5 random entries (or all if less than 5 available)
+    const shuffled = men.sort(() => Math.random() - 0.5);
+    const result = shuffled.length >= 5 ? shuffled.slice(0, 5) : shuffled;
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Error fetching their men:', error);

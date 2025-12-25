@@ -1,42 +1,39 @@
-import { redirect } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
+import { fetchActressFromDb } from '@/lib/actress/fetchActress';
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 // Redirect old /actress/[id] URLs to /actress/[id]/[slug]
 export default async function ActressPageRedirect({ params }: PageProps) {
   const { id } = await params;
   
+  // Validate and convert id to number
+  const actressId = parseInt(id);
+  if (isNaN(actressId) || actressId <= 0) {
+    notFound();
+    return;
+  }
+  
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-    const res = await fetch(`${baseUrl}/api/actresses/${id}`, {
-      cache: 'no-store',
-    });
+    // Fetch directly from database (no HTTP call)
+    const actressData = await fetchActressFromDb(actressId);
     
-    if (!res.ok) {
-      return (
-        <div className="min-h-full flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl mb-4">Actress not found</h1>
-          </div>
-        </div>
-      );
+    if (!actressData) {
+      notFound();
+      return;
     }
     
-    const actressData = await res.json();
     const slug = actressData.slug || `${actressData.firstName || ''}-${actressData.lastName || ''}`.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     
     redirect(`/actress/${id}/${slug}`);
   } catch (error) {
     console.error('Error redirecting:', error);
-    return (
-      <div className="min-h-full flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl mb-4">Error loading page</h1>
-        </div>
-      </div>
-    );
+    notFound();
+    return;
   }
 }

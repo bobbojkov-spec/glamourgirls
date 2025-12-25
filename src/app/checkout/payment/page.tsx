@@ -119,6 +119,7 @@ export default function PaymentPage() {
                 actressName: item.actressName,
                 hqUrl: item.hqUrl,
                 imageUrl: item.imageUrl,
+                thumbnailUrl: item.thumbnailUrl || item.imageUrl || '',
                 width: item.width,
                 height: item.height,
                 fileSizeMB: item.fileSizeMB,
@@ -168,18 +169,6 @@ export default function PaymentPage() {
 
           {/* Order Summary */}
           <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-6 md:p-8 mb-6">
-            <h2
-              className="text-[var(--text-primary)] mb-4"
-              style={{
-                fontFamily: 'var(--font-headline)',
-                fontSize: 'var(--h2-size)',
-                lineHeight: 'var(--h2-line-height)',
-                letterSpacing: 'var(--h2-letter-spacing)',
-              }}
-            >
-              Order Summary
-            </h2>
-          
             {/* Item List */}
             {cart.length > 0 && (
               <div className="mb-4 space-y-3 max-h-64 overflow-y-auto">
@@ -192,22 +181,22 @@ export default function PaymentPage() {
                     />
                     <div className="flex-1 min-w-0">
                       <p
-                        className="font-bold text-sm truncate block text-[var(--text-primary)]"
-                        style={{ fontFamily: "'Kabel Black', sans-serif" }}
+                        className="font-bold truncate block text-[var(--text-primary)] uppercase"
+                        style={{ fontFamily: "'Kabel Black', 'Arial Black', 'Arial Bold', Arial, sans-serif", fontSize: '22px', lineHeight: '1.2', fontWeight: '900' }}
                       >
                         {item.actressName}
                       </p>
-                      <p className="text-xs text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-ui)' }}>HQ Image #{item.imageId}</p>
                       {(item.width || item.height || item.fileSizeMB) && (
-                        <p className="text-xs text-[var(--text-muted)] mt-0.5" style={{ fontFamily: 'var(--font-ui)' }}>
+                        <p className="text-xs text-[var(--text-muted)] mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                           {item.width && item.height && `${item.width} × ${item.height} px`}
-                          {item.width && item.height && item.fileSizeMB && ' • '}
-                          {item.fileSizeMB && `${item.fileSizeMB} MB`}
+                          {item.width && item.height && item.fileSizeMB && (
+                            <span className="text-[var(--text-muted)]/80"> / {item.fileSizeMB} MB</span>
+                          )}
                         </p>
                       )}
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="font-semibold text-sm text-[var(--text-primary)]" style={{ fontFamily: 'var(--font-ui)' }}>${item.price.toFixed(2)}</p>
+                      <p className={`${item.fileSizeMB !== undefined && item.fileSizeMB !== null ? 'text-base font-bold text-[var(--text-primary)]' : 'text-sm font-semibold text-[var(--text-primary)]'}`} style={{ fontFamily: 'DM Sans, sans-serif' }}>${item.price.toFixed(2)}</p>
                     </div>
                   </div>
                 ))}
@@ -227,7 +216,7 @@ export default function PaymentPage() {
               )}
               <div className="flex justify-between font-semibold text-lg pt-2 border-t border-[var(--border-subtle)]">
                 <span className="text-[var(--text-primary)]">Total</span>
-                <span className="text-[var(--accent-gold)]">${total.toFixed(2)}</span>
+                <span className="text-[var(--text-primary)]">${total.toFixed(2)}</span>
               </div>
             </div>
           </div>

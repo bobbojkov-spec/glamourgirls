@@ -49,15 +49,15 @@ export default function GalleryItem({ image, onClick, theirMan }: GalleryItemPro
       onClick={onClick}
     >
       <div 
-        className="relative w-full bg-gray-100 overflow-hidden" 
-        style={{ aspectRatio: '3/4', width: '100%', height: 'auto' }}
+        className="relative w-full bg-transparent overflow-hidden flex items-center justify-center" 
+        style={{ aspectRatio: '3/4', width: '100%', height: 'auto', minHeight: '150px' }}
       >
         {currentSrc ? (
           <img
             src={currentSrc}
             alt="Gallery photo"
-            className="w-full h-full object-cover"
-            style={{ aspectRatio: '3/4', width: '100%', height: '100%' }}
+            className="w-full h-full object-contain"
+            style={{ width: '100%', height: '100%', objectPosition: 'center' }}
             loading="lazy"
             onError={handleError}
           />

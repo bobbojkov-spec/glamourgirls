@@ -39,10 +39,11 @@ export default function HeadshotImage({ src, alt, fallbackSrc, className, theirM
       onError={handleError}
       onLoad={onLoad}
       style={{ 
-        aspectRatio: '3/4', 
-        objectFit: 'cover',
-        width: '100%',
-        height: '100%',
+        maxWidth: '190px',
+        maxHeight: '245px',
+        width: 'auto',
+        height: 'auto',
+        objectFit: 'contain',
       }}
     />
   );

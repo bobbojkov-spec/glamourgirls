@@ -3,6 +3,8 @@ import pool from '@/lib/db';
 import { Card, Statistic, Row, Col, Space } from 'antd';
 import { UserOutlined, PictureOutlined, CheckCircleOutlined, CameraOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { Title, Text } from '@/components/admin/AdminTypography';
+import RelatedActressesAction from '@/components/admin/RelatedActressesAction';
+import CalculateHQFileSizesAction from '@/components/admin/CalculateHQFileSizesAction';
 
 export default async function AdminDashboard() {
   // Get basic statistics from PostgreSQL
@@ -155,10 +157,10 @@ export default async function AdminDashboard() {
                         {action.icon}
                       </div>
                       <div>
-                        <Text strong style={{ display: 'block', fontSize: '14px' }}>
+                        <Text strong style={{ display: 'block', fontSize: '28px', lineHeight: '1.2' }}>
                           {action.title}
                         </Text>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                        <Text type="secondary" style={{ fontSize: '13px' }}>
                           {action.description}
                         </Text>
                       </div>
@@ -167,6 +169,12 @@ export default async function AdminDashboard() {
                 </Link>
               </Col>
             ))}
+            <Col xs={24} sm={12} lg={8}>
+              <RelatedActressesAction />
+            </Col>
+            <Col xs={24} sm={12} lg={8}>
+              <CalculateHQFileSizesAction />
+            </Col>
           </Row>
         </Card>
       </Space>

@@ -363,15 +363,18 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
             <Title level={4} style={{ marginBottom: '12px' }}>Headshot (Portrait Photo)</Title>
             <div className="flex items-center gap-4">
               {initialData?.headshotUrl && (
-                <div className="relative">
-                  <img 
-                    src={initialData.headshotUrl} 
-                    alt="Headshot" 
-                    className="w-32 h-40 object-cover border border-gray-300 rounded"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
+                <div className="relative mb-4">
+                  <div className="relative w-32 h-40 bg-gray-100 border border-gray-300 rounded overflow-hidden" style={{ aspectRatio: '190/245' }}>
+                    <img 
+                      src={initialData.headshotUrl} 
+                      alt="Headshot" 
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
                 </div>
               )}
               <div>
@@ -399,7 +402,7 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                   </Button>
                 </Upload>
                 <p className="text-xs text-gray-500 mt-2" style={{ fontSize: '12px' }}>
-                  Image will be automatically cropped and resized to match existing headshots.
+                  Image will be automatically cropped and resized to 190px × 245px.
                 </p>
               </div>
             </div>
@@ -840,19 +843,14 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {formData.images.map((img: any, index: number) => {
-                  const galleryPath = img.url || img.path || '';
+                  // Use the database path (img.path) for thumbnail API, not the Supabase URL
+                  const galleryPath = img.path || '';
                   
-                  // If the path is already a full Supabase URL, use it directly
-                  // Otherwise, use the thumbnail API with the database path
+                  // Use thumbnail API with the database path
+                  // The thumbnail API will fetch from Supabase storage
                   let thumbnailUrl = '';
                   if (galleryPath) {
-                    if (galleryPath.startsWith('http://') || galleryPath.startsWith('https://')) {
-                      // Already a full URL - use thumbnail API to resize it
-                      thumbnailUrl = `/api/images/thumbnail?path=${encodeURIComponent(galleryPath)}&width=200&height=250`;
-                    } else {
-                      // Database path - use thumbnail API
-                      thumbnailUrl = `/api/images/thumbnail?path=${encodeURIComponent(galleryPath)}&width=200&height=250`;
-                    }
+                    thumbnailUrl = `/api/images/thumbnail?path=${encodeURIComponent(galleryPath)}&width=200&height=250`;
                   }
                   
                   const handleDeleteImage = async () => {
@@ -883,16 +881,28 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                   
                   return (
                     <div key={img.id || index} className="border border-gray-300 p-1.5 bg-white relative">
-                      <div className="relative bg-white">
+                      <div className="relative" style={{ aspectRatio: '4/5', minHeight: '200px' }}>
                         {thumbnailUrl ? (
                           <img 
                             src={thumbnailUrl} 
                             alt={`Image ${index + 1}`}
-                            className="w-full h-auto block"
-                            style={{ backgroundColor: 'transparent' }}
+                            className="w-full h-full object-cover bg-gray-100"
+                            loading="lazy"
+                            style={{ minHeight: '200px' }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                const errorDiv = document.createElement('div');
+                                errorDiv.className = 'w-full h-full bg-gray-200 flex items-center justify-center text-xs text-gray-500';
+                                errorDiv.textContent = 'Failed to load';
+                                parent.appendChild(errorDiv);
+                              }
+                            }}
                           />
                         ) : (
-                          <div className="w-full h-32 bg-gray-200 flex items-center justify-center text-xs text-gray-500">
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center text-xs text-gray-500" style={{ minHeight: '200px' }}>
                             No image
                           </div>
                         )}

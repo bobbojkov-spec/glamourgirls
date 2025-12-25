@@ -119,6 +119,13 @@ function findHQ(galleryImageId: number, hqImages: any[]): any {
          hqImages.find((hq: any) => hq.id === galleryImageId + 1);
 }
 
+// Helper function to check if image meets HQ requirements (minimum 1200px on long side)
+function isHQImage(width?: number, height?: number): boolean {
+  if (!width || !height) return false;
+  const longSide = Math.max(width, height);
+  return longSide >= 1200;
+}
+
 export default async function GalleryPage({ params }: PageProps) {
   const { id, slug } = await params;
   
@@ -155,8 +162,9 @@ export default async function GalleryPage({ params }: PageProps) {
   const galleryImages: GalleryImage[] = (actressData.images?.gallery || []).map((galleryImg: any) => {
     const hqImage = findHQ(galleryImg.id, actressData.images?.hq || []);
     
-    // Default price calculation (you can adjust this)
-    const price = hqImage ? 9.90 : undefined;
+    // Only mark as HQ if it meets the 1200px minimum requirement
+    const meetsHQRequirement = hqImage && isHQImage(hqImage.width, hqImage.height);
+    const price = meetsHQRequirement ? 9.90 : undefined;
     
     // Use thumbnailUrl from API, or fallback to gallery image
     const thumbnailUrl = galleryImg.thumbnailUrl || galleryImg.url;
@@ -168,10 +176,10 @@ export default async function GalleryPage({ params }: PageProps) {
       width: galleryImg.width,
       height: galleryImg.height,
       price,
-      hasHQ: !!hqImage,
-      hqWidth: hqImage?.width,
-      hqHeight: hqImage?.height,
-      hqUrl: hqImage?.url,
+      hasHQ: !!meetsHQRequirement,
+      hqWidth: meetsHQRequirement ? hqImage?.width : undefined,
+      hqHeight: meetsHQRequirement ? hqImage?.height : undefined,
+      hqUrl: meetsHQRequirement ? hqImage?.url : undefined,
     };
   });
 

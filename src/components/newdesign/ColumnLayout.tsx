@@ -68,9 +68,7 @@ export default function ColumnLayout({
       <FeaturedActressesGrid
         actresses={featuredItems}
         columns={featuredColumns}
-        title="Featured Icons"
         eyebrow="Spotlight"
-        description="A curated mix of screen sirens newly restored in the archive."
       />
     ) : null;
 

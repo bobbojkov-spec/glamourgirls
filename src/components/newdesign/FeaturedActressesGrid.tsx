@@ -41,28 +41,6 @@ export default function FeaturedActressesGrid({
           {eyebrow}
         </p>
       )}
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
-        <div>
-          <h2
-            className="text-[var(--text-primary)]"
-            style={{
-              fontFamily: 'var(--font-headline)',
-              fontSize: 'var(--h2-size)',
-              letterSpacing: 'var(--h2-letter-spacing)',
-              lineHeight: 'var(--h2-line-height)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {title}
-          </h2>
-          <p style={{ marginBottom: '10px' }}></p>
-          {description && (
-            <p className="text-[var(--text-secondary)] mt-2 text-base leading-relaxed">
-              {description}
-            </p>
-          )}
-        </div>
-      </div>
 
       <div className={`grid ${gridClass} gap-5`}>
         {actresses.map((actress) => {

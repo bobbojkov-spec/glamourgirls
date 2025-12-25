@@ -722,9 +722,23 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
    ======================================== */
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 0.75rem;
   align-items: start;
+}
+
+/* Ensure at least 3 columns on mobile */
+@media (min-width: 0px) {
+  .gallery-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* More columns on larger screens */
+@media (min-width: 640px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
 }
 
 .gallery-thumb {
@@ -744,9 +758,22 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   max-height: 200px;
+  background: transparent;
+}
+
+/* Mobile: Remove gray background from gallery items */
+@media (max-width: 767px) {
+  .gallery-thumb > div {
+    background: transparent !important;
+  }
+  
+  .gallery-thumb img {
+    background: transparent;
+  }
 }
 
 /* Gallery page title - "Photographs of..." */
@@ -879,19 +906,25 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
   }
 }
 
-/* Mobile: Single column, date above text with subtle divider */
-@media (max-width: 767px) {
+/* Mobile: Two-column layout (date left, event right) with padding */
+/* Mobile breakpoint: max-width: 639px (matches Tailwind sm: breakpoint) */
+@media (max-width: 639px) {
+  .timeline {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  
   .timeline-row {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
+    grid-template-columns: 80px 1fr;
+    gap: 1rem;
     padding: 0.75rem 0;
   }
   
   .timeline-date {
     font-weight: 600;
-    margin-bottom: 0.25rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(30, 30, 30, 0.08);
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
   }
 }
 

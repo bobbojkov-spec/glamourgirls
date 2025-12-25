@@ -29,18 +29,6 @@ export default function DecadesShowcase({ actresses, columns = 2 }: DecadesShowc
     <section className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-5 md:p-6">
       <div className="space-y-4">
         <p className="text-xs uppercase tracking-[0.35em] text-[var(--text-muted)]">Decades</p>
-        <h3
-          className="text-[var(--text-primary)]"
-          style={{
-            fontFamily: 'var(--font-headline)',
-            fontSize: 'var(--h2-size)',
-            letterSpacing: 'var(--h2-letter-spacing)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          Era highlights
-        </h3>
-        <p style={{ marginBottom: '10px' }}></p>
 
         <div className={`grid ${gridClass} gap-4`}>
           {items.map((actress) => {

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import EraBadge from './EraBadge';
+import ActressListRow from './ActressListRow';
 
 export interface ActressRow {
   id: string;
@@ -77,11 +78,11 @@ export default function ActressTable({
         </thead>
         <tbody>
           {actresses.map((actress) => (
-            <tr key={actress.id} className="hover:bg-[var(--bg-surface-alt)] transition-colors border-b border-[var(--border-subtle)]">
+            <tr key={actress.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-alt)] transition-all duration-200 active:scale-[0.99]">
               <td className="py-3">
                 <Link 
                   href={actress.slug ? `/actress/${actress.id}/${actress.slug}` : `/actress/${actress.id}`}
-                  className="flex items-center gap-3 hover:text-[var(--accent-gold)] transition-colors"
+                  className="flex items-center gap-3 hover:text-[var(--accent-gold)] transition-colors cursor-pointer"
                 >
                   {/* Thumbnail */}
                   <div className="w-12 h-16 flex-shrink-0 bg-[var(--bg-surface-alt)] rounded overflow-hidden border border-[var(--border-subtle)]">
@@ -157,60 +158,28 @@ export default function ActressTable({
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {actresses.map((actress) => (
-          <Link 
+          <ActressListRow
             key={actress.id}
-            href={actress.slug ? `/actress/${actress.id}/${actress.slug}` : `/actress/${actress.id}`}
-            className="block bg-[var(--bg-surface-alt)] p-4 rounded-lg border border-[var(--border-subtle)] hover:bg-[var(--bg-surface)] transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              {/* Thumbnail */}
-              <div className="w-16 h-20 flex-shrink-0 bg-[var(--bg-surface)] rounded overflow-hidden border border-[var(--border-subtle)]">
-                <img
-                  src={`/api/actresses/${actress.id}/headshot`}
-                  alt={actress.name}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  onError={(e) => {
-                    // Only use placeholder for "their men" entries when image fails
-                    const img = e.currentTarget;
-                    if (actress.theirMan && !img.src.includes('placeholder')) {
-                      img.src = '/images/placeholder-man-portrait.png';
-                    } else {
-                      // Hide broken image for regular entries
-                      img.style.display = 'none';
-                    }
-                  }}
-                />
+            id={actress.id}
+            name={actress.name}
+            slug={actress.slug}
+            thumbnailUrl={`/api/actresses/${actress.id}/headshot`}
+            theirMan={actress.theirMan}
+            additionalContent={
+              <div 
+                className="text-[var(--text-secondary)]" 
+                style={{ 
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontSize: '13px',
+                  fontWeight: 400,
+                  opacity: 0.7,
+                }}
+              >
+                {actress.years} • {actress.photoCount} photos
+                {actress.hqPhotoCount > 0 && ` • ${actress.hqPhotoCount} HQ`}
               </div>
-              {/* Details */}
-              <div className="flex-1 min-w-0">
-                {actress.isNew && (
-                  <span className="badge-new mr-2">NEW</span>
-                )}
-                <div 
-                  className="mb-1 uppercase search-actress-name" 
-                  style={{ 
-                    fontFamily: "'Kabel Black', sans-serif",
-                  }}
-                >
-                  {actress.name}
-                </div>
-                <div 
-                  className="text-[var(--text-secondary)]" 
-                  style={{ 
-                    fontFamily: 'DM Sans, sans-serif',
-                    fontSize: '13px',
-                    fontWeight: 400,
-                    opacity: 0.7,
-                  }}
-                >
-                  {actress.years} • {actress.photoCount} photos
-                  {actress.hqPhotoCount > 0 && ` • ${actress.hqPhotoCount} HQ`}
-                </div>
-              </div>
-              <span className="text-[var(--text-muted)]">→</span>
-            </div>
-          </Link>
+            }
+          />
         ))}
       </div>
     </div>

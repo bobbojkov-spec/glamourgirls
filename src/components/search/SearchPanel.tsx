@@ -146,9 +146,9 @@ export default function SearchPanel({
         </div>
 
         {/* Years filter - Radio Buttons */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-nowrap md:flex-wrap">
           <span 
-            className="font-medium text-[var(--text-primary)]"
+            className="font-medium text-[var(--text-primary)] flex-shrink-0"
             style={{
               fontSize: '13px',
               fontWeight: 500,
@@ -157,9 +157,9 @@ export default function SearchPanel({
           >
             Years
           </span>
-          <div className="flex items-center gap-2 border border-gray-300 rounded-md p-1 bg-white">
+          <div className="flex items-center gap-2 flex-nowrap overflow-x-auto">
             {['all', '20-30s', '40s', '50s', '60s', 'men'].map(year => (
-              <label key={year} className="flex items-center cursor-pointer">
+              <label key={year} className="flex items-center cursor-pointer flex-shrink-0">
                 <input
                   type="radio"
                   name="years"
@@ -169,13 +169,14 @@ export default function SearchPanel({
                   className="sr-only peer"
                 />
                 <span 
-                  className={`px-3 py-1 rounded transition-all search-form-select ${
+                  className={`px-3 py-1.5 rounded-md transition-all border ${
                     filters.years[0] === year
-                      ? 'bg-[#E6D9B3] text-gray-900 border border-[#d1c4a0]'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'border-gray-600 text-gray-900 bg-transparent'
+                      : 'border-gray-300 text-gray-700 bg-transparent hover:border-gray-400'
                   }`}
                   style={{
-                    fontSize: '16px', /* Mobile: 16px, Desktop/tablet handled by CSS */
+                    fontSize: '13px', /* 3px smaller on mobile (was 16px) */
+                    fontFamily: 'DM Sans, sans-serif',
                   }}
                 >
                   {year === 'men' ? 'Their Men' : year}
@@ -188,9 +189,9 @@ export default function SearchPanel({
 
       {/* Keyword and search button */}
       <div className="flex flex-col items-center gap-4">
-        <div className="relative flex items-center rounded-lg overflow-hidden border border-gray-300 w-full max-w-md">
+        <div className="relative flex items-stretch w-full max-w-md border border-gray-300 rounded-lg overflow-hidden">
           {/* Magnifying Glass Icon on Left */}
-          <div className="absolute left-4 z-10 pointer-events-none">
+          <div className="absolute left-4 z-10 pointer-events-none flex items-center h-full">
             <svg
               className="w-5 h-5 text-gray-500"
               fill="none"
@@ -219,7 +220,7 @@ export default function SearchPanel({
               }
             }}
             placeholder="input search text"
-            className="flex-1 pl-12 pr-0 py-3 border-0 rounded-l-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none search-form-input"
+            className="flex-1 pl-12 pr-0 py-3 border-0 bg-white text-gray-900 placeholder-gray-400 focus:outline-none search-form-input"
             style={{ 
               fontFamily: 'DM Sans, sans-serif',
               fontSize: '16px', /* Mobile: 16px, Desktop/tablet handled by CSS */
@@ -229,11 +230,10 @@ export default function SearchPanel({
           {/* Search Button - Darker Glamour Girls Colors */}
           <button
             type="submit"
-            className="px-6 py-3 rounded-r-lg font-medium transition-all duration-200"
+            className="px-6 py-3 font-medium transition-all duration-200 border-l border-gray-300 flex items-center"
             style={{
               backgroundColor: '#8b6f2a',
               color: '#ffffff',
-              borderLeft: '1px solid #6f5718',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#6f5718';

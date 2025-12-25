@@ -189,6 +189,7 @@ export default async function EditGirlPage({
     // Use the same headshot API route as the frontend (can generate if missing)
     // This ensures consistency and handles headshots that are generated on-the-fly
     const headshotUrl = `/api/actresses/${girlId}/headshot`;
+    const headshot2Url = `/api/actresses/${girlId}/headshot2`;
 
     // Map to form data structure - ensure all values are serializable
     const girl = {
@@ -242,6 +243,7 @@ export default async function EditGirlPage({
       photoCount: Number(row.photoCount) || 0,
       hqPhotoCount: Number(row.hqPhotoCount) || 0,
       headshotUrl: headshotUrl ? String(headshotUrl) : null,
+      headshot2Url: headshot2Url ? String(headshot2Url) : null,
       seo: {
         seoTitle: String(row.seotitle || ''),
         seoDescription: String(row.metadescription || ''),

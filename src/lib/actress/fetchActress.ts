@@ -196,13 +196,12 @@ export async function fetchActressFromDb(actressId: number): Promise<Actress | n
     try {
       try {
         const [relatedRows] = await pool.execute(
-          `SELECT g.id, g.nm, g.slug, g.godini, ra.reason, ra.score
+          `SELECT g.id, g.nm, g.slug, g.godini, ra.score
            FROM related_actresses ra
            INNER JOIN girls g ON ra.related_id = g.id
            WHERE ra.actress_id = ? 
              AND g.published = 2
-           ORDER BY ra.score DESC, RAND()
-           LIMIT 8`,
+           ORDER BY ra.score DESC`,
           [actressId]
         ) as any[];
 
@@ -212,8 +211,8 @@ export async function fetchActressFromDb(actressId: number): Promise<Actress | n
             name: row.nm,
             slug: row.slug || `${row.id}`,
             era: eraMap[row.godini] || '50s',
-            reason: row.reason,
-            score: row.score,
+            reason: null,
+            score: row.score || 0,
           }));
         }
       } catch (tableError: any) {
@@ -229,7 +228,7 @@ export async function fetchActressFromDb(actressId: number): Promise<Actress | n
            WHERE published = 2 
              AND godini = ? 
              AND id != ? 
-           ORDER BY RAND()
+           ORDER BY random()
            LIMIT 5`,
           [actress.godini, actressId]
         ) as any[];

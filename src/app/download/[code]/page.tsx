@@ -427,17 +427,18 @@ export default function DownloadPage() {
                   </div>
                   <div className="p-3">
                     <p
-                      className="font-bold text-xs mb-1 truncate block text-[var(--text-primary)]"
-                      style={{ fontFamily: "'Kabel Black', sans-serif" }}
+                      className="font-bold mb-1 truncate block text-[var(--text-primary)] uppercase"
+                      style={{ fontFamily: "'Kabel Black', 'Arial Black', 'Arial Bold', Arial, sans-serif", fontSize: '22px', lineHeight: '1.2', fontWeight: '900' }}
                       title={item.actressName}
                     >
                       {item.actressName}
                     </p>
                     {(item.width || item.height || item.fileSizeMB) && (
-                      <p className="text-xs text-[var(--text-muted)] mb-2" style={{ fontFamily: 'var(--font-ui)' }}>
+                      <p className="text-xs text-[var(--text-muted)] mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                         {item.width && item.height && `${item.width} × ${item.height} px`}
-                        {item.width && item.height && item.fileSizeMB && ' • '}
-                        {item.fileSizeMB && `${item.fileSizeMB} MB`}
+                        {item.width && item.height && item.fileSizeMB && (
+                          <span className="text-[var(--text-muted)]/80"> / {item.fileSizeMB} MB</span>
+                        )}
                       </p>
                     )}
                     {downloadData.used ? (

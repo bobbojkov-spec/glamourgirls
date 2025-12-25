@@ -12,6 +12,7 @@ import FeaturedPhoto from '@/components/actress/FeaturedPhoto';
 import FavoriteButton from '@/components/actress/FavoriteButton';
 import RelatedActressesGrid from '@/components/actress/RelatedActressesGrid';
 import Breadcrumb from '@/components/ui/Breadcrumb';
+import ScrollToTop from '@/components/ui/ScrollToTop';
 import type { Actress } from '@/types/actress';
 import { fetchActressFromDb } from '@/lib/actress/fetchActress';
 
@@ -29,6 +30,7 @@ interface FeaturedImage {
   width?: number;
   height?: number;
   price?: number;
+  fileSizeMB?: number;
 }
 
 interface PageProps {
@@ -55,8 +57,12 @@ const selectFeaturedImage = (actress: Actress): FeaturedImage | null => {
       (img) => Math.abs(Number(img.id) - Number(hqImage.id)) <= 1
     );
 
+    // Always use gallery image ID when available to ensure consistency with cart
+    // This prevents duplicate items when the same image is added from featured photos vs gallery
+    const imageId = galleryMatch ? Number(galleryMatch.id) : Number(hqImage.id);
+
     return {
-      id: Number(hqImage.id),
+      id: imageId,
       displayUrl: normalizeImageUrl(galleryMatch?.url || hqImage.url),
       downloadUrl: normalizeImageUrl(hqImage.url),
       width: hqImage.width,
@@ -221,59 +227,100 @@ export default async function ActressPage({ params }: PageProps) {
 
   const heroYears = formatYearRange(actressData.birthYear, actressData.deathYear);
   const featuredImage = selectFeaturedImage(actressData);
+  
+  // Helper function to check if image meets HQ requirements (minimum 1200px on long side)
+  const isHQImage = (width?: number, height?: number): boolean => {
+    if (!width || !height) return false;
+    const longSide = Math.max(width, height);
+    return longSide >= 1200;
+  };
+  
+  // Helper function to get file size in MB
+  const getFileSizeMB = (size?: number): number | undefined => {
+    if (!size || size === 0) return undefined;
+    return parseFloat((size / (1024 * 1024)).toFixed(2));
+  };
+  
   // Get up to 4 featured images (2 or 4, always even number for desktop layout)
+  // CRITICAL: Only include HQ images (minimum 1000px on long side)
   const featuredImages: FeaturedImage[] = [];
-  if (featuredImage) {
-    featuredImages.push(featuredImage);
-    // Try to get additional featured images (up to 3 more for max 4 total)
-    const hqImages = actressData.images?.hq || [];
-    const galleryImages = actressData.images?.gallery || [];
-    
-    // Get up to 3 more images (for total of 4)
-    for (let i = 1; i < 4 && featuredImages.length < 4; i++) {
-      if (hqImages.length > i) {
-        const hqImg = hqImages[i];
-        const galleryMatch = galleryImages.find(
+  if (featuredImage && isHQImage(featuredImage.width, featuredImage.height)) {
+    // Get file size from HQ image if available
+    // featuredImage.id is now always a gallery ID, so use findHQForGallery
+    const hqForFeatured = findHQForGallery(Number(featuredImage.id), actressData.images?.hq || []);
+    const fileSizeMB = getFileSizeMB(hqForFeatured?.size);
+    featuredImages.push({
+      ...featuredImage,
+      fileSizeMB,
+    });
+  }
+  
+  // Try to get additional featured images (up to 3 more for max 4 total)
+  const hqImages = actressData.images?.hq || [];
+  const allGalleryImages = actressData.images?.gallery || [];
+  
+  // Get up to 3 more images (for total of 4)
+  for (let i = 1; i < 4 && featuredImages.length < 4; i++) {
+    if (hqImages.length > i) {
+      const hqImg = hqImages[i];
+      // Only include if it meets HQ requirements
+      if (isHQImage(hqImg.width, hqImg.height)) {
+        const galleryMatch = allGalleryImages.find(
           (img) => Math.abs(Number(img.id) - Number(hqImg.id)) <= 1
         );
         if (galleryMatch || hqImg) {
+          const fileSizeMB = getFileSizeMB(hqImg.size);
+          // Always use gallery image ID when available to ensure consistency with cart
+          const imageId = galleryMatch ? Number(galleryMatch.id) : Number(hqImg.id);
           featuredImages.push({
-            id: Number(hqImg.id),
+            id: imageId,
             displayUrl: normalizeImageUrl(galleryMatch?.url || hqImg.url),
             downloadUrl: normalizeImageUrl(hqImg.url),
             width: hqImg.width,
             height: hqImg.height,
             price: 9.9,
+            fileSizeMB,
           });
         }
-      } else if (galleryImages.length > i) {
-        // If no more HQ images, use gallery images
-        const galleryImg = galleryImages[i];
-        const hqForGallery = findHQForGallery(Number(galleryImg.id), hqImages);
+      }
+    } else if (allGalleryImages.length > i) {
+      // Check if gallery image has HQ version that meets requirements
+      const galleryImg = allGalleryImages[i];
+      const hqForGallery = findHQForGallery(Number(galleryImg.id), hqImages);
+      if (hqForGallery && isHQImage(hqForGallery.width, hqForGallery.height)) {
+        const fileSizeBytes = hqForGallery.size || galleryImg.size || 0;
+        const fileSizeMB = fileSizeBytes > 0 ? parseFloat((fileSizeBytes / (1024 * 1024)).toFixed(2)) : undefined;
         featuredImages.push({
           id: Number(galleryImg.id),
           displayUrl: normalizeImageUrl(galleryImg.url),
           downloadUrl: normalizeImageUrl(galleryImg.url),
           width: galleryImg.width,
           height: galleryImg.height,
-          price: hqForGallery ? 9.9 : undefined,
+          price: 9.9,
+          fileSizeMB,
         });
       }
     }
-    
-    // Limit photos based on breakpoint requirements:
-    // Mobile: max 4 (2 rows of 2) - keep all up to 4
-    // Tablet: max 3 (1 row of 3) - hide 4th via CSS
-    // Desktop: max 4 (2 rows of 2, must be even) - hide 3rd if we have 3
-    if (featuredImages.length > 4) {
-      featuredImages.splice(4);
-    }
+  }
+  
+  // Limit photos based on breakpoint requirements:
+  // Mobile: max 2 (1 row of 2) - show exactly 2
+  // Tablet: max 3 (1 row of 3) - hide 4th via CSS
+  // Desktop: max 4 (2 rows of 2, must be even) - hide 3rd if we have 3
+  if (featuredImages.length > 4) {
+    featuredImages.splice(4);
   }
   const relatedActresses = actressData.relatedActresses || [];
   const galleryImages = (actressData.images?.gallery || []).filter((img) => !!img?.url);
   const galleryGridImages: GalleryImage[] = galleryImages.map((galleryImg) => {
     const hqImage = findHQForGallery(Number(galleryImg.id), actressData.images?.hq || []);
-    const price = hqImage ? 9.9 : undefined;
+    // Only mark as HQ if it meets the 1200px minimum requirement
+    const meetsHQRequirement = hqImage && isHQImage(hqImage.width, hqImage.height);
+    const price = meetsHQRequirement ? 9.9 : undefined;
+    
+    // Calculate file size in MB (use HQ size if available, otherwise gallery size)
+    const fileSizeBytes = hqImage?.size || galleryImg.size || 0;
+    const fileSizeMB = fileSizeBytes > 0 ? parseFloat((fileSizeBytes / (1024 * 1024)).toFixed(2)) : undefined;
 
     return {
       id: galleryImg.id.toString(),
@@ -282,10 +329,11 @@ export default async function ActressPage({ params }: PageProps) {
       width: galleryImg.width || 0,
       height: galleryImg.height || 0,
       price,
-      hasHQ: !!hqImage,
-      hqWidth: hqImage?.width,
-      hqHeight: hqImage?.height,
-      hqUrl: hqImage ? normalizeImageUrl(hqImage.url) : undefined,
+      hasHQ: !!meetsHQRequirement,
+      hqWidth: meetsHQRequirement ? hqImage?.width : undefined,
+      hqHeight: meetsHQRequirement ? hqImage?.height : undefined,
+      hqUrl: meetsHQRequirement ? normalizeImageUrl(hqImage.url) : undefined,
+      fileSizeMB: meetsHQRequirement ? fileSizeMB : undefined,
     };
   });
 
@@ -331,31 +379,54 @@ export default async function ActressPage({ params }: PageProps) {
             style={{ maxWidth: '1280px' }}
           >
             {/* Combined Block - Headshot + Name + Button, centered */}
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-12">
               {/* Headshot (tilted, framed) - Fixed aspect ratio to prevent layout shift */}
-              <div className="relative flex flex-col justify-center items-center gap-4" style={{ 
+              <div className="relative flex flex-col justify-center items-center gap-4 sm:gap-4" style={{ 
                 width: 'clamp(150px, 25vw, 200px)', 
                 minWidth: '150px',
                 flexShrink: 0,
               }}>
-                <div className="relative" style={{ 
-                  aspectRatio: '3/4', 
-                  width: '100%',
-                  maxWidth: '100%',
-                }}>
-                  <HeadshotImage
-                    src={heroImage}
-                    alt={`${actressName} portrait`}
-                    className="w-full h-full object-cover rounded-xl border-[10px] border-white shadow-lg transform rotate-[-2deg]"
-                    theirMan={actressData.theirMan}
+                {/* Mobile: Heart button positioned to the right of headshot */}
+                <div className="relative w-full sm:w-auto">
+                  <div className="relative" style={{ 
+                    aspectRatio: '3/4', 
+                    width: '100%',
+                    maxWidth: '100%',
+                  }}>
+                    <HeadshotImage
+                      src={heroImage}
+                      alt={`${actressName} portrait`}
+                      className="w-full h-full object-cover rounded-xl border-[10px] border-white shadow-lg transform rotate-[-2deg]"
+                      theirMan={actressData.theirMan}
+                    />
+                    {/* Mobile: PHOTOS button overlaying bottom third of headshot, centered, shifted 25px right */}
+                    <div className="absolute bottom-0 left-1/2 sm:hidden w-[80%] max-w-[200px]" style={{ transform: 'translateX(calc(-50% + 25px)) translateY(33%)' }}>
+                      <HeroGalleryButton
+                        galleryImages={galleryGridImages}
+                        actressId={actressData.id.toString()}
+                        actressName={actressName}
+                      />
+                    </div>
+                  </div>
+                  {/* Heart button - right of headshot on mobile, hidden on desktop (will show below on desktop) */}
+                  <div className="absolute -right-12 top-1/2 -translate-y-1/2 sm:hidden z-10">
+                    <FavoriteButton
+                      actressId={actressData.id.toString()}
+                      actressName={actressName}
+                      actressSlug={actressData.slug || `${actressData.id}`}
+                      thumbnailUrl={heroImage}
+                    />
+                  </div>
+                </div>
+                {/* Desktop: Heart button below headshot */}
+                <div className="hidden sm:block">
+                  <FavoriteButton
+                    actressId={actressData.id.toString()}
+                    actressName={actressName}
+                    actressSlug={actressData.slug || `${actressData.id}`}
+                    thumbnailUrl={heroImage}
                   />
                 </div>
-                <FavoriteButton
-                  actressId={actressData.id.toString()}
-                  actressName={actressName}
-                  actressSlug={actressData.slug || `${actressData.id}`}
-                  thumbnailUrl={heroImage}
-                />
               </div>
 
                   {/* Name + Button - Fixed font sizes to prevent layout shift */}
@@ -387,7 +458,8 @@ export default async function ActressPage({ params }: PageProps) {
                   </span>
                 </h1>
 
-                <div className="flex justify-center mt-8">
+                {/* Desktop: View Archive button */}
+                <div className="hidden sm:flex justify-center mt-8">
                   <HeroGalleryButton
                     galleryImages={galleryGridImages}
                     actressId={actressData.id.toString()}
@@ -483,21 +555,20 @@ export default async function ActressPage({ params }: PageProps) {
                         lineHeight: 'var(--h2-line-height)',
                       }}
                     >
-                      Featured Photo
+                      Featured Photos
                     </h3>
                     <div className="mt-[15px]">
                       {/* 
-                        Mobile (max-width: 767px): 2 columns, max 4 photos (2 rows of 2)
+                        Mobile (max-width: 767px): 2 columns, exactly 2 photos (1 row of 2)
                         Tablet (min-width: 768px, max-width: 1023px): 3 columns, max 3 photos (1 row of 3)
                       */}
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-                      {featuredImages.slice(0, 3).map((img, index) => {
-                        // Mobile: show up to 4, Tablet: show up to 3
-                        const isFourthItem = index === 3;
+                      {featuredImages.slice(0, 2).map((img, index) => {
+                        // Mobile: show exactly 2, Tablet: show up to 3
                         return (
                           <div
                             key={index}
-                            className={isFourthItem ? 'hidden' : ''}
+                            className={index >= 2 ? 'hidden md:block' : ''}
                           >
                             <FeaturedPhoto
                               image={img}
@@ -536,6 +607,13 @@ export default async function ActressPage({ params }: PageProps) {
                     </div>
                   </div>
                 )}
+
+                {/* Related Actresses Section - Mobile/Tablet: After Gallery */}
+                {relatedActresses.length > 0 && (
+                  <div className="lg:hidden bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-5 md:p-6">
+                    <RelatedActressesGrid actresses={relatedActresses} />
+                  </div>
+                )}
               </div>
 
               {/* Right Column - Sidebar (Desktop Only) */}
@@ -553,7 +631,7 @@ export default async function ActressPage({ params }: PageProps) {
                         lineHeight: 'var(--h2-line-height)',
                       }}
                     >
-                      Featured Photo
+                      Featured Photos
                     </h3>
                     <div className="mt-[15px]">
                       {/* 
@@ -601,20 +679,7 @@ export default async function ActressPage({ params }: PageProps) {
                 {/* Related Actresses Section - Right after Featured Photo */}
                 {relatedActresses.length > 0 && (
                   <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-5 md:p-6">
-                    <div className="space-y-4">
-                      <h3
-                        className="text-[var(--text-primary)] mb-4"
-                        style={{
-                          fontFamily: 'var(--font-headline)',
-                          fontSize: 'var(--h2-size)',
-                          letterSpacing: 'var(--h2-letter-spacing)',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Related Actresses
-                      </h3>
-                      <RelatedActressesGrid actresses={relatedActresses} />
-                    </div>
+                    <RelatedActressesGrid actresses={relatedActresses} />
                   </div>
                 )}
                 </div>
@@ -646,6 +711,7 @@ export default async function ActressPage({ params }: PageProps) {
       </div>
 
       <Footer />
+      <ScrollToTop />
     </>
   );
 }

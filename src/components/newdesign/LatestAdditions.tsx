@@ -41,18 +41,6 @@ export default function LatestAdditions({
       }`}
     >
       <p className="text-xs uppercase tracking-[0.35em] text-[var(--text-muted)] mb-2">Latest additions</p>
-      <h2
-        className="text-[var(--text-primary)]"
-        style={{
-          fontFamily: 'var(--font-headline)',
-          fontSize: 'var(--h2-size)',
-          lineHeight: 'var(--h2-line-height)',
-          letterSpacing: 'var(--h2-letter-spacing)',
-        }}
-      >
-        New pictures
-      </h2>
-      <p style={{ marginBottom: '10px' }}></p>
 
       {variant === 'grid' ? (
         <div className={`grid ${gridClass} gap-5`}>

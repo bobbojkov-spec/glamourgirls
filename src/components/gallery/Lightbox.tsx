@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useCart } from '@/context/CartContext';
 import { GalleryImage } from './GalleryGrid';
 
@@ -45,6 +46,31 @@ export default function Lightbox({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onNext, onPrev, onClose]);
 
+  // Prevent body scroll when lightbox is open (including mobile touch scrolling)
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+    const originalTop = document.body.style.top;
+    const originalWidth = document.body.style.width;
+    
+    // Prevent scrolling on all devices including mobile
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = `-${window.scrollY}px`;
+    
+    return () => {
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.top = originalTop;
+      document.body.style.width = originalWidth;
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    };
+  }, []);
+
   const handleAddToCart = () => {
     if (!image.hasHQ || !image.price) return;
     
@@ -56,6 +82,7 @@ export default function Lightbox({
       price: image.price,
       width: image.hqWidth || image.width,
       height: image.hqHeight || image.height,
+      fileSizeMB: image.fileSizeMB,
     });
     
     openCart();
@@ -64,19 +91,25 @@ export default function Lightbox({
   // Use full-size gallery image (not thumbnail)
   const imageSrc = image.fullUrl;
 
-  return (
+  // Render using portal to ensure it's at the root level
+  const lightboxContent = (
     <div
-      className="fixed inset-0 bg-black/90 z-[1000] flex flex-col items-center justify-center"
+      className="fixed inset-0 bg-black/95 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center"
       onClick={(e) => {
         // Only close on click outside the image container
         if (e.target === e.currentTarget) {
           onClose();
         }
       }}
+      style={{ 
+        zIndex: 9999,
+        touchAction: 'none', // Prevent touch scrolling on mobile
+        overscrollBehavior: 'contain', // Prevent scroll chaining
+      }}
     >
       {/* Image counter */}
       {images.length > 1 && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white bg-black/50 px-4 py-2 rounded text-sm z-[1001]">
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white bg-black/50 px-4 py-2 rounded text-sm z-[10000]">
           {currentIndex + 1} / {images.length}
         </div>
       )}
@@ -87,8 +120,8 @@ export default function Lightbox({
           e.stopPropagation();
           onClose();
         }}
-        className="absolute top-4 right-4 text-white hover:bg-white/20 transition-all duration-200 z-[1001] bg-black/60 backdrop-blur-sm rounded-md px-4 py-2 shadow-lg font-medium"
-        style={{ fontFamily: 'DM Sans, sans-serif' }}
+        className="absolute top-4 right-4 text-white hover:bg-white/20 transition-all duration-200 z-[10000] bg-black/60 backdrop-blur-sm rounded-md px-4 py-2 shadow-lg font-medium"
+        style={{ fontFamily: 'DM Sans, sans-serif', zIndex: 10000 }}
         aria-label="Close lightbox"
         title="Close (Esc)"
       >
@@ -103,7 +136,8 @@ export default function Lightbox({
         {images.length > 1 && (
           <button
             onClick={onPrev}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-[1001] bg-black/70 hover:bg-black/90 rounded-full p-3 shadow-lg"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-3 shadow-lg"
+            style={{ zIndex: 10000 }}
             aria-label="Previous image"
           >
             <svg
@@ -140,7 +174,8 @@ export default function Lightbox({
         {images.length > 1 && (
           <button
             onClick={onNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-[1001] bg-black/70 hover:bg-black/90 rounded-full p-3 shadow-lg"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-3 shadow-lg"
+            style={{ zIndex: 10000 }}
             aria-label="Next image"
           >
             <svg
@@ -163,66 +198,109 @@ export default function Lightbox({
       {/* Photo info and purchase section - below image, only if HQ available */}
       {image.hasHQ && (
         <div 
-          className="mt-4 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg shadow-[var(--shadow-subtle)] px-6 py-4 flex items-center justify-between gap-6"
+          className="mt-4 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg shadow-[var(--shadow-subtle)] px-4 sm:px-6 py-3 sm:py-4 flex flex-row items-center justify-between gap-3 sm:gap-4 relative z-[10000] w-full max-w-[90vw] sm:max-w-none"
           onClick={(e) => e.stopPropagation()}
-          style={{ fontFamily: 'DM Sans, sans-serif' }}
+          onTouchMove={(e) => e.stopPropagation()} // Prevent touch scrolling on mobile
+          style={{ 
+            fontFamily: 'DM Sans, sans-serif', 
+            zIndex: 10000,
+            height: '64px', // Fixed height for all screen sizes
+            minHeight: '64px',
+            maxHeight: '64px',
+            touchAction: 'none', // Prevent touch scrolling
+          }}
         >
-          <div className="flex items-center gap-4 text-[var(--text-secondary)]" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px' }}>
+          {/* Left side: Pixel size, Megabyte size, and Price */}
+          <div className="flex flex-row items-center gap-2 sm:gap-3 text-[var(--text-secondary)] flex-1 min-w-0" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px' }}>
             {image.hqWidth && image.hqHeight && (
-              <span className="font-medium">{image.hqWidth} × {image.hqHeight} px</span>
-            )}
-            {image.price && (
-              <span className="font-semibold text-[var(--text-primary)]" style={{ fontSize: '16px' }}>
-                ${image.price.toFixed(2)}
-              </span>
+              <>
+                <span className="font-medium whitespace-nowrap">{image.hqWidth} × {image.hqHeight} px</span>
+                {image.fileSizeMB !== undefined && image.fileSizeMB !== null && (
+                  <span className="font-medium whitespace-nowrap text-[var(--text-secondary)]/80">/ {image.fileSizeMB} MB</span>
+                )}
+                {image.price && (
+                  <span className="font-semibold text-[var(--text-primary)] whitespace-nowrap ml-auto" style={{ fontSize: '16px' }}>
+                    ${image.price.toFixed(2)}
+                  </span>
+                )}
+              </>
             )}
           </div>
 
+          {/* Right side: Add to Cart button (icon only, max 60px width) */}
           {image.price && (
-            <div>
+            <div className="flex-shrink-0">
               {inCart ? (
                 <button
-                  onClick={openCart}
-                  className="px-5 py-2.5 bg-[var(--accent-gold)] text-white rounded-md flex items-center gap-2 hover:bg-[var(--accent-gold)]/90 transition-all duration-200 font-medium text-sm shadow-sm"
-                  style={{ fontFamily: 'DM Sans, sans-serif' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openCart();
+                  }}
+                  className="inline-flex items-center justify-center bg-[var(--accent-gold)] text-white rounded-md hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-all duration-200 font-medium text-sm shadow-sm active:scale-[0.92] active:shadow-md active:opacity-80"
+                  style={{ 
+                    fontFamily: 'DM Sans, sans-serif',
+                    height: '44px',
+                    width: '44px',
+                    minHeight: '44px',
+                    minWidth: '44px',
+                    maxHeight: '44px',
+                    maxWidth: '60px',
+                    padding: '0',
+                    flexShrink: 0,
+                  }}
+                  aria-label="View cart"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
+                    width="20"
+                    height="20"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    className="flex-shrink-0"
                   >
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  In Cart
                 </button>
               ) : (
                 <button
-                  onClick={handleAddToCart}
-                  className="px-5 py-2.5 bg-[var(--accent-gold)] text-white rounded-md flex items-center gap-2 hover:bg-[var(--accent-gold)]/90 transition-all duration-200 font-medium text-sm shadow-sm hover:shadow-md"
-                  style={{ fontFamily: 'DM Sans, sans-serif' }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddToCart();
+                  }}
+                  className="inline-flex items-center justify-center bg-[var(--accent-gold)] text-white rounded-md hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-all duration-200 font-medium text-sm shadow-sm active:scale-[0.92] active:shadow-md active:opacity-80"
+                  style={{ 
+                    fontFamily: 'DM Sans, sans-serif',
+                    height: '44px',
+                    width: '44px',
+                    minHeight: '44px',
+                    minWidth: '44px',
+                    maxHeight: '44px',
+                    maxWidth: '60px',
+                    padding: '0',
+                    flexShrink: 0,
+                  }}
+                  aria-label="Add to cart"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
+                    width="20"
+                    height="20"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    className="flex-shrink-0"
                   >
                     <circle cx="9" cy="21" r="1" />
                     <circle cx="20" cy="21" r="1" />
                     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                   </svg>
-                  Add to Cart
                 </button>
               )}
             </div>
@@ -231,6 +309,13 @@ export default function Lightbox({
       )}
     </div>
   );
+
+  // Use portal to render at document.body level
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  return createPortal(lightboxContent, document.body);
 }
 
 

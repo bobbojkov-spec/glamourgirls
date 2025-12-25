@@ -1,9 +1,8 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
 import { useFavorites } from '@/context/FavoritesContext';
+import ActressListRow from '@/components/ui/ActressListRow';
 
 export default function FavoritesModal() {
   const { favorites, isOpen, closeFavorites, removeFavorite } = useFavorites();
@@ -24,7 +23,7 @@ export default function FavoritesModal() {
           className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-lift)] p-6 max-w-2xl w-full max-h-[80vh] flex flex-col pointer-events-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 border-b border-[var(--border-subtle)] pb-5 px-0">
             <h2
               className="text-[var(--text-primary)]"
               style={{
@@ -56,41 +55,27 @@ export default function FavoritesModal() {
               <ul className="space-y-3">
                 {favorites.map((actress) => (
                   <li key={actress.id}>
-                    <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-[var(--bg-surface-alt)] transition-colors group">
-                      <Link
-                        href={`/actress/${actress.id}/${actress.slug}`}
-                        onClick={closeFavorites}
-                        className="flex items-center gap-4 flex-1 min-w-0"
-                      >
-                        <div className="relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border border-[var(--border-subtle)]">
-                          <Image
-                            src={actress.thumbnailUrl}
-                            alt={actress.name}
-                            fill
-                            className="object-cover"
-                            sizes="64px"
-                          />
-                        </div>
-                        <p
-                          className="text-base text-[var(--text-primary)] leading-tight uppercase font-bold truncate flex-1"
-                          style={{ fontFamily: "'Kabel Black', sans-serif" }}
+                    <ActressListRow
+                      id={actress.id}
+                      name={actress.name}
+                      slug={actress.slug}
+                      thumbnailUrl={actress.thumbnailUrl}
+                      actionButton={
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeFavorite(actress.id);
+                          }}
+                          className="p-2 text-[var(--text-muted)] hover:text-red-500 transition-colors"
+                          aria-label={`Remove ${actress.name} from favorites`}
                         >
-                          {actress.name}
-                        </p>
-                      </Link>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          removeFavorite(actress.id);
-                        }}
-                        className="flex-shrink-0 p-2 text-[var(--text-muted)] hover:text-red-500 transition-colors"
-                        aria-label={`Remove ${actress.name} from favorites`}
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                          </svg>
+                        </button>
+                      }
+                    />
                   </li>
                 ))}
               </ul>

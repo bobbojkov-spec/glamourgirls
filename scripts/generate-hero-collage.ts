@@ -45,7 +45,7 @@ async function generateHeroCollage(era: string, version: number = 1): Promise<st
        AND i.path != ''
        AND i.width > 0
        AND i.height > 0
-     ORDER BY RAND()
+     ORDER BY random()
      LIMIT 30`,
     [eraValue]
   ) as any[];

@@ -103,13 +103,13 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none px-4 sm:px-[20%]">
         <div
-          className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-lift)] max-w-3xl w-full pointer-events-auto transform transition-all"
+          className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-lift)] w-full pointer-events-auto transform transition-all"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="px-6 py-5 border-b border-[var(--border-subtle)] bg-gradient-to-r from-[var(--bg-surface)] to-[var(--bg-surface-alt)]">
+          <div className="px-6 py-5 border-b border-[var(--border-subtle)]">
             <div className="flex items-center justify-between">
               <h2
                 className="text-[var(--text-primary)]"
@@ -204,7 +204,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <button
                     type="submit"
                     disabled={!canSearch}
-                    className="px-6 py-3 rounded-r-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 rounded-r-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#6f5718] active:scale-95 active:shadow-md active:opacity-90"
                     style={{
                       backgroundColor: canSearch ? '#8b6f2a' : '#6f5718',
                       color: '#ffffff',

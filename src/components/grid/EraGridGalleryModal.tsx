@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFavorites } from '@/context/FavoritesContext';
+import { useCart } from '@/context/CartContext';
 
 interface GridItem {
   actressId: number;
@@ -30,6 +31,13 @@ function getFullImageUrl(thumbnailUrl: string | null): string {
   return thumbnailUrl;
 }
 
+interface HqImageInfo {
+  width: number;
+  height: number;
+  price: number;
+  imageId: string;
+}
+
 export default function EraGridGalleryModal({
   items,
   initialIndex,
@@ -38,12 +46,88 @@ export default function EraGridGalleryModal({
 }: EraGridGalleryModalProps) {
   const router = useRouter();
   const { isFavorite, addFavorite, removeFavorite } = useFavorites();
+  const { addItem, isInCart, openCart } = useCart();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
+  const [hqImageInfo, setHqImageInfo] = useState<HqImageInfo | null>(null);
+  const [loadingHqInfo, setLoadingHqInfo] = useState(false);
 
   const currentItem = items[currentIndex];
   const isFavorited = currentItem ? isFavorite(currentItem.actressId.toString()) : false;
+
+  // Split name into first name and surname
+  const splitName = (fullName: string) => {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) {
+      return { firstName: parts[0], surname: '' };
+    }
+    return {
+      firstName: parts[0],
+      surname: parts.slice(1).join(' '),
+    };
+  };
+
+  const { firstName, surname } = currentItem ? splitName(currentItem.actressName) : { firstName: '', surname: '' };
+
+  // Fetch HQ image info when current item changes
+  useEffect(() => {
+    const fetchHqImageInfo = async () => {
+      if (!currentItem || !currentItem.hasHqImages || !currentItem.imageId) {
+        setHqImageInfo(null);
+        return;
+      }
+
+      setLoadingHqInfo(true);
+      try {
+        const response = await fetch(`/api/actresses/${currentItem.actressId}`);
+        if (response.ok) {
+          const actressData = await response.json();
+          const galleryImages = actressData.images?.gallery || [];
+          const hqImages = actressData.images?.hq || [];
+          
+          // Find the gallery image that matches
+          const galleryImage = galleryImages.find((img: any) => 
+            img.id.toString() === currentItem.imageId?.toString()
+          );
+          
+          if (galleryImage) {
+            // Find corresponding HQ image (usually galleryId - 1 or + 1)
+            const galleryId = parseInt(galleryImage.id);
+            const hqImage = hqImages.find((hq: any) => 
+              parseInt(hq.id) === galleryId - 1 || parseInt(hq.id) === galleryId + 1
+            );
+            
+            // Check if HQ image meets minimum requirements (1200px on long side)
+            if (hqImage && hqImage.width && hqImage.height) {
+              const longSide = Math.max(hqImage.width, hqImage.height);
+              if (longSide >= 1200) {
+                setHqImageInfo({
+                  width: hqImage.width,
+                  height: hqImage.height,
+                  price: 9.9,
+                  imageId: galleryImage.id.toString(), // Use gallery ID for cart consistency
+                });
+                return;
+              }
+            }
+          }
+        }
+        setHqImageInfo(null);
+      } catch (error) {
+        console.error('Error fetching HQ image info:', error);
+        setHqImageInfo(null);
+      } finally {
+        setLoadingHqInfo(false);
+      }
+    };
+
+    if (isOpen && currentItem) {
+      fetchHqImageInfo();
+    }
+  }, [isOpen, currentItem?.actressId, currentItem?.imageId, currentItem?.hasHqImages]);
 
   // Reset state when modal opens/closes or index changes
   useEffect(() => {
@@ -125,6 +209,71 @@ export default function EraGridGalleryModal({
     onClose();
   }, [currentItem, router, onClose]);
 
+  const handleAddToCart = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentItem || !hqImageInfo) return;
+    
+    addItem({
+      id: hqImageInfo.imageId,
+      actressId: currentItem.actressId.toString(),
+      actressName: currentItem.actressName,
+      thumbnailUrl: currentItem.thumbnailUrl || '',
+      price: hqImageInfo.price,
+      width: hqImageInfo.width,
+      height: hqImageInfo.height,
+    });
+    
+    openCart();
+  }, [currentItem, hqImageInfo, addItem, openCart]);
+
+  const isAlreadyInCart = hqImageInfo ? isInCart(hqImageInfo.imageId) : false;
+
+  // Touch/swipe handlers for mobile
+  const minSwipeDistance = 50; // Minimum distance for a swipe
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart({
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY,
+    });
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    setTouchEnd({
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY,
+    });
+  }, []);
+
+  const onTouchEnd = useCallback(() => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distanceX = touchStart.x - touchEnd.x;
+    const distanceY = touchStart.y - touchEnd.y;
+    const isLeftSwipe = distanceX > minSwipeDistance;
+    const isRightSwipe = distanceX < -minSwipeDistance;
+    const isUpSwipe = distanceY > minSwipeDistance;
+    const isDownSwipe = distanceY < -minSwipeDistance;
+
+    // Handle horizontal swipes (left/right)
+    if (isLeftSwipe || isRightSwipe) {
+      if (isLeftSwipe) {
+        handleNext();
+      } else {
+        handlePrevious();
+      }
+    }
+    // Handle vertical swipes (up/down)
+    else if (isUpSwipe || isDownSwipe) {
+      if (isUpSwipe) {
+        handleNext();
+      } else {
+        handlePrevious();
+      }
+    }
+  }, [touchStart, touchEnd, handlePrevious, handleNext]);
+
   if (!isOpen || !currentItem) return null;
 
   const fullImageUrl = getFullImageUrl(currentItem.thumbnailUrl);
@@ -134,10 +283,10 @@ export default function EraGridGalleryModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm"
       onClick={onClose}
     >
-      {/* Close button */}
+      {/* Close button - Overlay on image corner for mobile */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+        className="absolute top-2 right-2 md:top-4 md:right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 md:bg-white/10 hover:bg-black/70 md:hover:bg-white/20 transition-colors text-white"
         aria-label="Close gallery"
       >
         <svg
@@ -155,24 +304,25 @@ export default function EraGridGalleryModal({
         </svg>
       </button>
 
-      {/* Navigation buttons */}
+      {/* Navigation buttons - Bigger with black overlay on mobile */}
       <button
         onClick={(e) => {
           e.stopPropagation();
           handlePrevious();
         }}
-        className="absolute left-4 z-10 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+        className="absolute left-2 md:left-4 z-20 w-14 h-14 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-black/50 md:bg-white/10 hover:bg-black/70 md:hover:bg-white/20 transition-colors text-white active:scale-95"
         aria-label="Previous image"
       >
         <svg
-          width="24"
-          height="24"
+          width="36"
+          height="36"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
+          className="md:w-6 md:h-6"
         >
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
@@ -183,18 +333,19 @@ export default function EraGridGalleryModal({
           e.stopPropagation();
           handleNext();
         }}
-        className="absolute right-4 z-10 w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
+        className="absolute right-2 md:right-4 z-20 w-14 h-14 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-black/50 md:bg-white/10 hover:bg-black/70 md:hover:bg-white/20 transition-colors text-white active:scale-95"
         aria-label="Next image"
       >
         <svg
-          width="24"
-          height="24"
+          width="36"
+          height="36"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
+          className="md:w-6 md:h-6"
         >
           <polyline points="9 18 15 12 9 6"></polyline>
         </svg>
@@ -202,11 +353,14 @@ export default function EraGridGalleryModal({
 
       {/* Main content */}
       <div
-        className="relative w-full h-full flex flex-col items-center justify-center px-4 py-4"
+        className="relative w-full h-full flex flex-col items-center justify-center px-4 pt-8 md:pt-4 pb-4"
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
-        {/* Image container - Fixed 650px height */}
-        <div className="relative w-full max-w-4xl h-[650px] flex items-center justify-center mb-6">
+        {/* Image container - Fixed 650px height, higher on mobile */}
+        <div className="relative w-full max-w-4xl h-[650px] flex items-center justify-center mb-4 md:mb-6">
           {imageLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -253,53 +407,135 @@ export default function EraGridGalleryModal({
         {/* Info panel */}
         <div className="w-full max-w-4xl px-4">
           <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20">
-            {/* Actress name and favorite button */}
-            <div className="flex items-center justify-between mb-3">
-              <h2 
-                className="text-lg font-bold text-white uppercase" 
-                style={{ fontFamily: "'Kabel Black', sans-serif" }}
-              >
-                {currentItem.actressName}
-              </h2>
-              <button
-                onClick={handleFavoriteClick}
-                className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)] flex-shrink-0"
-                aria-label={isFavorited ? `Remove ${currentItem.actressName} from favorites` : `Add ${currentItem.actressName} to favorites`}
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill={isFavorited ? '#8B4513' : 'none'}
-                  stroke={isFavorited ? '#8B4513' : 'currentColor'}
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="transition-all duration-200"
+            {/* First row: Actress name (left) and HQ info (right) */}
+            <div className="flex items-start justify-between mb-3 gap-4">
+              {/* Left: Actress name (20% smaller, more white, always two rows) */}
+              <div className="flex-1">
+                <h2 
+                  className="font-bold text-white uppercase leading-tight" 
                   style={{ 
-                    color: isFavorited ? '#8B4513' : 'white',
+                    fontFamily: "'Kabel Black', sans-serif",
+                    fontSize: '0.8em', // 20% smaller
+                    opacity: 1, // More white/dense opacity
                   }}
                 >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
-              </button>
+                  {firstName && (
+                    <div className="block">{firstName}</div>
+                  )}
+                  {surname && (
+                    <div className="block">{surname}</div>
+                  )}
+                  {!firstName && !surname && currentItem.actressName && (
+                    <>
+                      <div className="block">{currentItem.actressName.split(' ')[0]}</div>
+                      {currentItem.actressName.split(' ').slice(1).length > 0 && (
+                        <div className="block">{currentItem.actressName.split(' ').slice(1).join(' ')}</div>
+                      )}
+                    </>
+                  )}
+                </h2>
+              </div>
+
+              {/* Right: Favorite button and HQ info */}
+              <div className="flex items-start gap-3 flex-shrink-0">
+                {/* HQ Image Info (only if available) - First row */}
+                {hqImageInfo && !loadingHqInfo && (
+                  <div className="flex items-center gap-2 text-white/90" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '0.75rem' }}>
+                    <span>High-quality images are available</span>
+                    <span>•</span>
+                    <span>{hqImageInfo.width.toLocaleString()} × {hqImageInfo.height.toLocaleString()} px</span>
+                    <span>•</span>
+                    <span className="font-semibold">${hqImageInfo.price.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {/* Favorite button */}
+                <button
+                  onClick={handleFavoriteClick}
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)] flex-shrink-0"
+                  aria-label={isFavorited ? `Remove ${currentItem.actressName} from favorites` : `Add ${currentItem.actressName} to favorites`}
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill={isFavorited ? '#8B4513' : 'none'}
+                    stroke={isFavorited ? '#8B4513' : 'currentColor'}
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="transition-all duration-200"
+                    style={{ 
+                      color: isFavorited ? '#8B4513' : 'white',
+                    }}
+                  >
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
-            {/* High-quality images notice */}
-            {currentItem.hasHqImages && (
-              <p className="text-white/70 text-xs mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                High-quality images are available
-              </p>
-            )}
-
-            {/* View details link */}
-            <button
-              onClick={handleViewDetails}
-              className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-sm font-medium mb-2"
-              style={{ fontFamily: 'DM Sans, sans-serif' }}
-            >
-              Go see details on this actress →
-            </button>
+            {/* Second row: View details link (left) and Add to Cart button (right) */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={handleViewDetails}
+                className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-sm font-medium"
+                style={{ fontFamily: 'DM Sans, sans-serif' }}
+              >
+                Go see details on this actress →
+              </button>
+              
+              {/* Add to Cart button (same row as "Go see details") */}
+              {hqImageInfo && !loadingHqInfo && (
+                <div>
+                  {!isAlreadyInCart ? (
+                    <button
+                      onClick={handleAddToCart}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-xs text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-all duration-200 shadow-sm active:scale-[0.95]"
+                      style={{ fontFamily: 'DM Sans, sans-serif' }}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="9" cy="21" r="1" />
+                        <circle cx="20" cy="21" r="1" />
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                      </svg>
+                      <span>Add</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={openCart}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-xs text-white bg-green-600"
+                      style={{ fontFamily: 'DM Sans, sans-serif' }}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      <span>In Cart</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Image counter */}
             <div className="mt-3 pt-3 border-t border-white/20">

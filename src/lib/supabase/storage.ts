@@ -44,7 +44,7 @@ export function getStorageUrl(dbPath: string | null | undefined, bucket: string 
 }
 
 /**
- * Fetch an image from Supabase Storage
+ * Fetch an image from Supabase Storage using public URL
  * @param dbPath - Database path from images.path column
  * @param bucket - Storage bucket name (default: 'glamourgirls_images')
  * @returns Image buffer or null if fetch fails
@@ -66,6 +66,46 @@ export async function fetchFromStorage(
     return Buffer.from(arrayBuffer);
   } catch (error) {
     console.error(`Error fetching from storage: ${storageUrl}`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetch an image from Supabase Storage using the Supabase client (for private buckets)
+ * @param dbPath - Database path from images.path column
+ * @param bucket - Storage bucket name (default: 'glamourgirls_images')
+ * @returns Image buffer or null if fetch fails
+ */
+export async function fetchFromStorageWithClient(
+  dbPath: string | null | undefined,
+  bucket: string = 'glamourgirls_images'
+): Promise<Buffer | null> {
+  if (!dbPath) return null;
+
+  try {
+    const supabase = getSupabaseClient();
+    
+    // Remove leading slash and normalize path
+    const cleanPath = dbPath.startsWith('/') ? dbPath.slice(1) : dbPath;
+    
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .download(cleanPath);
+
+    if (error) {
+      console.error(`Failed to download from storage (bucket: ${bucket}, path: ${cleanPath}): ${error.message}`);
+      return null;
+    }
+
+    if (!data) {
+      console.error(`No data returned from storage (bucket: ${bucket}, path: ${cleanPath})`);
+      return null;
+    }
+
+    const arrayBuffer = await data.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (error: any) {
+    console.error(`Error downloading from storage (bucket: ${bucket}, path: ${dbPath}):`, error);
     return null;
   }
 }
