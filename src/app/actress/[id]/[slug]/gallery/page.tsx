@@ -147,23 +147,31 @@ export default async function GalleryPage({ params }: PageProps) {
     return;
   }
   
+  // Guarded early return: handle null case explicitly
+  // After this guard, TypeScript knows actressData is non-null
   if (!actressData) {
     notFound();
     return;
   }
 
+  // Assign to const after null check - TypeScript now knows it's non-null
+  const actress = actressData;
+
   // Always redirect to detail page (gallery pages no longer exist)
-  if (actressData.slug) {
-    redirect(`/actress/${id}/${actressData.slug}`);
+  // Note: redirect() throws internally, so code after it is unreachable at runtime
+  if (actress.slug) {
+    redirect(`/actress/${id}/${actress.slug}`);
   } else {
     redirect(`/actress/${id}`);
   }
 
-  const bgClass = eraBackgrounds[actressData.era] || 'era-30s';
+  // This code is unreachable at runtime (redirect throws), but TypeScript requires it
+  // to satisfy type checking. The redirect above will execute and throw before this runs.
+  const bgClass = eraBackgrounds[actress.era] || 'era-30s';
   
   // Map database images to GalleryImage format
-  const galleryImages: GalleryImage[] = (actressData.images?.gallery || []).map((galleryImg: any) => {
-    const hqImage = findHQ(galleryImg.id, actressData.images?.hq || []);
+  const galleryImages: GalleryImage[] = (actress.images?.gallery || []).map((galleryImg: any) => {
+    const hqImage = findHQ(galleryImg.id, actress.images?.hq || []);
     
     // Only mark as HQ if it meets the 1200px minimum requirement
     const meetsHQRequirement = hqImage && isHQImage(hqImage.width, hqImage.height);
@@ -193,9 +201,9 @@ export default async function GalleryPage({ params }: PageProps) {
         <nav className="breadcrumb w-full">
           <Link href="/search">Search</Link>
           <span className="breadcrumb-separator">›</span>
-          <Link href={`/actress/${id}/${slug}`}>{actressData.name} Profile</Link>
+          <Link href={`/actress/${id}/${slug}`}>{actress.name} Profile</Link>
           <span className="breadcrumb-separator">›</span>
-          <span>{actressData.name} Photo Gallery</span>
+          <span>{actress.name} Photo Gallery</span>
         </nav>
       </div>
 
@@ -204,22 +212,22 @@ export default async function GalleryPage({ params }: PageProps) {
         <div className="w-full">
           {/* Title */}
           <h1 className="gallery-title">
-            Photographs of {actressData.name}
+            Photographs of {actress.name}
           </h1>
           
           {/* Copyright notice */}
           <p className="text-sm text-gray-600 mb-6 pb-4 border-b border-black/10">
             This site and its contents are for private use only. Reproduction of any kind 
-            of the {actressData.name} Images without consent is forbidden.
+            of the {actress.name} Images without consent is forbidden.
           </p>
 
           {/* Gallery Grid */}
           {galleryImages.length > 0 ? (
             <GalleryGrid 
               images={galleryImages} 
-              actressId={actressData.id.toString()}
-              actressName={actressData.name}
-              actressSlug={actressData.slug || `${actressData.id}`}
+              actressId={actress.id.toString()}
+              actressName={actress.name}
+              actressSlug={actress.slug || `${actress.id}`}
             />
           ) : (
             <div className="text-center py-12">

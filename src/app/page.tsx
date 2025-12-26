@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/newdesign';
-import SearchPanel, { SearchFilters } from '@/components/search/SearchPanel';
+import SearchPanel, { SearchFilters, YearFilterValue } from '@/components/search/SearchPanel';
 import type { SearchActressResult } from '@/types/search';
 import './newdesign/design-tokens.css';
 
@@ -186,7 +186,7 @@ const logWarn = (message: string) => {
 const defaultFilters: SearchFilters = {
   newEntry: 'all',
   newPhotos: 'all',
-  years: ['all'],
+  years: ['all'] as [YearFilterValue],
   nameStartsWith: '',
   surnameStartsWith: '',
   keyword: '',
@@ -247,7 +247,7 @@ export default function HomePage() {
   useEffect(() => {
     setLoading(true);
     // Fetch only featured actresses
-    fetchActresses({ years: ['all'], newEntry: 'all', newPhotos: 'all', nameStartsWith: '', surnameStartsWith: '', keyword: '' })
+    fetchActresses({ years: ['all'] as [YearFilterValue], newEntry: 'all', newPhotos: 'all', nameStartsWith: '', surnameStartsWith: '', keyword: '' })
       .then((data) => {
         // Filter to only featured actresses with gallery images, ordered by featured_order
         const featured = data
@@ -503,7 +503,7 @@ export default function HomePage() {
                   <SearchPanel 
                     compact 
                     initialFilters={{ 
-                      years: ['all'],
+                      years: ['all'] as [YearFilterValue],
                       newEntry: 'all',
                       newPhotos: 'all',
                       nameStartsWith: '',

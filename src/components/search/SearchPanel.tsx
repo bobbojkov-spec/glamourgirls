@@ -14,31 +14,41 @@ interface SearchPanelProps {
   onSearch?: (filters: SearchFilters) => void;
 }
 
+// Canonical type for year filter values
+export type YearFilterValue = 'all' | '20-30s' | '40s' | '50s' | '60s' | 'men';
+
+// Canonical type for toggle filter values
+export type ToggleFilterValue = 'all' | 'yes' | 'no';
+
+// Canonical SearchFilters interface - used everywhere
 export interface SearchFilters {
-  newEntry: 'all' | 'yes' | 'no';
-  newPhotos: 'all' | 'yes' | 'no';
-  years: string[];
+  newEntry: ToggleFilterValue;
+  newPhotos: ToggleFilterValue;
+  years: [YearFilterValue]; // Tuple with exactly one value (radio button selection)
   nameStartsWith: string;
   surnameStartsWith: string;
   keyword: string;
 }
 
-const defaultFilters: SearchFilters = {
+// Full default object - used for state initialization
+const FULL_DEFAULT_FILTERS: SearchFilters = {
   newEntry: 'all',
   newPhotos: 'all',
   years: ['all'],
   nameStartsWith: '',
   surnameStartsWith: '',
   keyword: '',
-};
+} as const;
 
 export default function SearchPanel({ 
   compact = false, 
   initialFilters,
   onSearch 
 }: SearchPanelProps) {
-  // Reset filters when initialFilters change (e.g., when URL params change)
-  const [filters, setFilters] = useState<SearchFilters>(initialFilters || defaultFilters);
+  // Initialize state with full default object - ensures type safety
+  const [filters, setFilters] = useState<SearchFilters>(
+    initialFilters ?? FULL_DEFAULT_FILTERS
+  );
   
   // Update filters when initialFilters prop changes (from URL params)
   useEffect(() => {
@@ -103,11 +113,14 @@ export default function SearchPanel({
 
   // Years filter now uses radio buttons, so we just set the selected year
   // Hero search: Auto-search immediately to narrow results
-  const handleYearChange = (year: string) => {
-    const newFilters: SearchFilters = { ...filters, years: [year] };
-    setFilters(newFilters);
-    // Immediately refine search with new year filter
-    onSearch?.(newFilters);
+  const handleYearChange = (year: YearFilterValue) => {
+    // Use functional update to prevent type widening and ensure stability
+    setFilters(prev => {
+      const newFilters: SearchFilters = { ...prev, years: [year] };
+      // Immediately refine search with new year filter
+      onSearch?.(newFilters);
+      return newFilters;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -126,20 +139,24 @@ export default function SearchPanel({
 
   // Auto-search when alphabet letters are clicked
   const handleLetterClick = (letter: string, type: 'name' | 'surname') => {
-    const currentValue = filters[type === 'name' ? 'nameStartsWith' : 'surnameStartsWith'];
-    // Toggle: if same letter clicked, clear; otherwise set to that letter
-    const newValue = currentValue === letter ? '' : letter;
-    
-    const newFilters: SearchFilters = {
-      ...filters,
-      [type === 'name' ? 'nameStartsWith' : 'surnameStartsWith']: newValue
-    };
-    setFilters(newFilters);
-    
-    // Only search if we have at least 3 letters or clearing the search
-    if (newValue.length >= 3 || newValue.length === 0) {
-      onSearch?.(newFilters);
-    }
+    // Use functional update to prevent type widening and ensure stability
+    setFilters(prev => {
+      const currentValue = prev[type === 'name' ? 'nameStartsWith' : 'surnameStartsWith'];
+      // Toggle: if same letter clicked, clear; otherwise set to that letter
+      const newValue = currentValue === letter ? '' : letter;
+      
+      const newFilters: SearchFilters = {
+        ...prev,
+        [type === 'name' ? 'nameStartsWith' : 'surnameStartsWith']: newValue
+      };
+      
+      // Only search if we have at least 3 letters or clearing the search
+      if (newValue.length >= 3 || newValue.length === 0) {
+        onSearch?.(newFilters);
+      }
+      
+      return newFilters;
+    });
   };
 
   return (
@@ -179,10 +196,14 @@ export default function SearchPanel({
               type="checkbox"
               checked={filters.newEntry === 'yes'}
               onChange={(e) => {
-                // Hero search: Auto-search immediately to narrow results
-                const newFilters: SearchFilters = { ...filters, newEntry: e.target.checked ? 'yes' : 'no' };
-                setFilters(newFilters);
-                onSearch?.(newFilters);
+                // Use functional update with explicit mapping: checked → 'yes', unchecked → 'no'
+                setFilters(prev => {
+                  const newValue: ToggleFilterValue = e.target.checked ? 'yes' : 'no';
+                  const newFilters: SearchFilters = { ...prev, newEntry: newValue };
+                  // Hero search: Auto-search immediately to narrow results
+                  onSearch?.(newFilters);
+                  return newFilters;
+                });
               }}
               className="sr-only peer"
             />
@@ -217,10 +238,14 @@ export default function SearchPanel({
               type="checkbox"
               checked={filters.newPhotos === 'yes'}
               onChange={(e) => {
-                // Hero search: Auto-search immediately to narrow results
-                const newFilters: SearchFilters = { ...filters, newPhotos: e.target.checked ? 'yes' : 'no' };
-                setFilters(newFilters);
-                onSearch?.(newFilters);
+                // Use functional update with explicit mapping: checked → 'yes', unchecked → 'no'
+                setFilters(prev => {
+                  const newValue: ToggleFilterValue = e.target.checked ? 'yes' : 'no';
+                  const newFilters: SearchFilters = { ...prev, newPhotos: newValue };
+                  // Hero search: Auto-search immediately to narrow results
+                  onSearch?.(newFilters);
+                  return newFilters;
+                });
               }}
               className="sr-only peer"
             />
@@ -260,7 +285,7 @@ export default function SearchPanel({
             >
               Years
             </span>
-            {['all', '20-30s', '40s', '50s', '60s', 'men'].map(year => (
+            {(['all', '20-30s', '40s', '50s', '60s', 'men'] as const satisfies readonly YearFilterValue[]).map(year => (
               <label key={year} className="flex items-center cursor-pointer flex-shrink-0">
                 <input
                   type="radio"
@@ -327,7 +352,8 @@ export default function SearchPanel({
                 // Handle Enter key to submit
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  handleSubmit(e as any);
+                  // Call onSearch directly with current filters (same as handleSubmit does)
+                  onSearch?.(filters);
                   return;
                 }
                 

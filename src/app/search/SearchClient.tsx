@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Header, Footer } from '@/components/newdesign';
-import SearchPanel, { SearchFilters } from '@/components/search/SearchPanel';
+import SearchPanel, { SearchFilters, YearFilterValue } from '@/components/search/SearchPanel';
 import ActressTable, { ActressRow } from '@/components/ui/ActressTable';
 import ScrollToTop from '@/components/ui/ScrollToTop';
 import type { SearchActressResult } from '@/types/search';
@@ -81,13 +81,17 @@ export default function SearchClient() {
   };
 
   // Helper to get years from URL params (handles both era and theirMan)
-  const getYearsFromParams = (searchParams: URLSearchParams): string[] => {
+  // Returns tuple with exactly one YearFilterValue
+  const getYearsFromParams = (searchParams: URLSearchParams): [YearFilterValue] => {
     const theirMan = searchParams.get('theirMan');
     if (theirMan === 'true') {
       return ['men'];
     }
     const eraParam = searchParams.get('era');
-    return eraParam ? [eraParam] : ['all'];
+    if (eraParam && ['20-30s', '40s', '50s', '60s'].includes(eraParam)) {
+      return [eraParam as YearFilterValue];
+    }
+    return ['all'];
   };
 
   const [filters, setFilters] = useState<SearchFilters>({
@@ -101,14 +105,15 @@ export default function SearchClient() {
 
   // Update filters when URL params change (e.g., from nav search or browser back/forward)
   useEffect(() => {
-    setFilters({
+    // Use functional update pattern for consistency
+    setFilters(prev => ({
       newEntry: getNewEntryFilter(searchParams.get('isNew')),
       newPhotos: getNewPhotosFilter(searchParams.get('hasNewPhotos')),
       years: getYearsFromParams(searchParams),
       nameStartsWith: searchParams.get('nameStartsWith') || '',
       surnameStartsWith: searchParams.get('surnameStartsWith') || '',
       keyword: searchParams.get('keyword') || '',
-    });
+    }));
   }, [searchParams]);
 
   // Initial load and when filters change

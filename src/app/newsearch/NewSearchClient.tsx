@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Header, Footer } from '@/components/newdesign';
-import SearchPanel, { SearchFilters } from '@/components/search/SearchPanel';
+import SearchPanel, { SearchFilters, YearFilterValue } from '@/components/search/SearchPanel';
 import ActressTable, { ActressRow } from '@/components/ui/ActressTable';
 import type { SearchActressResult } from '@/types/search';
 import '../newdesign/design-tokens.css';
@@ -69,7 +69,7 @@ export default function NewSearchClient() {
   const [filters, setFilters] = useState<SearchFilters>({
     newEntry: 'all',
     newPhotos: 'all',
-    years: ['all'],
+    years: ['all'] as [YearFilterValue],
     nameStartsWith: searchParams.get('nameStartsWith') || '',
     surnameStartsWith: searchParams.get('surnameStartsWith') || '',
     keyword: searchParams.get('keyword') || '',
@@ -77,14 +77,15 @@ export default function NewSearchClient() {
 
   // Update filters when URL params change
   useEffect(() => {
-    setFilters({
+    // Use functional update pattern for consistency
+    setFilters(prev => ({
       newEntry: 'all',
       newPhotos: 'all',
-      years: ['all'],
+      years: ['all'] as [YearFilterValue],
       nameStartsWith: searchParams.get('nameStartsWith') || '',
       surnameStartsWith: searchParams.get('surnameStartsWith') || '',
       keyword: searchParams.get('keyword') || '',
-    });
+    }));
   }, [searchParams]);
 
   // Initial load and when filters change
