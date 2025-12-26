@@ -324,9 +324,32 @@ export default function SearchPanel({
               onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value }))}
               onFocus={handleKeywordFocus}
               onKeyDown={(e) => {
+                // Handle Enter key to submit
                 if (e.key === 'Enter') {
                   e.preventDefault();
                   handleSubmit(e as any);
+                  return;
+                }
+                
+                // Handle Ctrl+A (Windows/Linux) or Cmd+A (Mac) to select all
+                if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                  e.preventDefault();
+                  if (keywordInputRef.current) {
+                    keywordInputRef.current.select();
+                  }
+                  return;
+                }
+                
+                // Handle Delete or Backspace when all text is selected
+                if ((e.key === 'Delete' || e.key === 'Backspace') && keywordInputRef.current) {
+                  const input = keywordInputRef.current;
+                  const isAllSelected = input.selectionStart === 0 && 
+                                       input.selectionEnd === input.value.length;
+                  if (isAllSelected) {
+                    e.preventDefault();
+                    setFilters(prev => ({ ...prev, keyword: '' }));
+                    return;
+                  }
                 }
               }}
               placeholder="input search text"

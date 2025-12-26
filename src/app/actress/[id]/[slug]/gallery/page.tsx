@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import { redirect, notFound } from 'next/navigation';
 import { GalleryGrid, GalleryImage } from '@/components/gallery';
 import { fetchActressFromDb } from '@/lib/actress/fetchActress';
+import type { Actress } from '@/types/actress';
 
 // Era background colors
 const eraBackgrounds: Record<string, string> = {
@@ -137,7 +138,7 @@ export default async function GalleryPage({ params }: PageProps) {
   }
   
   // Fetch directly from database (no HTTP call)
-  let actressData = null;
+  let actressData: Actress | null = null;
   try {
     actressData = await fetchActressFromDb(actressId);
   } catch (error) {

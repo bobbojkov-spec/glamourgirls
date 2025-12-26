@@ -142,11 +142,34 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       // Always call handleSearch - it checks canSearch internally
       // This ensures Enter is ALWAYS captured and acknowledged
       handleSearch();
+      return;
     }
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
       onClose();
+      return;
+    }
+    
+    // Handle Ctrl+A (Windows/Linux) or Cmd+A (Mac) to select all
+    if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+      e.preventDefault();
+      if (inputRef.current) {
+        inputRef.current.select();
+      }
+      return;
+    }
+    
+    // Handle Delete or Backspace when all text is selected
+    if ((e.key === 'Delete' || e.key === 'Backspace') && inputRef.current) {
+      const input = inputRef.current;
+      const isAllSelected = input.selectionStart === 0 && 
+                           input.selectionEnd === input.value.length;
+      if (isAllSelected) {
+        e.preventDefault();
+        setQuery('');
+        return;
+      }
     }
   };
 

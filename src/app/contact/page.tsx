@@ -62,12 +62,13 @@ export default function ContactPage() {
                 </svg>
               </div>
               <h2
-                className="text-[var(--text-primary)] mb-4"
+                className="text-[var(--text-primary)] mb-4 uppercase"
                 style={{
-                  fontFamily: 'var(--font-headline)',
-                  fontSize: 'var(--h2-size)',
-                  lineHeight: 'var(--h2-line-height)',
-                  letterSpacing: 'var(--h2-letter-spacing)',
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontWeight: 500,
+                  fontSize: 'clamp(15px, calc(15px + 0.268vw), 18px)',
+                  letterSpacing: '0.14em',
+                  lineHeight: 1.25,
                 }}
               >
                 Message Sent!
@@ -102,17 +103,25 @@ export default function ContactPage() {
       <Header />
       <main className="flex-1 py-10 md:py-16 px-4 md:px-6 lg:px-8">
         <div className="max-w-[600px] mx-auto">
-          <h1
-            className="text-[var(--text-primary)] mb-8"
+          <div 
+            className="mb-8 flex items-center"
             style={{
-              fontFamily: 'var(--font-headline)',
-              fontSize: 'var(--h1-size)',
-              lineHeight: 'var(--h1-line-height)',
-              letterSpacing: 'var(--h1-letter-spacing)',
+              height: '40px',
             }}
           >
-            Contact Us
-          </h1>
+            <h1
+              className="text-[var(--text-primary)] uppercase"
+              style={{
+                fontFamily: 'DM Sans, sans-serif',
+                fontWeight: 500,
+                fontSize: 'clamp(15px, calc(15px + 0.268vw), 18px)',
+                letterSpacing: '0.14em',
+                lineHeight: 1.25,
+              }}
+            >
+              Contact Us
+            </h1>
+          </div>
 
           <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-6 md:p-8">
             <p className="text-[var(--text-secondary)] mb-6" style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--body-size)' }}>
