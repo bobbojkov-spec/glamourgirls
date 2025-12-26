@@ -380,7 +380,7 @@ export default function EraGridGalleryModal({
 
       {/* Main content - Fixed layout to prevent vertical jumps */}
       <div
-        className="relative w-full h-full flex flex-col px-4 pt-8 md:pt-4 pb-4"
+        className="relative w-full h-full flex flex-col px-4 pt-8 md:pt-4 pb-4 overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -390,9 +390,9 @@ export default function EraGridGalleryModal({
           justifyContent: 'flex-start',
         }}
       >
-        {/* Image container - Fixed viewport height on mobile (70vh), fixed px on desktop (650px) */}
+        {/* Image container - Fixed viewport height on mobile (70vh), same on desktop */}
         <div 
-          className="relative w-full max-w-4xl flex items-center justify-center bg-black mb-4 md:mb-6 h-[70vh] min-h-[70vh] max-h-[70vh] md:h-[650px] md:min-h-[650px] md:max-h-[650px]"
+          className="relative w-full max-w-4xl mx-auto flex items-center justify-center bg-black mb-4 md:mb-6 h-[70vh] min-h-[70vh] max-h-[70vh]"
         >
           {imageLoading && (
             <div className="absolute inset-0 flex items-center justify-center z-10">
@@ -440,21 +440,26 @@ export default function EraGridGalleryModal({
         </div>
 
         {/* Info panel - Fixed layout to prevent layout shift */}
-        <div className="w-full max-w-4xl">
+        <div className="w-full max-w-4xl mx-auto">
+          {/* Mobile: Keep the gray background block */}
           <div 
-            className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20"
+            className="bg-white/10 backdrop-blur-md rounded-lg p-4 md:hidden border border-white/20"
             style={{ 
               contain: 'layout paint',
-              minHeight: '140px' // Ensure minimum height for stability
+              minHeight: '140px',
             }}
           >
-            {/* ROW 1: Actress name - Fixed 32px height, single line, truncate */}
+            {/* ROW 1: Actress name - Mobile */}
             <div className="h-8 flex items-center mb-2">
               <h2 
-                className="text-[19px] font-semibold text-white/95 truncate w-full"
+                className="text-white truncate w-full text-center"
                 style={{ 
-                  fontFamily: "'Kabel Black', sans-serif",
-                  lineHeight: '32px',
+                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontSize: '24px',
+                  fontWeight: 500,
+                  letterSpacing: '0.01em',
+                  textTransform: 'none',
+                  lineHeight: '1.2',
                 }}
                 title={currentItem.actressName}
               >
@@ -462,21 +467,20 @@ export default function EraGridGalleryModal({
               </h2>
             </div>
 
-            {/* ROW 2 & ROW 3: Shared container for alignment - both rows start at same left position */}
+            {/* ROW 2 & ROW 3: Shared container for alignment - Mobile */}
             <div className="space-y-2">
-              {/* ROW 2: Metadata - Fixed 36-40px height, always render both versions */}
+              {/* ROW 2: Metadata - Mobile */}
               <div className="h-[40px] flex items-center justify-between gap-4 relative">
                 {/* Version A: HQ available (when image is NOT HQ) */}
                 <div 
-                  className="flex items-center gap-2 text-white/90"
+                  className="flex items-center gap-2 text-white/90 h-[40px] md:h-[32px]"
                   style={{ 
                     fontFamily: 'DM Sans, sans-serif', 
-                    fontSize: '0.75rem',
+                    fontSize: '11px',
                     visibility: showHQAvailable ? 'visible' : 'hidden',
                     opacity: showHQAvailable ? 1 : 0,
                     position: 'absolute',
                     left: 0,
-                    height: '40px',
                     alignItems: 'center',
                   }}
                 >
@@ -501,20 +505,19 @@ export default function EraGridGalleryModal({
 
                 {/* Version B: HQ details with price and button (when image IS HQ) */}
                 <div 
-                  className="flex items-center justify-between gap-3 w-full"
+                  className="flex items-center justify-between gap-3 w-full h-[40px] md:h-[32px]"
                   style={{ 
                     fontFamily: 'DM Sans, sans-serif', 
-                    fontSize: '0.75rem',
+                    fontSize: '11px',
                     visibility: isHQImage ? 'visible' : 'hidden',
                     opacity: isHQImage ? 1 : 0,
                     position: 'absolute',
                     left: 0,
                     right: 0,
-                    height: '40px',
                     alignItems: 'center',
                   }}
                 >
-                  <div className="flex items-center gap-2 text-white/90 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 md:gap-1.5 text-white/90 flex-1 min-w-0">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="16"
@@ -525,28 +528,28 @@ export default function EraGridGalleryModal({
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 md:w-3.5 md:h-3.5"
                     >
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                       <circle cx="8.5" cy="8.5" r="1.5" />
                       <polyline points="21 15 16 10 5 21" />
                     </svg>
                     {hqImageInfo && (
-                      <span className="whitespace-nowrap">
+                      <span className="whitespace-nowrap text-[11px]">
                         &gt; {hqImageInfo.width.toLocaleString()} × {hqImageInfo.height.toLocaleString()} px
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0 relative" style={{ width: '140px', minWidth: '140px' }}>
+                  <div className="flex items-center gap-3 md:gap-2 flex-shrink-0 relative" style={{ width: '140px', minWidth: '140px' }}>
                     {hqImageInfo && (
                       <>
-                        <span className="font-semibold text-white text-base whitespace-nowrap" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                        <span className="font-semibold text-white text-xs whitespace-nowrap" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                           ${hqImageInfo.price.toFixed(2)}
                         </span>
                         {/* Add button - always rendered, toggle visibility */}
                         <button
                           onClick={handleAddToCart}
-                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-xs text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-opacity duration-200 shadow-sm active:scale-[0.95] flex-shrink-0"
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 md:px-2 md:py-1 rounded-md font-medium text-[11px] text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-opacity duration-200 shadow-sm active:scale-[0.95] flex-shrink-0"
                           style={{ 
                             fontFamily: 'DM Sans, sans-serif',
                             width: '70px',
@@ -579,7 +582,7 @@ export default function EraGridGalleryModal({
                         {/* In Cart button - always rendered, toggle visibility */}
                         <button
                           onClick={openCart}
-                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-xs text-white bg-green-600 hover:bg-green-700 transition-opacity duration-200 flex-shrink-0"
+                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 md:px-2 md:py-1 rounded-md font-medium text-[11px] text-white bg-green-600 hover:bg-green-700 transition-opacity duration-200 flex-shrink-0"
                           style={{ 
                             fontFamily: 'DM Sans, sans-serif',
                             width: '70px',
@@ -613,14 +616,13 @@ export default function EraGridGalleryModal({
                 </div>
               </div>
 
-              {/* ROW 3: Actions - Fixed height, LEFT-ALIGNED with Row 2 icon start */}
+              {/* ROW 3: Actions - Mobile */}
               <div className="h-10 flex items-center gap-2">
                 <button
                   onClick={handleViewDetails}
-                  className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-sm font-medium truncate"
+                  className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-[11px] font-medium truncate"
                   style={{ 
                     fontFamily: 'DM Sans, sans-serif',
-                    // Left-align with Row 2 icon (same left position: 0)
                     marginLeft: 0,
                   }}
                   title="See actress page"
@@ -631,7 +633,7 @@ export default function EraGridGalleryModal({
                 {/* Spacer to push favorite button to right */}
                 <div className="flex-1" />
                 
-                {/* Favorite button */}
+                {/* Favorite button - Mobile */}
                 <button
                   onClick={handleFavoriteClick}
                   className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-opacity duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)] flex-shrink-0"
@@ -657,8 +659,154 @@ export default function EraGridGalleryModal({
               </div>
             </div>
 
-            {/* Image counter */}
+            {/* Image counter - Mobile */}
             <div className="mt-3 pt-3 border-t border-white/20">
+              <p className="text-white/60 text-xs text-center" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                {currentIndex + 1} of {items.length}
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop: Clean layout without background block, centered, matching image width */}
+          <div className="hidden md:block w-full max-w-4xl mx-auto">
+            {/* Actress name - centered, Playfair Display, 24px, NOT all caps */}
+            <div className="flex items-center justify-center mb-3">
+              <h2 
+                className="text-white text-center"
+                style={{ 
+                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontSize: '24px',
+                  fontWeight: 500,
+                  letterSpacing: '0.01em',
+                  textTransform: 'none',
+                  lineHeight: '1.2',
+                }}
+                title={currentItem.actressName}
+              >
+                {firstName} {surname}
+              </h2>
+            </div>
+
+            {/* Info row - pixel size, price, add button - centered, 2px smaller */}
+            <div className="flex items-center justify-center gap-4 mb-3">
+              {/* HQ available message (when image is NOT HQ) */}
+              {showHQAvailable && (
+                <span className="text-white/90 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  HQ available
+                </span>
+              )}
+              
+              {/* Pixel size (when image IS HQ) */}
+              {hqImageInfo && (
+                <span className="text-white/90 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  {hqImageInfo.width.toLocaleString()} × {hqImageInfo.height.toLocaleString()} px
+                </span>
+              )}
+              
+              {/* Price (when image IS HQ) */}
+              {hqImageInfo && (
+                <span className="font-semibold text-white text-xs" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  ${hqImageInfo.price.toFixed(2)}
+                </span>
+              )}
+              
+              {/* Add button (when image IS HQ) */}
+              {hqImageInfo && !isAlreadyInCart && (
+                <button
+                  onClick={handleAddToCart}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-md font-medium text-[11px] text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-all duration-200 shadow-sm active:scale-[0.95]"
+                  style={{ 
+                    fontFamily: 'DM Sans, sans-serif',
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="flex-shrink-0"
+                  >
+                    <circle cx="9" cy="21" r="1" />
+                    <circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                  </svg>
+                  <span>Add</span>
+                </button>
+              )}
+              
+              {/* In Cart button */}
+              {hqImageInfo && isAlreadyInCart && (
+                <button
+                  onClick={openCart}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-md font-medium text-[11px] text-white bg-green-600 hover:bg-green-700 transition-all duration-200"
+                  style={{ 
+                    fontFamily: 'DM Sans, sans-serif',
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="flex-shrink-0"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span>In Cart</span>
+                </button>
+              )}
+            </div>
+
+            {/* Actions row - See actress page and favorite - centered, 2px smaller */}
+            <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={handleViewDetails}
+                className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-[11px] font-medium"
+                style={{ 
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+                title="See actress page"
+              >
+                See actress page →
+              </button>
+              
+              {/* Favorite button */}
+              <button
+                onClick={handleFavoriteClick}
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-opacity duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)]"
+                aria-label={isFavorited ? `Remove ${currentItem.actressName} from favorites` : `Add ${currentItem.actressName} to favorites`}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill={isFavorited ? '#8B4513' : 'none'}
+                  stroke={isFavorited ? '#8B4513' : 'currentColor'}
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transition-opacity duration-200"
+                  style={{ 
+                    color: isFavorited ? '#8B4513' : 'white',
+                  }}
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Image counter - Desktop */}
+            <div className="mt-4">
               <p className="text-white/60 text-xs text-center" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                 {currentIndex + 1} of {items.length}
               </p>

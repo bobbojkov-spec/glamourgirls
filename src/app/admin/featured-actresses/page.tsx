@@ -755,7 +755,7 @@ export default function FeaturedActressesPage() {
                     cover={
                       <div style={{ 
                         width: '100%', 
-                        aspectRatio: '2/3',
+                        aspectRatio: '3/4',
                         backgroundColor: '#f0f0f0',
                         display: 'flex',
                         alignItems: 'center',
@@ -843,7 +843,7 @@ export default function FeaturedActressesPage() {
                   cover={
                     <div style={{ 
                       width: '100%', 
-                      aspectRatio: '2/3',
+                      aspectRatio: '3/4',
                       backgroundColor: '#f0f0f0',
                       display: 'flex',
                       alignItems: 'center',

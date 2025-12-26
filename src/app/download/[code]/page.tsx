@@ -427,8 +427,14 @@ export default function DownloadPage() {
                   </div>
                   <div className="p-3">
                     <p
-                      className="font-bold mb-1 truncate block text-[var(--text-primary)] uppercase"
-                      style={{ fontFamily: "'Kabel Black', 'Arial Black', 'Arial Bold', Arial, sans-serif", fontSize: '22px', lineHeight: '1.2', fontWeight: '900' }}
+                      className="mb-1 truncate block text-[var(--text-primary)]"
+                      style={{ 
+                        fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                        fontSize: 'clamp(16px, 0.4vw + 16px, 18px)',
+                        fontWeight: 500,
+                        letterSpacing: '0.01em',
+                        lineHeight: '1.2',
+                      }}
                       title={item.actressName}
                     >
                       {item.actressName}

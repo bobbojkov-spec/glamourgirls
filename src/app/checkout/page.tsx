@@ -172,12 +172,13 @@ export default function CheckoutPage() {
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="text-center max-w-md">
             <h1
-              className="text-[var(--text-primary)] mb-4"
+              className="text-[var(--text-primary)] mb-4 uppercase"
               style={{
-                fontFamily: 'var(--font-headline)',
-                fontSize: 'var(--h1-size)',
-                lineHeight: 'var(--h1-line-height)',
-                letterSpacing: 'var(--h1-letter-spacing)',
+                fontFamily: 'DM Sans, sans-serif',
+                fontWeight: 500,
+                fontSize: 'clamp(15px, calc(15px + 0.268vw), 18px)',
+                letterSpacing: '0.14em',
+                lineHeight: 1.25,
               }}
             >
               Your Cart is Empty
@@ -222,12 +223,13 @@ export default function CheckoutPage() {
           {/* Header */}
           <div className="mb-8">
             <h1
-              className="text-[var(--text-primary)] mb-2"
+              className="text-[var(--text-primary)] mb-2 uppercase"
               style={{
-                fontFamily: 'var(--font-headline)',
-                fontSize: 'var(--h1-size)',
-                lineHeight: 'var(--h1-line-height)',
-                letterSpacing: 'var(--h1-letter-spacing)',
+                fontFamily: 'DM Sans, sans-serif',
+                fontWeight: 500,
+                fontSize: 'clamp(15px, calc(15px + 0.268vw), 18px)',
+                letterSpacing: '0.14em',
+                lineHeight: 1.25,
               }}
             >
               Checkout
@@ -247,8 +249,14 @@ export default function CheckoutPage() {
                   />
                   <div className="flex-1">
                     <p
-                      className="font-bold text-[var(--text-primary)] truncate uppercase"
-                      style={{ fontFamily: "'Kabel Black', 'Arial Black', 'Arial Bold', Arial, sans-serif", fontSize: '22px', lineHeight: '1.2', fontWeight: '900' }}
+                      className="text-[var(--text-primary)] truncate"
+                      style={{ 
+                        fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                        fontSize: 'clamp(16px, 0.4vw + 16px, 18px)',
+                        fontWeight: 500,
+                        letterSpacing: '0.01em',
+                        lineHeight: '1.2',
+                      }}
                     >
                       {item.actressName}
                     </p>

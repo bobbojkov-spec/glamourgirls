@@ -46,7 +46,7 @@ export default function FeaturedPhoto({ image, actressId, actressName, actressSl
     <div className="space-y-2">
       <div
         className="relative overflow-hidden rounded-lg border-[8px] border-white group cursor-pointer md:cursor-pointer"
-        style={{ aspectRatio: '4/5', width: '100%' }}
+        style={{ aspectRatio: '3/4', width: '100%' }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onClick={(e) => {
@@ -62,7 +62,7 @@ export default function FeaturedPhoto({ image, actressId, actressName, actressSl
           className={`absolute inset-0 h-full w-full object-cover transition-transform duration-500 ${
             isHovered ? 'scale-105' : 'scale-100'
           }`}
-          style={{ aspectRatio: '4/5', width: '100%', height: '100%' }}
+          style={{ aspectRatio: '3/4', width: '100%', height: '100%' }}
           loading="lazy"
         />
         {/* Desktop: Hover overlay with shopping cart icon only */}

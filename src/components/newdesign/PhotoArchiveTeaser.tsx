@@ -51,7 +51,7 @@ export default function PhotoArchiveTeaser({
 
       <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6">
         {photos.map((photo, index) => (
-          <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-page-alt)]">
+          <div key={index} className="relative aspect-[3/4] rounded-xl overflow-hidden border border-[var(--border-subtle)] bg-[var(--bg-page-alt)]">
             <Image
               src={photo}
               alt={`Archive photo ${index + 1}`}

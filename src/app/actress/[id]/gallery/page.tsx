@@ -33,13 +33,10 @@ export default async function GalleryPage({ params }: PageProps) {
     return;
   }
 
-  // Always redirect to slug-based URL
-  // If no slug exists, generate one from the name
+  // Always redirect to detail page (gallery pages no longer exist)
   if (actressData.slug) {
-    redirect(`/actress/${id}/${actressData.slug}/gallery`);
+    redirect(`/actress/${id}/${actressData.slug}`);
+  } else {
+    redirect(`/actress/${id}`);
   }
-  
-  // If no slug, redirect to profile page (slug-based route will handle it)
-  // This should rarely happen as all actresses should have slugs
-  redirect(`/actress/${id}`);
 }

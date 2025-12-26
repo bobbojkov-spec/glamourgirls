@@ -143,13 +143,24 @@ export default function SearchPanel({
   };
 
   return (
-    <form 
-      onSubmit={handleSubmit}
-      className="space-y-6"
-      style={{ fontFamily: 'DM Sans, sans-serif' }}
-    >
+    <>
+      <style dangerouslySetInnerHTML={{__html: `
+        .years-filter-row {
+          flex-wrap: nowrap !important;
+        }
+        @media (max-width: 400px) {
+          .years-filter-row {
+            flex-wrap: wrap !important;
+          }
+        }
+      `}} />
+      <form 
+        onSubmit={handleSubmit}
+        className={compact ? "space-y-3" : "space-y-6"}
+        style={{ fontFamily: 'DM Sans, sans-serif' }}
+      >
       {/* Filters row - centered */}
-      <div className="flex flex-wrap items-center justify-center gap-x-2 sm:gap-x-4 md:gap-x-8 gap-y-3 w-full">
+      <div className={`flex flex-wrap items-center justify-center gap-x-2 sm:gap-x-4 md:gap-x-8 w-full ${compact ? 'gap-y-2' : 'gap-y-3'}`}>
         {/* New entry filter - Toggle */}
         <div className="flex items-center gap-2 flex-shrink-0" style={{ minWidth: 0 }}>
           <span 
@@ -226,9 +237,18 @@ export default function SearchPanel({
           </label>
         </div>
 
-        {/* Years filter - Toggle Pills */}
-        <div className="w-full">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-0">
+      </div>
+
+      {/* Years filter - Toggle Pills - Centered - One line until very small screens */}
+      <div className="flex flex-col items-center w-full">
+        <div className="flex flex-col items-center" style={{ maxWidth: '100%', width: '100%' }}>
+          {/* Years label and buttons in one flex row - only wrap on very small screens (< 400px) */}
+          <div 
+            className="flex items-center gap-2 sm:gap-3 justify-center years-filter-row"
+            style={{ 
+              flexWrap: 'nowrap',
+            }}
+          >
             <span 
               className="font-medium text-[var(--text-primary)] flex-shrink-0"
               style={{
@@ -240,9 +260,6 @@ export default function SearchPanel({
             >
               Years
             </span>
-          </div>
-          {/* Mobile: Fixed 3 columns x 2 rows (all | 20–30s | 40s / 50s | 60s | Their Men), Desktop: flex row */}
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 sm:grid-cols-none sm:flex sm:flex-wrap sm:items-center">
             {['all', '20-30s', '40s', '50s', '60s', 'men'].map(year => (
               <label key={year} className="flex items-center cursor-pointer flex-shrink-0">
                 <input
@@ -277,10 +294,10 @@ export default function SearchPanel({
       </div>
 
       {/* Keyword and search button */}
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative flex flex-col sm:flex-row items-stretch border border-gray-300 rounded-lg overflow-hidden" style={{ maxWidth: '520px', width: '100%' }}>
+      <div className={`flex flex-col items-center ${compact ? 'gap-2' : 'gap-4'}`}>
+        <div className="relative flex flex-col sm:flex-row items-stretch border border-gray-300 rounded-lg overflow-hidden w-full" style={{ minWidth: '280px' }}>
           {/* Input with icon inside */}
-          <div className="relative flex-1">
+          <div className="relative flex-1" style={{ minWidth: 0 }}>
             {/* Magnifying Glass Icon inside input */}
             <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none flex items-center" style={{ height: '44px' }}>
               <svg
@@ -316,7 +333,6 @@ export default function SearchPanel({
               className="w-full pl-10 pr-0 border-0 bg-white text-gray-900 placeholder-gray-400 focus:outline-none search-form-input"
               style={{ 
                 fontFamily: 'DM Sans, sans-serif',
-                fontSize: '14px',
                 height: '44px',
                 paddingTop: '0',
                 paddingBottom: '0',
@@ -350,6 +366,7 @@ export default function SearchPanel({
         </div>
       </div>
     </form>
+    </>
   );
 }
 

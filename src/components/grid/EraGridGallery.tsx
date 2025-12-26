@@ -189,7 +189,7 @@ export default function EraGridGallery({ era }: EraGridGalleryProps) {
             >
               {/* Vintage rounded white frame with 4-5px border */}
               <div className="relative bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow" style={{ padding: '5px' }}>
-                <div className="relative aspect-square bg-gray-100 rounded overflow-hidden">
+                <div className="relative aspect-[3/4] bg-gray-100 rounded overflow-hidden">
                   {isVisible && item.thumbnailUrl && !failedImages.has(index) ? (
                     <img
                       src={getThumbnailUrl(item.thumbnailUrl)}

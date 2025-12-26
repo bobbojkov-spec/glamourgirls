@@ -1,14 +1,27 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import CartItem from './CartItem';
-import ModalHeader from '@/components/ui/ModalHeader';
 
 export default function CartDrawer() {
   const router = useRouter();
   const { items, isOpen, closeCart, totalPrice, subtotal, discountRate, discountAmount, clearCart } = useCart();
+
+  // Handle ESC key to close
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeCart();
+      }
+    };
+    
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, closeCart]);
 
   const handleCheckout = useCallback(() => {
     if (items.length === 0) {
@@ -32,24 +45,55 @@ export default function CartDrawer() {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - lighter on desktop, darker on mobile */}
       <div
-        className="fixed inset-0 bg-black/50 z-[998] transition-opacity"
+        className="fixed inset-0 bg-black/20 md:bg-black/30 z-[998] transition-opacity"
         onClick={closeCart}
         aria-hidden="true"
       />
 
-      {/* Drawer */}
-      <div className="fixed top-0 right-0 h-full w-full max-w-md bg-[var(--bg-surface)] shadow-[var(--shadow-lift)] z-[999] flex flex-col">
-        {/* Header */}
-        <ModalHeader 
-          title="Your Cart" 
-          onClose={closeCart}
-          closeAriaLabel="Close cart"
-        />
+      {/* Mini-Cart Dropdown - Desktop: top-right dropdown, Mobile: bottom drawer */}
+      <div 
+        className="fixed bottom-0 left-0 right-0 md:left-auto md:right-4 md:bottom-auto md:top-4 w-full md:w-[360px] md:max-h-[calc(100vh-20px)] bg-[var(--bg-surface)] shadow-[0_4px_20px_rgba(0,0,0,0.15)] md:rounded-lg md:border md:border-[var(--border-subtle)] z-[999] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header - Compact */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] flex-shrink-0">
+          <h2 
+            className="uppercase text-[var(--text-primary)]"
+            style={{
+              fontFamily: 'DM Sans, sans-serif',
+              fontWeight: 500,
+              fontSize: 'clamp(15px, calc(15px + 0.268vw), 18px)',
+              letterSpacing: '0.14em',
+              lineHeight: 1.25,
+            }}
+          >
+            Your Cart
+          </h2>
+          <button
+            onClick={closeCart}
+            className="interactive-icon text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-md hover:bg-[var(--state-hover-wash)] p-1.5"
+            aria-label="Close cart"
+          >
+            <svg 
+              width="18" 
+              height="18" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
 
         {/* Cart items */}
-        <div className="flex-1 overflow-y-auto px-6">
+        <div className="flex-1 overflow-y-auto px-4 py-3">
           {items.length === 0 ? (
             <div className="flex-1 flex items-center justify-center py-16">
               <div className="text-center">
@@ -76,19 +120,17 @@ export default function CartDrawer() {
               </div>
             </div>
           ) : (
-            <div className="py-4">
-              <div className="space-y-0">
-                {items.map((item) => (
-                  <CartItem key={item.id} item={item} />
-                ))}
-              </div>
+            <div className="space-y-0">
+              {items.map((item) => (
+                <CartItem key={item.id} item={item} />
+              ))}
             </div>
           )}
         </div>
 
         {/* Footer with total and checkout */}
         {items.length > 0 && (
-          <div className="px-6 py-5 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-alt)]">
+          <div className="px-4 py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-alt)] flex-shrink-0">
             {/* Subtotal */}
             <div className="flex items-center justify-between mb-2" style={{ fontFamily: 'var(--font-ui)' }}>
               <span 

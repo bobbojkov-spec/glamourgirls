@@ -177,12 +177,13 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
           <div className="px-6 py-5 border-b border-[var(--border-subtle)]">
             <div className="flex items-center justify-between">
               <h2
-                className="text-[var(--text-primary)]"
+                className="uppercase text-[var(--text-primary)]"
                 style={{
-                  fontFamily: 'var(--font-headline)',
-                  fontSize: 'var(--h2-size)',
-                  letterSpacing: 'var(--h2-letter-spacing)',
-                  lineHeight: 'var(--h2-line-height)',
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontWeight: 500,
+                  fontSize: 'clamp(15px, calc(15px + 0.268vw), 18px)',
+                  letterSpacing: '0.14em',
+                  lineHeight: 1.25,
                 }}
               >
                 Search Archive

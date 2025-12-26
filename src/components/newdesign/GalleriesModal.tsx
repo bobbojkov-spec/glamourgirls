@@ -41,12 +41,13 @@ export default function GalleriesModal({ isOpen, onClose }: GalleriesModalProps)
         >
           <div className="flex items-center justify-between mb-6">
             <h2
-              className="text-[var(--text-primary)]"
+              className="uppercase text-[var(--text-primary)]"
               style={{
-                fontFamily: 'var(--font-headline)',
-                fontSize: 'var(--h2-size)',
-                letterSpacing: 'var(--h2-letter-spacing)',
-                lineHeight: 'var(--h2-line-height)',
+                fontFamily: 'DM Sans, sans-serif',
+                fontWeight: 500,
+                fontSize: 'clamp(15px, calc(15px + 0.268vw), 18px)',
+                letterSpacing: '0.14em',
+                lineHeight: 1.25,
               }}
             >
               Select Era

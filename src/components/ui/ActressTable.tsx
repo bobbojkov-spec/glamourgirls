@@ -103,11 +103,14 @@ export default function ActressTable({
                       }}
                     />
                   </div>
-                  {/* Name - Match ActressListRow exactly */}
+                  {/* Name - Match Featured Actresses styling exactly */}
                   <span 
-                    className="text-base text-[var(--text-primary)] leading-tight uppercase font-bold truncate" 
+                    className="text-[var(--text-primary)] leading-tight truncate" 
                     style={{ 
-                      fontFamily: "'Kabel Black', sans-serif",
+                      fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                      fontSize: 'clamp(16px, 0.4vw + 16px, 18px)',
+                      fontWeight: 500,
+                      letterSpacing: '0.01em',
                     }}
                   >
                     {actress.name}
@@ -117,9 +120,10 @@ export default function ActressTable({
               <td 
                 className="py-3 text-[var(--text-secondary)]" 
                 style={{ 
-                  fontFamily: 'var(--font-ui)',
-                  fontSize: 'var(--meta-size)',
+                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontSize: 'clamp(14px, 0.3vw + 14px, 16px)',
                   fontWeight: 400,
+                  letterSpacing: '0.02em',
                 }}
               >
                 {actress.years}
@@ -127,9 +131,10 @@ export default function ActressTable({
               <td 
                 className="py-3 text-center text-[var(--text-secondary)]" 
                 style={{ 
-                  fontFamily: 'var(--font-ui)',
-                  fontSize: 'var(--meta-size)',
+                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontSize: 'clamp(14px, 0.3vw + 14px, 16px)',
                   fontWeight: 400,
+                  letterSpacing: '0.02em',
                 }}
               >
                 {actress.hasNewPhotos && (
@@ -140,9 +145,10 @@ export default function ActressTable({
               <td 
                 className="py-3 text-center text-[var(--text-secondary)]" 
                 style={{ 
-                  fontFamily: 'var(--font-ui)',
-                  fontSize: 'var(--meta-size)',
+                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontSize: 'clamp(14px, 0.3vw + 14px, 16px)',
                   fontWeight: 400,
+                  letterSpacing: '0.02em',
                 }}
               >
                 {actress.hqPhotoCount > 0 ? actress.hqPhotoCount : '-'}
@@ -166,9 +172,10 @@ export default function ActressTable({
               <div 
                 className="text-[var(--text-secondary)]" 
                 style={{ 
-                  fontFamily: 'var(--font-ui)',
-                  fontSize: 'var(--meta-size)',
+                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontSize: 'clamp(14px, 0.3vw + 14px, 16px)',
                   fontWeight: 400,
+                  letterSpacing: '0.02em',
                 }}
               >
                 {actress.years} • {actress.photoCount} photos

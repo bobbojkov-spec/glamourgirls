@@ -33,13 +33,13 @@ export default async function RootLayout({
     const headersList = await headers();
     const pathname = headersList.get("x-pathname") || "";
     isAdmin = pathname.startsWith("/admin");
-    isNewDesign = pathname.startsWith("/newdesign") || pathname === "/";
+    isNewDesign = pathname.startsWith("/newdesign") || pathname === "/old";
     isActress = pathname.startsWith("/actress");
     isExplore = pathname.startsWith("/explore");
     isCheckout = pathname.startsWith("/checkout");
     isDownload = pathname.startsWith("/download");
     isSearch = pathname.startsWith("/search");
-    isFront2 = pathname.startsWith("/front2");
+    isFront2 = pathname.startsWith("/front2") || pathname === "/";
   } catch (e) {
     // If headers() fails, assume not admin or newdesign
     isAdmin = false;

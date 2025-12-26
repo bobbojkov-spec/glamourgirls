@@ -158,12 +158,13 @@ export default function ConfirmationClient() {
         <main className="flex-1 flex items-center justify-center p-6">
           <div className="text-center max-w-md">
             <h1
-              className="text-[var(--text-primary)] mb-4"
+              className="text-[var(--text-primary)] mb-4 uppercase"
               style={{
-                fontFamily: 'var(--font-headline)',
-                fontSize: 'var(--h1-size)',
-                lineHeight: 'var(--h1-line-height)',
-                letterSpacing: 'var(--h1-letter-spacing)',
+                fontFamily: 'DM Sans, sans-serif',
+                fontWeight: 500,
+                fontSize: 'clamp(15px, calc(15px + 0.268vw), 18px)',
+                letterSpacing: '0.14em',
+                lineHeight: 1.25,
               }}
             >
               Order Not Found
@@ -235,12 +236,13 @@ export default function ConfirmationClient() {
               </svg>
             </div>
             <h1
-              className="text-[var(--text-primary)] mb-2"
+              className="text-[var(--text-primary)] mb-2 uppercase"
               style={{
-                fontFamily: 'var(--font-headline)',
-                fontSize: 'var(--h1-size)',
-                lineHeight: 'var(--h1-line-height)',
-                letterSpacing: 'var(--h1-letter-spacing)',
+                fontFamily: 'DM Sans, sans-serif',
+                fontWeight: 500,
+                fontSize: 'clamp(15px, calc(15px + 0.268vw), 18px)',
+                letterSpacing: '0.14em',
+                lineHeight: 1.25,
               }}
             >
               Payment Successful!

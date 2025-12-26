@@ -17,7 +17,7 @@ export default function ActressCard({ id, name, decade, imageUrl, slug }: Actres
     <Link href={href} className="group interactive-link">
       <div className="interactive-row bg-[var(--bg-surface)] rounded-lg shadow-[var(--shadow-subtle)] overflow-hidden hover:shadow-[var(--shadow-lift)]">
         {/* Image */}
-        <div className="relative w-full aspect-square overflow-hidden rounded-lg">
+        <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg">
           <Image
             src={imageUrl}
             alt={name}

@@ -151,9 +151,11 @@ export default async function GalleryPage({ params }: PageProps) {
     return;
   }
 
-  // Redirect if slug doesn't match
-  if (actressData.slug && actressData.slug !== slug) {
-    redirect(`/actress/${id}/${actressData.slug}/gallery`);
+  // Always redirect to detail page (gallery pages no longer exist)
+  if (actressData.slug) {
+    redirect(`/actress/${id}/${actressData.slug}`);
+  } else {
+    redirect(`/actress/${id}`);
   }
 
   const bgClass = eraBackgrounds[actressData.era] || 'era-30s';
