@@ -320,7 +320,7 @@ export default function SearchPanel({
 
       {/* Keyword and search button */}
       <div className={`flex flex-col items-center ${compact ? 'gap-2' : 'gap-4'}`}>
-        <div className="relative flex flex-col sm:flex-row items-stretch border border-gray-300 rounded-lg overflow-hidden w-full" style={{ minWidth: '280px' }}>
+        <div className="relative flex flex-col sm:flex-row items-stretch border border-gray-300 rounded-lg overflow-hidden w-full" style={{ minWidth: '280px', maxWidth: '475px' }}>
           {/* Input with icon inside */}
           <div className="relative flex-1" style={{ minWidth: 0 }}>
             {/* Magnifying Glass Icon inside input */}

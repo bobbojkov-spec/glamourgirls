@@ -411,108 +411,102 @@ export default function HomePage() {
         {/* Hero Section - Clean Editorial Layout */}
         <section className="w-full py-8 sm:py-10 md:py-14 lg:py-20 px-3 sm:px-4 md:px-6 lg:px-8" style={{ backgroundColor: '#f6e5c0', minWidth: 0, maxWidth: '100%' }}>
           <div className="max-w-7xl mx-auto" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
-            {/* Hero Text and Image Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12 xl:gap-16 items-start">
-              {/* Left Column: Text Content */}
-              <div className="order-1 lg:order-1">
-                {/* Headline - Editorial scale, fluid typography - At least twice as big */}
-                <h1 
-                  className="mb-2 md:mb-3"
-                  style={{ 
-                    fontFamily: 'var(--font-logo-primary)',
-                    color: 'var(--text-primary)',
-                    fontSize: 'clamp(4rem, 7vw + 1rem, 7rem)', // Fluid: 64px mobile → 112px desktop (at least 2x bigger)
-                    lineHeight: '1.2',
-                    fontWeight: 400,
-                    textTransform: 'none',
-                    letterSpacing: '0.01em',
-                    wordBreak: 'normal',
-                    hyphens: 'auto',
-                    maxWidth: '100%', // Prevent overflow
-                    textAlign: 'center',
-                  }}
-                >
-                  Glamour Girls
-                </h1>
-                
-                {/* Subheadline - DM Sans, all caps, 12-14px */}
-                <p 
-                  className="mb-6 md:mb-8 lg:mb-10"
-                  style={{ 
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 'clamp(12px, 0.5vw + 12px, 14px)', // Fluid: 12px mobile → 14px desktop
-                    lineHeight: '1.4',
-                    fontWeight: 400,
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    textAlign: 'center',
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  OF THE SILVER SCREEN
-                </p>
-              </div>
-
-              {/* Right Column: Hero Image - Editorial Portrait Frame (only if selected) */}
-              {heroImagePath && (
-                <div className="order-2 lg:order-2 flex justify-center lg:justify-end mt-6 md:mt-8 lg:mt-0">
-                  <div 
-                    className="w-full max-w-xs aspect-[3/4] bg-[var(--bg-surface-alt)] overflow-hidden"
-                    style={{ 
-                      borderRadius: '7px', // Match thumbnail styling
-                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)', // Match thumbnail shadow
-                      border: '1px solid rgba(0, 0, 0, 0.06)',
-                    }}
-                  >
-                    <img
-                      src={heroImagePath.startsWith('http') ? heroImagePath : (heroImagePath.startsWith('/') ? heroImagePath : `/${heroImagePath}`)}
-                      alt="Classic Hollywood archive portrait"
-                      className="w-full h-full object-cover"
-                      loading="eager"
-                      width={300}
-                      height={450}
-                      style={{
-                        borderRadius: '7px', // Match container radius
-                      }}
-                      onError={(e) => {
-                        // Fallback to placeholder if image fails to load
-                        const img = e.currentTarget;
-                        if (!img.src.includes('placeholder')) {
-                          img.src = '/images/placeholder-portrait.png';
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+            {/* Hero Title - Centered, Outside Grid */}
+            <div className="w-full text-center mb-6 md:mb-8 lg:mb-10">
+              {/* Headline - Editorial scale, fluid typography - At least twice as big */}
+              <h1 
+                className="mb-2 md:mb-3"
+                style={{ 
+                  fontFamily: 'var(--font-logo-primary)',
+                  color: 'var(--text-primary)',
+                  fontSize: 'clamp(4rem, 7vw + 1rem, 7rem)', // Fluid: 64px mobile → 112px desktop (at least 2x bigger)
+                  lineHeight: '1.2',
+                  fontWeight: 400,
+                  textTransform: 'none',
+                  letterSpacing: '0.01em',
+                  wordBreak: 'normal',
+                  hyphens: 'auto',
+                  maxWidth: '100%', // Prevent overflow
+                  textAlign: 'center',
+                }}
+              >
+                Glamour Girls
+              </h1>
+              
+              {/* Subheadline - DM Sans, all caps, 12-14px */}
+              <p 
+                className="mb-0"
+                style={{ 
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 'clamp(12px, 0.5vw + 12px, 14px)', // Fluid: 12px mobile → 14px desktop
+                  lineHeight: '1.4',
+                  fontWeight: 400,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  textAlign: 'center',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                OF THE SILVER SCREEN
+              </p>
             </div>
+
+            {/* Hero Image - Centered Below Title (only if selected) */}
+            {heroImagePath && (
+              <div className="w-full flex justify-center mb-6 md:mb-8 lg:mb-10">
+                <div 
+                  className="w-full max-w-xs aspect-[3/4] bg-[var(--bg-surface-alt)] overflow-hidden"
+                  style={{ 
+                    borderRadius: '7px', // Match thumbnail styling
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)', // Match thumbnail shadow
+                    border: '1px solid rgba(0, 0, 0, 0.06)',
+                  }}
+                >
+                  <img
+                    src={heroImagePath.startsWith('http') ? heroImagePath : (heroImagePath.startsWith('/') ? heroImagePath : `/${heroImagePath}`)}
+                    alt="Classic Hollywood archive portrait"
+                    className="w-full h-full object-cover"
+                    loading="eager"
+                    width={300}
+                    height={450}
+                    style={{
+                      borderRadius: '7px', // Match container radius
+                    }}
+                    onError={(e) => {
+                      // Fallback to placeholder if image fails to load
+                      const img = e.currentTarget;
+                      if (!img.src.includes('placeholder')) {
+                        img.src = '/images/placeholder-portrait.png';
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Search Block - OUTSIDE GRID, Independently Centered */}
             <div className="w-full mt-8 flex justify-center">
               <div 
-                className="bg-[#E6D9B3] rounded-lg p-3 sm:p-4 md:p-5 lg:p-6 w-full max-w-[750px] lg:max-w-[700px]"
+                className="bg-[#E6D9B3] rounded-lg w-full max-w-[700px]"
                 style={{
+                  padding: '20px',
                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
                   border: '1px solid rgba(0, 0, 0, 0.08)',
-                  minWidth: 0,
-                  display: 'flex',
-                  justifyContent: 'center',
+                  minWidth: '280px',
                 }}
               >
-                <div style={{ width: '100%', minWidth: '280px' }}>
-                  <SearchPanel 
-                    compact 
-                    initialFilters={{ 
-                      years: ['all'] as [YearFilterValue],
-                      newEntry: 'all',
-                      newPhotos: 'all',
-                      nameStartsWith: '',
-                      surnameStartsWith: '',
-                      keyword: ''
-                    }} 
-                    onSearch={handleSearch} 
-                  />
-                </div>
+                <SearchPanel 
+                  compact 
+                  initialFilters={{ 
+                    years: ['all'] as [YearFilterValue],
+                    newEntry: 'all',
+                    newPhotos: 'all',
+                    nameStartsWith: '',
+                    surnameStartsWith: '',
+                    keyword: ''
+                  }} 
+                  onSearch={handleSearch} 
+                />
               </div>
             </div>
           </div>

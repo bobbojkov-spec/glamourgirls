@@ -188,65 +188,62 @@ export default function SearchClient() {
         {/* Hero Section - Clean Editorial Layout */}
         <section className="w-full py-8 sm:py-10 md:py-14 lg:py-20 px-3 sm:px-4 md:px-6 lg:px-8" style={{ backgroundColor: '#f6e5c0', minWidth: 0, maxWidth: '100%' }}>
           <div className="max-w-7xl mx-auto" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12 xl:gap-16 items-start">
-              {/* Left Column: Text Content + Search */}
-              <div className="order-1 lg:order-1">
-                {/* Headline - Editorial scale, fluid typography */}
-                <h1 
-                  className="mb-4 md:mb-5 lg:mb-6"
-                  style={{ 
-                    fontFamily: 'var(--font-logo-primary)',
-                    color: 'var(--text-primary)',
-                    fontSize: 'clamp(2rem, 3.5vw + 0.5rem, 3.5rem)', // Fluid: 32px mobile → 56px desktop, smooth scaling
-                    lineHeight: '1.2',
-                    fontWeight: 400,
-                    textTransform: 'none',
-                    letterSpacing: '0.01em',
-                    wordBreak: 'normal',
-                    hyphens: 'auto',
-                    maxWidth: '100%', // Prevent overflow
-                    textAlign: 'center',
-                  }}
-                >
-                  Search
-                </h1>
-                
-                {/* Subheadline - Clean serif, fluid typography */}
-                <p 
-                  className="mb-6 md:mb-8 lg:mb-10 text-[#2B2B2B]"
-                  style={{ 
-                    fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
-                    fontSize: 'clamp(0.875rem, 0.5vw + 0.75rem, 1.125rem)', // Fluid: 14px mobile → 18px desktop, smooth scaling
-                    lineHeight: '1.7',
-                    fontWeight: 400,
-                    letterSpacing: '0.01em',
-                    textAlign: 'center',
-                  }}
-                >
-                  Find actresses in our archive.
-                </p>
-                
-                {/* Embedded Search Block - Integrated panel - Compact dropdown style */}
-                <div 
-                  className="bg-[#E6D9B3] rounded-lg px-2.5 sm:px-3 md:px-4 lg:px-5 py-1.5 sm:py-2 md:py-2.5 lg:py-3"
-                  style={{
-                    boxShadow: '0 1px 4px rgba(0, 0, 0, 0.08)',
-                    border: '1px solid rgba(0, 0, 0, 0.1)',
-                    minWidth: 0,
-                    width: '100%',
-                    maxWidth: '100%',
-                    display: 'flex',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <div style={{ width: '100%', maxWidth: '750px', minWidth: '280px' }}>
-                    <SearchPanel 
-                      compact 
-                      initialFilters={filters} 
-                      onSearch={handleSearch} 
-                    />
-                  </div>
-                </div>
+            {/* Hero Title - Centered, Outside Grid */}
+            <div className="w-full text-center mb-6 md:mb-8 lg:mb-10">
+              {/* Main Header - "Search" */}
+              <h1 
+                className="mb-2 md:mb-3"
+                style={{ 
+                  fontFamily: 'var(--font-logo-primary)',
+                  color: 'var(--text-primary)',
+                  fontSize: 'clamp(4rem, 7vw + 1rem, 7rem)', // Fluid: 64px mobile → 112px desktop (same as homepage)
+                  lineHeight: '1.2',
+                  fontWeight: 400,
+                  textTransform: 'none',
+                  letterSpacing: '0.01em',
+                  wordBreak: 'normal',
+                  hyphens: 'auto',
+                  maxWidth: '100%', // Prevent overflow
+                  textAlign: 'center',
+                }}
+              >
+                Search
+              </h1>
+              
+              {/* Subtitle - Using same font family and size as current search subtitle */}
+              <p 
+                className="mb-0"
+                style={{ 
+                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  color: 'var(--text-primary)',
+                  fontSize: 'clamp(0.875rem, 0.5vw + 0.75rem, 1.125rem)', // Fluid: 14px mobile → 18px desktop, same as current search
+                  lineHeight: '1.7',
+                  fontWeight: 400,
+                  letterSpacing: '0.01em',
+                  textAlign: 'center',
+                  textTransform: 'none',
+                }}
+              >
+                Search and find actresses in our archive
+              </p>
+            </div>
+
+            {/* Search Block - Centered Below Title */}
+            <div className="w-full mt-8 flex justify-center">
+              <div 
+                className="bg-[#E6D9B3] rounded-lg w-full max-w-[700px]"
+                style={{
+                  padding: '20px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  minWidth: '280px',
+                }}
+              >
+                <SearchPanel 
+                  compact 
+                  initialFilters={filters} 
+                  onSearch={handleSearch} 
+                />
               </div>
             </div>
           </div>
