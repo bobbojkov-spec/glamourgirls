@@ -32,19 +32,27 @@ export default function HeadshotImage({ src, alt, fallbackSrc, className, theirM
   };
 
   return (
-    <img
-      src={imgSrc}
-      alt={alt}
-      className={className}
-      onError={handleError}
-      onLoad={onLoad}
-      style={{ 
-        maxWidth: '190px',
-        maxHeight: '245px',
-        width: 'auto',
-        height: 'auto',
-        objectFit: 'contain',
+    <div
+      className="relative w-full h-full"
+      style={{
+        backgroundColor: '#f6e5c0', // Beige background to prevent white flash
+        minHeight: '100%',
+        minWidth: '100%',
       }}
-    />
+    >
+      <img
+        src={imgSrc}
+        alt={alt}
+        className={className}
+        onError={handleError}
+        onLoad={onLoad}
+        style={{ 
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block',
+        }}
+      />
+    </div>
   );
 }

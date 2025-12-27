@@ -222,14 +222,8 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
 }
 
 /* ========================================
-   HEADER
+   HEADER - REMOVED (old design, no longer used)
    ======================================== */
-.header {
-  background: linear-gradient(to bottom, var(--color-black-header-start), var(--color-black-header-end));
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
 
 /* ========================================
    SIDEBAR
@@ -779,37 +773,27 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
 }
 
 /* ========================================
-   GALLERY GRID
+   GALLERY GRID - Fluid row-based layout, left-aligned
+   Same layout on all screen sizes (mobile, tablet, desktop)
    ======================================== */
 .gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 0.75rem;
-  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
+  gap: 0.75rem; /* Consistent gap on all screen sizes */
 }
 
-/* Fluid grid - adapts to viewport width */
-@media (min-width: 0px) {
-  .gallery-grid {
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  }
-}
-
-/* More columns on larger screens */
-@media (min-width: 640px) {
-  .gallery-grid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  }
-}
-
+/* Gallery items - fluid width, natural flow */
 .gallery-thumb {
+  flex: 0 0 auto;
   background: transparent;
   padding: 0;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   transition: transform 0.12s ease, opacity 0.12s ease;
-  width: 100%;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -827,24 +811,20 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
 .gallery-thumb img {
   border: none;
   display: block;
-  width: 100%;
-  height: 100%;
+  height: auto;
+  min-height: 150px;
+  max-height: 250px;
+  width: auto;
   object-fit: contain;
   object-position: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  max-height: 200px;
   background: transparent;
+  border-radius: 6px;
 }
 
-/* Mobile: Remove gray background from gallery items */
-@media (max-width: 767px) {
-  .gallery-thumb > div {
-    background: transparent !important;
-  }
-  
-  .gallery-thumb img {
-    background: transparent;
-  }
+/* Consistent styling across all screen sizes */
+.gallery-thumb > div {
+  background: transparent !important;
 }
 
 /* Gallery page title - "Photographs of..." */

@@ -398,6 +398,9 @@ export default async function ActressPage({ params }: PageProps) {
                       alt={`${actressName} portrait`}
                       className="w-full h-full object-cover rounded-xl border-[10px] border-white shadow-lg transform rotate-[-2deg]"
                       theirMan={actressData.theirMan}
+                      priority={true}
+                      width={200}
+                      height={267}
                     />
                     {/* Mobile: PHOTOS button overlaying bottom third of headshot, centered, shifted 25px right */}
                     <div className="absolute bottom-0 left-1/2 sm:hidden w-[80%] max-w-[200px]" style={{ transform: 'translateX(calc(-50% + 25px)) translateY(33%)' }}>
@@ -523,22 +526,14 @@ export default async function ActressPage({ params }: PageProps) {
                 {/* Sources & Links Section - Right below Timeline, in homepage-style box */}
                 {(actressData.sources || actressData.links?.length || actressData.books?.length) && (
                   <div className="w-full bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-5 md:p-6">
-                    <h3
-                      className="text-[var(--text-primary)] mb-6"
-                      style={{
-                        fontFamily: 'var(--font-headline)',
-                        fontSize: 'var(--h2-size)',
-                        letterSpacing: 'var(--h2-letter-spacing)',
-                        lineHeight: 'var(--h2-line-height)',
-                      }}
-                    >
-                      Sources &amp; Links
-                    </h3>
-                    <ActressSourcesLinks
-                      sources={actressData.sources}
-                      links={actressData.links}
-                      books={actressData.books}
-                    />
+                    <p className="text-xs uppercase tracking-[0.35em] text-[var(--text-muted)] mb-4">Sources &amp; Links</p>
+                    <div className="mt-[15px]">
+                      <ActressSourcesLinks
+                        sources={actressData.sources}
+                        links={actressData.links}
+                        books={actressData.books}
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -548,17 +543,7 @@ export default async function ActressPage({ params }: PageProps) {
                     className="p-5 md:p-6 rounded-xl lg:hidden" 
                     style={{ backgroundColor: '#f6e5c0' }}
                   >
-                    <h3
-                      className="text-[var(--text-primary)] mb-4"
-                      style={{
-                        fontFamily: 'var(--font-headline)',
-                        fontSize: 'var(--h2-size)',
-                        letterSpacing: 'var(--h2-letter-spacing)',
-                        lineHeight: 'var(--h2-line-height)',
-                      }}
-                    >
-                      Featured Photos
-                    </h3>
+                    <p className="text-xs uppercase tracking-[0.35em] text-[var(--text-muted)] mb-4">Featured Photos</p>
                     <div className="mt-[15px]">
                       {/* 
                         Mobile (max-width: 767px): 2 columns, exactly 2 photos (1 row of 2)
@@ -589,18 +574,8 @@ export default async function ActressPage({ params }: PageProps) {
                 {/* Photo Gallery Section - Right after Featured Photos on Mobile/Tablet */}
                 {galleryGridImages.length > 0 && (
                   <div className="w-full bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-5 md:p-6">
-                    <h3
-                      className="text-[var(--text-primary)] mb-6 text-left"
-                      style={{
-                        fontFamily: 'var(--font-headline)',
-                        fontSize: 'var(--h2-size)',
-                        letterSpacing: 'var(--h2-letter-spacing)',
-                        lineHeight: 'var(--h2-line-height)',
-                      }}
-                    >
-                      Photo Gallery
-                    </h3>
-                    <div className="text-left mt-[15px]">
+                    <p className="text-xs uppercase tracking-[0.35em] text-[var(--text-muted)] mb-4">Photo Gallery</p>
+                    <div className="mt-[15px]">
                       <GalleryGrid
                         images={galleryGridImages}
                         actressId={actressData.id.toString()}
@@ -626,17 +601,7 @@ export default async function ActressPage({ params }: PageProps) {
                 {/* Featured Photo Section - Desktop Only */}
                 {featuredImages.length > 0 && (
                   <div className="p-6 rounded-xl" style={{ backgroundColor: '#f6e5c0' }}>
-                    <h3
-                      className="text-[var(--text-primary)] mb-4"
-                      style={{
-                        fontFamily: 'var(--font-headline)',
-                        fontSize: 'var(--h2-size)',
-                        letterSpacing: 'var(--h2-letter-spacing)',
-                        lineHeight: 'var(--h2-line-height)',
-                      }}
-                    >
-                      Featured Photos
-                    </h3>
+                    <p className="text-xs uppercase tracking-[0.35em] text-[var(--text-muted)] mb-4">Featured Photos</p>
                     <div className="mt-[15px]">
                       {/* 
                         Mobile (max-width: 767px): 2 columns, max 4 photos (2 rows of 2)

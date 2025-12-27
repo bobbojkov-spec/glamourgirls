@@ -49,20 +49,26 @@ export default function GalleryItem({ image, onClick, theirMan }: GalleryItemPro
       onClick={onClick}
     >
       <div 
-        className="relative w-full bg-transparent overflow-hidden flex items-center justify-center" 
-        style={{ aspectRatio: '3/4', width: '100%', height: 'auto', minHeight: '150px' }}
+        className="relative bg-transparent overflow-hidden flex items-center justify-center" 
       >
         {currentSrc ? (
           <img
             src={currentSrc}
             alt="Gallery photo"
-            className="w-full h-full object-contain"
-            style={{ width: '100%', height: '100%', objectPosition: 'center' }}
+            className="object-contain"
+            style={{ 
+              minHeight: '150px', 
+              maxHeight: '250px', 
+              width: 'auto', 
+              height: 'auto',
+              objectPosition: 'center',
+              borderRadius: '6px'
+            }}
             loading="lazy"
             onError={handleError}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
+          <div className="flex items-center justify-center text-gray-400" style={{ minHeight: '150px', width: '150px' }}>
             <span className="text-xs">No preview</span>
           </div>
         )}
@@ -70,7 +76,7 @@ export default function GalleryItem({ image, onClick, theirMan }: GalleryItemPro
         {/* HQ Available overlay */}
         {image.hasHQ && (
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-            <span className="bg-[#1890ff] text-white text-xs font-bold px-2 py-1 rounded">
+            <span className="bg-[var(--accent-gold)] text-white text-xs font-bold px-2 py-1 rounded-md">
               HQ Available
             </span>
           </div>

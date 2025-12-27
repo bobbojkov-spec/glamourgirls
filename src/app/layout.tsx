@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Header from "@/components/layout/Header";
 import { CartDrawer } from "@/components/cart";
 import { CartProvider } from "@/context/CartContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
@@ -29,6 +28,7 @@ export default async function RootLayout({
   let isDownload = false;
   let isSearch = false;
   let isFront2 = false;
+  let isCart = false;
   try {
     const headersList = await headers();
     const pathname = headersList.get("x-pathname") || "";
@@ -40,6 +40,7 @@ export default async function RootLayout({
     isDownload = pathname.startsWith("/download");
     isSearch = pathname.startsWith("/search");
     isFront2 = pathname.startsWith("/front2") || pathname === "/";
+    isCart = pathname.startsWith("/cart");
   } catch (e) {
     // If headers() fails, assume not admin or newdesign
     isAdmin = false;
@@ -50,6 +51,7 @@ export default async function RootLayout({
     isDownload = false;
     isSearch = false;
     isFront2 = false;
+    isCart = false;
   }
 
   // Admin pages use their own layout and CSS (no website header/sidebar)
@@ -66,8 +68,8 @@ export default async function RootLayout({
     );
   }
 
-  // New design pages, actress pages, explore page, checkout, download, search, and front2 pages use their own layout (completely separate)
-  if (isNewDesign || isActress || isExplore || isCheckout || isDownload || isSearch || isFront2) {
+  // New design pages, actress pages, explore page, checkout, download, search, cart, and front2 pages use their own layout (completely separate)
+  if (isNewDesign || isActress || isExplore || isCheckout || isDownload || isSearch || isFront2 || isCart) {
     return (
       <html 
         lang="en" 
@@ -156,10 +158,7 @@ export default async function RootLayout({
             <ContactModalProvider>
               <SearchIndexPreloaderWrapper />
               <SearchMetadataPreloaderWrapper />
-              {/* Header */}
-              <Header />
-
-              {/* Main content */}
+              {/* Main content - no old header */}
               <main className="flex-1 min-w-0">
                 {children}
               </main>
