@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
+import { useFavorites } from '@/context/FavoritesContext';
 import { GalleryImage } from './GalleryGrid';
 
 interface LightboxProps {
@@ -28,11 +30,30 @@ export default function Lightbox({
   onPrev,
   onClose 
 }: LightboxProps) {
+  const router = useRouter();
   const { addItem, isInCart, openCart } = useCart();
+  const { isFavorite, addFavorite, removeFavorite } = useFavorites();
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   const inCart = isInCart(image.id);
+  const isFavorited = isFavorite(actressId);
+
+  // Split name into first name and surname
+  const splitName = (fullName: string) => {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length === 1) {
+      return { firstName: parts[0], surname: '' };
+    }
+    return {
+      firstName: parts[0],
+      surname: parts.slice(1).join(' '),
+    };
+  };
+
+  const { firstName, surname } = splitName(actressName);
 
   // Keyboard navigation
   useEffect(() => {
@@ -76,7 +97,7 @@ export default function Lightbox({
   }, []);
 
   // Touch/swipe handlers for mobile - same as EraGridGalleryModal
-  const minSwipeDistance = 50; // Minimum distance for a swipe
+  const minSwipeDistance = 50;
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     setTouchEnd(null);
@@ -121,7 +142,33 @@ export default function Lightbox({
     }
   }, [touchStart, touchEnd, onPrev, onNext]);
 
-  const handleAddToCart = () => {
+  const handleNext = useCallback(() => {
+    onNext();
+  }, [onNext]);
+
+  const handlePrevious = useCallback(() => {
+    onPrev();
+  }, [onPrev]);
+
+  const handleViewDetails = useCallback(() => {
+    onClose();
+    router.push(`/actress/${actressId}/${actressSlug}`);
+  }, [onClose, router, actressId, actressSlug]);
+
+  const handleFavoriteClick = useCallback(() => {
+    if (isFavorited) {
+      removeFavorite(actressId);
+    } else {
+      addFavorite({
+        id: parseInt(actressId),
+        name: actressName,
+        slug: actressSlug,
+        thumbnailUrl: image.thumbnailUrl,
+      });
+    }
+  }, [isFavorited, addFavorite, removeFavorite, actressId, actressName, actressSlug, image.thumbnailUrl]);
+
+  const handleAddToCart = useCallback(() => {
     if (!image.hasHQ || !image.price) return;
     
     addItem({
@@ -135,209 +182,208 @@ export default function Lightbox({
       height: image.hqHeight || image.height,
       fileSizeMB: image.fileSizeMB,
     });
-    
-    // Don't open cart automatically - let user continue browsing
-  };
+  }, [image, actressId, actressName, actressSlug, addItem]);
 
+  const isAlreadyInCart = isInCart(image.id);
+  const isHQImage = image.hasHQ && !!image.price;
+  
   // Use full-size gallery image (not thumbnail)
   const imageSrc = image.fullUrl;
 
   // Render using portal to ensure it's at the root level
   const lightboxContent = (
     <div
-      className="fixed inset-0 bg-black/95 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center"
-      onClick={(e) => {
-        // Only close on click outside the image container
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      style={{ 
-        zIndex: 9999,
-        touchAction: 'none', // Prevent touch scrolling on mobile
-        overscrollBehavior: 'contain', // Prevent scroll chaining
-      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm"
+      onClick={onClose}
     >
-      {/* Image counter */}
-      {images.length > 1 && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white bg-black/50 px-4 py-2 rounded text-sm z-[10000]">
-          {currentIndex + 1} / {images.length}
-        </div>
-      )}
+      {/* Close button - Overlay on image corner for mobile */}
+      <button
+        onClick={onClose}
+        className="absolute top-2 right-2 md:top-4 md:right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 md:bg-white/10 hover:bg-black/70 md:hover:bg-white/20 transition-colors text-white"
+        aria-label="Close gallery"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
 
-      {/* Close button - Top Right */}
+      {/* Navigation buttons - Bigger with black overlay on mobile */}
       <button
         onClick={(e) => {
           e.stopPropagation();
-          onClose();
+          handlePrevious();
         }}
-        className="interactive-button absolute top-4 right-4 text-white hover:bg-white/20 z-[10000] bg-black/60 backdrop-blur-sm rounded-md px-4 py-2 shadow-lg font-medium"
-        style={{ fontFamily: 'DM Sans, sans-serif', zIndex: 10000 }}
-        aria-label="Close lightbox"
-        title="Close (Esc)"
+        className="absolute left-2 md:left-4 z-20 w-14 h-14 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-black/50 md:bg-white/10 hover:bg-black/70 md:hover:bg-white/20 transition-colors text-white active:scale-95"
+        aria-label="Previous image"
       >
-        Close
+        <svg
+          width="36"
+          height="36"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="md:w-6 md:h-6"
+        >
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
       </button>
 
-      <div
-        className="relative w-full h-full flex items-center justify-center px-4"
-        onClick={(e) => e.stopPropagation()}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleNext();
+        }}
+        className="absolute right-2 md:right-4 z-20 w-14 h-14 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-black/50 md:bg-white/10 hover:bg-black/70 md:hover:bg-white/20 transition-colors text-white active:scale-95"
+        aria-label="Next image"
       >
-        {/* Previous Arrow */}
-        {images.length > 1 && (
-          <button
-            onClick={onPrev}
-            className="interactive-icon absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-3 shadow-lg"
-            style={{ zIndex: 10000 }}
-            aria-label="Previous image"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-        )}
+        <svg
+          width="36"
+          height="36"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="md:w-6 md:h-6"
+        >
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
 
-        {/* Image Container - ensures full image visibility */}
-        <div className="relative flex items-center justify-center w-full h-full max-w-[90vw] max-h-[85vh]">
-          <img
-            src={imageSrc}
-            alt={`${actressName} photo ${currentIndex + 1} of ${images.length}`}
-            className="max-w-full max-h-full w-auto h-auto object-contain"
-            style={{ 
-              objectFit: 'contain',
-              maxWidth: '90vw',
-              maxHeight: '85vh'
-            }}
-          />
+      {/* Main content - Fixed layout to prevent vertical jumps */}
+      <div
+        className="relative w-full h-full flex flex-col px-4 pt-8 md:pt-4 pb-4 overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        style={{
+          justifyContent: 'flex-start',
+        }}
+      >
+        {/* Image container - Fixed viewport height on mobile (70vh), same on desktop */}
+        <div 
+          className="relative w-full max-w-4xl mx-auto flex items-center justify-center bg-black mb-4 md:mb-6 h-[70vh] min-h-[70vh] max-h-[70vh]"
+        >
+          {imageLoading && (
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+            </div>
+          )}
+          
+          {imageError ? (
+            <div className="flex flex-col items-center justify-center text-white/70">
+              <svg
+                width="64"
+                height="64"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                className="mb-4"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <p className="text-sm">Image not available</p>
+            </div>
+          ) : (
+            <img
+              src={imageSrc}
+              alt={`${actressName} photo ${currentIndex + 1} of ${images.length}`}
+              className={`max-w-full max-h-full w-auto h-auto object-contain transition-opacity duration-300 ${
+                imageLoading ? 'opacity-0' : 'opacity-100'
+              }`}
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                width: 'auto',
+                height: 'auto',
+              }}
+              onLoad={() => setImageLoading(false)}
+              onError={() => {
+                setImageLoading(false);
+                setImageError(true);
+              }}
+            />
+          )}
         </div>
 
-        {/* Next Arrow */}
-        {images.length > 1 && (
-          <button
-            onClick={onNext}
-            className="interactive-icon absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 z-[10000] bg-black/70 hover:bg-black/90 rounded-full p-3 shadow-lg"
-            style={{ zIndex: 10000 }}
-            aria-label="Next image"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-        )}
-      </div>
+        {/* Info panel - Fixed layout to prevent layout shift */}
+        <div className="w-full max-w-4xl mx-auto">
+          {/* Mobile: Same layout as desktop (no box) */}
+          <div className="md:hidden w-full max-w-4xl mx-auto">
+            {/* Actress name - centered, Playfair Display, 24px, NOT all caps */}
+            <div className="flex items-center justify-center mb-3">
+              <h2 
+                className="text-white text-center"
+                style={{ 
+                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontSize: '24px',
+                  fontWeight: 600, // SemiBold
+                  letterSpacing: '0.01em',
+                  textTransform: 'none',
+                  lineHeight: '1.2',
+                }}
+                title={actressName}
+              >
+                {firstName} {surname}
+              </h2>
+            </div>
 
-      {/* Photo info and purchase section - below image, only if HQ available */}
-      {image.hasHQ && (
-        <div 
-          className="mt-4 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg shadow-[var(--shadow-subtle)] px-4 sm:px-6 py-3 sm:py-4 flex flex-row items-center justify-between gap-3 sm:gap-4 relative z-[10000] w-full max-w-[90vw] sm:max-w-none"
-          onClick={(e) => e.stopPropagation()}
-          onTouchMove={(e) => e.stopPropagation()} // Prevent touch scrolling on mobile
-          style={{ 
-            fontFamily: 'DM Sans, sans-serif', 
-            zIndex: 10000,
-            height: '64px', // Fixed height for all screen sizes
-            minHeight: '64px',
-            maxHeight: '64px',
-            touchAction: 'none', // Prevent touch scrolling
-          }}
-        >
-          {/* Left side: Pixel size, Megabyte size, and Price */}
-          <div className="flex flex-row items-center gap-2 sm:gap-3 text-[var(--text-secondary)] flex-1 min-w-0" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '14px' }}>
-            {image.hqWidth && image.hqHeight && (
-              <>
-                <span className="font-medium whitespace-nowrap">{image.hqWidth} × {image.hqHeight} px</span>
-                {image.fileSizeMB !== undefined && image.fileSizeMB !== null && (
-                  <span className="font-medium whitespace-nowrap text-[var(--text-secondary)]/80">/ {image.fileSizeMB} MB</span>
-                )}
-                {image.price && (
-                  <span className="font-semibold text-[var(--text-primary)] whitespace-nowrap ml-auto" style={{ fontSize: '16px' }}>
-                    ${image.price.toFixed(2)}
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Right side: Add to Cart button (icon only, max 60px width) */}
-          {image.price && (
-            <div className="flex-shrink-0">
-              {inCart ? (
+            {/* Info row - pixel size, price, add button - centered, 2px smaller - Fixed height to prevent layout shift */}
+            <div className="flex items-center justify-center gap-4 mb-3" style={{ minHeight: '32px' }}>
+              {/* Photo count (when image is NOT HQ) */}
+              {!isHQImage && (
+                <span className="text-white/90 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  {images.length} {images.length === 1 ? 'photo' : 'photos'}
+                </span>
+              )}
+              
+              {/* Pixel size and MB (when image IS HQ) */}
+              {isHQImage && image.hqWidth && image.hqHeight && (
+                <span className="text-white/90 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  {image.hqWidth.toLocaleString()} × {image.hqHeight.toLocaleString()} px
+                  {image.fileSizeMB !== undefined && image.fileSizeMB !== null && ` / ${image.fileSizeMB} MB`}
+                </span>
+              )}
+              
+              {/* Price (when image IS HQ) */}
+              {isHQImage && image.price && (
+                <span className="font-semibold text-white text-xs" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  ${image.price.toFixed(2)}
+                </span>
+              )}
+              
+              {/* Add button (when image IS HQ) - Icon only */}
+              {isHQImage && image.price && !isAlreadyInCart && (
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openCart();
-                  }}
-                  className="interactive-button inline-flex items-center justify-center bg-[var(--accent-gold)] text-white rounded-md hover:bg-[var(--accent-gold)]/90 hover:shadow-lg font-medium text-sm shadow-sm"
+                  onClick={handleAddToCart}
+                  className="inline-flex items-center justify-center p-2 rounded-md font-medium text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-all duration-200 shadow-sm active:scale-[0.95]"
                   style={{ 
                     fontFamily: 'DM Sans, sans-serif',
-                    height: '44px',
-                    width: '44px',
-                    minHeight: '44px',
-                    minWidth: '44px',
-                    maxHeight: '44px',
-                    maxWidth: '60px',
-                    padding: '0',
-                    flexShrink: 0,
-                  }}
-                  aria-label="View cart"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="flex-shrink-0"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </button>
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAddToCart();
-                  }}
-                  className="interactive-button inline-flex items-center justify-center gap-2 bg-[var(--accent-gold)] text-white rounded-md hover:bg-[var(--accent-gold)]/90 hover:shadow-lg font-medium text-sm shadow-sm h-11 w-11 min-[500px]:w-auto min-[500px]:px-4"
-                  style={{ 
-                    fontFamily: 'DM Sans, sans-serif',
-                    minHeight: '44px',
-                    minWidth: '44px',
-                    flexShrink: 0,
                   }}
                   aria-label="Add to cart"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
+                    width="18"
+                    height="18"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -350,15 +396,231 @@ export default function Lightbox({
                     <circle cx="20" cy="21" r="1" />
                     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                   </svg>
-                  <span className="hidden min-[500px]:inline whitespace-nowrap">
-                    Add to cart
-                  </span>
+                </button>
+              )}
+              
+              {/* In Cart button - Icon only */}
+              {isHQImage && image.price && isAlreadyInCart && (
+                <button
+                  onClick={openCart}
+                  className="inline-flex items-center justify-center p-2 rounded-md font-medium text-white bg-green-600 hover:bg-green-700 transition-all duration-200"
+                  style={{ 
+                    fontFamily: 'DM Sans, sans-serif',
+                  }}
+                  aria-label="View cart"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="flex-shrink-0"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 </button>
               )}
             </div>
-          )}
+
+            {/* Actions row - See actress page and favorite - centered, 2px smaller */}
+            <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={handleViewDetails}
+                className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-[11px] font-medium"
+                style={{ 
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+                title="See actress page"
+              >
+                See actress page →
+              </button>
+              
+              {/* Favorite button */}
+              <button
+                onClick={handleFavoriteClick}
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-opacity duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)]"
+                aria-label={isFavorited ? `Remove ${actressName} from favorites` : `Add ${actressName} to favorites`}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill={isFavorited ? '#8B4513' : 'none'}
+                  stroke={isFavorited ? '#8B4513' : 'currentColor'}
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transition-opacity duration-200"
+                  style={{ 
+                    color: isFavorited ? '#8B4513' : 'white',
+                  }}
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Image counter */}
+            <div className="mt-4">
+              <p className="text-white/60 text-xs text-center" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                {currentIndex + 1} of {images.length}
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop: Clean layout without background block, centered, matching image width */}
+          <div className="hidden md:block w-full max-w-4xl mx-auto">
+            {/* Actress name - centered, Playfair Display, 24px, NOT all caps */}
+            <div className="flex items-center justify-center mb-3">
+              <h2 
+                className="text-white text-center"
+                style={{ 
+                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontSize: '24px',
+                  fontWeight: 600, // SemiBold
+                  letterSpacing: '0.01em',
+                  textTransform: 'none',
+                  lineHeight: '1.2',
+                }}
+                title={actressName}
+              >
+                {firstName} {surname}
+              </h2>
+            </div>
+
+            {/* Info row - pixel size, price, add button - centered, 2px smaller - Fixed height to prevent layout shift */}
+            <div className="flex items-center justify-center gap-4 mb-3" style={{ minHeight: '32px' }}>
+              {/* Photo count (when image is NOT HQ) */}
+              {!isHQImage && (
+                <span className="text-white/90 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  {images.length} {images.length === 1 ? 'photo' : 'photos'}
+                </span>
+              )}
+              
+              {/* Pixel size and MB (when image IS HQ) */}
+              {isHQImage && image.hqWidth && image.hqHeight && (
+                <span className="text-white/90 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  {image.hqWidth.toLocaleString()} × {image.hqHeight.toLocaleString()} px
+                  {image.fileSizeMB !== undefined && image.fileSizeMB !== null && ` / ${image.fileSizeMB} MB`}
+                </span>
+              )}
+              
+              {/* Price (when image IS HQ) */}
+              {isHQImage && image.price && (
+                <span className="font-semibold text-white text-xs" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  ${image.price.toFixed(2)}
+                </span>
+              )}
+              
+              {/* Add button (when image IS HQ) - Icon only */}
+              {isHQImage && image.price && !isAlreadyInCart && (
+                <button
+                  onClick={handleAddToCart}
+                  className="inline-flex items-center justify-center p-2 rounded-md font-medium text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-all duration-200 shadow-sm active:scale-[0.95]"
+                  style={{ 
+                    fontFamily: 'DM Sans, sans-serif',
+                  }}
+                  aria-label="Add to cart"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="flex-shrink-0"
+                  >
+                    <circle cx="9" cy="21" r="1" />
+                    <circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                  </svg>
+                </button>
+              )}
+              
+              {/* In Cart button - Icon only */}
+              {isHQImage && image.price && isAlreadyInCart && (
+                <button
+                  onClick={openCart}
+                  className="inline-flex items-center justify-center p-2 rounded-md font-medium text-white bg-green-600 hover:bg-green-700 transition-all duration-200"
+                  style={{ 
+                    fontFamily: 'DM Sans, sans-serif',
+                  }}
+                  aria-label="View cart"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="flex-shrink-0"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Actions row - See actress page and favorite - centered, 2px smaller */}
+            <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={handleViewDetails}
+                className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-[11px] font-medium"
+                style={{ 
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+                title="See actress page"
+              >
+                See actress page →
+              </button>
+              
+              {/* Favorite button */}
+              <button
+                onClick={handleFavoriteClick}
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-opacity duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)]"
+                aria-label={isFavorited ? `Remove ${actressName} from favorites` : `Add ${actressName} to favorites`}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill={isFavorited ? '#8B4513' : 'none'}
+                  stroke={isFavorited ? '#8B4513' : 'currentColor'}
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transition-opacity duration-200"
+                  style={{ 
+                    color: isFavorited ? '#8B4513' : 'white',
+                  }}
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Image counter - Desktop */}
+            <div className="mt-4">
+              <p className="text-white/60 text-xs text-center" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                {currentIndex + 1} of {images.length}
+              </p>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 

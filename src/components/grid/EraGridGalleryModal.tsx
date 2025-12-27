@@ -525,18 +525,12 @@ export default function EraGridGalleryModal({
 
         {/* Info panel - Fixed layout to prevent layout shift */}
         <div className="w-full max-w-4xl mx-auto">
-          {/* Mobile: Keep the gray background block */}
-          <div 
-            className="bg-white/10 backdrop-blur-md rounded-lg p-4 md:hidden border border-white/20"
-            style={{ 
-              contain: 'layout paint',
-              minHeight: '140px',
-            }}
-          >
-            {/* ROW 1: Actress name - Mobile */}
-            <div className="h-8 flex items-center mb-2">
+          {/* Mobile: Same layout as desktop (no box) */}
+          <div className="md:hidden w-full max-w-4xl mx-auto">
+            {/* Actress name - centered, Playfair Display, 24px, NOT all caps */}
+            <div className="flex items-center justify-center mb-3">
               <h2 
-                className="text-white truncate w-full text-center"
+                className="text-white text-center"
                 style={{ 
                   fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
                   fontSize: '24px',
@@ -551,188 +545,135 @@ export default function EraGridGalleryModal({
               </h2>
             </div>
 
-            {/* ROW 2 & ROW 3: Shared container for alignment - Mobile */}
-            <div className="space-y-2">
-              {/* ROW 2: Metadata - Mobile - Fixed height to prevent layout shift */}
-              <div className="h-[40px] flex items-center justify-between gap-4 relative" style={{ minHeight: '40px' }}>
-                {/* Loading state - show placeholder to prevent jump */}
-                {loadingHqInfo && (
-                  <div 
-                    className="flex items-center gap-2 text-white/60 h-[40px]"
-                    style={{ 
-                      fontFamily: 'DM Sans, sans-serif', 
-                      fontSize: '11px',
-                      position: 'absolute',
-                      left: 0,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <span className="whitespace-nowrap">Loading...</span>
-                  </div>
-                )}
-                
-                {/* Version A: Photo count (when image is NOT HQ) */}
-                {!isHQImage && !loadingHqInfo && (
-                  <div 
-                    className="flex items-center gap-2 text-white/90 h-[40px]"
-                    style={{ 
-                      fontFamily: 'DM Sans, sans-serif', 
-                      fontSize: '11px',
-                      position: 'absolute',
-                      left: 0,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <span className="whitespace-nowrap">
-                      {galleryPhotoCount} {galleryPhotoCount === 1 ? 'photo' : 'photos'}
-                      {hasOtherHqImages && ` / high quality available`}
-                    </span>
-                  </div>
-                )}
-
-                {/* Version B: HQ details with price and button (when image IS HQ) */}
-                <div 
-                  className="flex items-center justify-between gap-3 w-full h-[40px] md:h-[32px]"
-                  style={{ 
-                    fontFamily: 'DM Sans, sans-serif', 
-                    fontSize: '11px',
-                    visibility: isHQImage ? 'visible' : 'hidden',
-                    opacity: isHQImage ? 1 : 0,
-                    position: 'absolute',
-                    left: 0,
-                    right: 0,
-                    alignItems: 'center',
-                  }}
-                >
-                  <div className="flex items-center gap-2 md:gap-1.5 text-white/90 flex-1 min-w-0">
-                    {hqImageInfo && (
-                      <span className="whitespace-nowrap text-[11px]">
-                        {hqImageInfo.width.toLocaleString()} × {hqImageInfo.height.toLocaleString()} px
-                        {hqImageInfo.fileSizeMB && ` / ${hqImageInfo.fileSizeMB} MB`}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 md:gap-2 flex-shrink-0 relative" style={{ width: '140px', minWidth: '140px' }}>
-                    {hqImageInfo && (
-                      <>
-                        <span className="font-semibold text-white text-xs whitespace-nowrap" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                          ${hqImageInfo.price.toFixed(2)}
-                        </span>
-                        {/* Add button - always rendered, toggle visibility */}
-                        <button
-                          onClick={handleAddToCart}
-                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 md:px-2 md:py-1 rounded-md font-medium text-[11px] text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-opacity duration-200 shadow-sm active:scale-[0.95] flex-shrink-0"
-                          style={{ 
-                            fontFamily: 'DM Sans, sans-serif',
-                            width: '70px',
-                            minWidth: '70px',
-                            maxWidth: '70px',
-                            visibility: isAlreadyInCart ? 'hidden' : 'visible',
-                            opacity: isAlreadyInCart ? 0 : 1,
-                            position: 'absolute',
-                            right: 0,
-                          }}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="flex-shrink-0"
-                          >
-                            <circle cx="9" cy="21" r="1" />
-                            <circle cx="20" cy="21" r="1" />
-                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                          </svg>
-                          <span>Add</span>
-                        </button>
-                        {/* In Cart button - always rendered, toggle visibility */}
-                        <button
-                          onClick={openCart}
-                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 md:px-2 md:py-1 rounded-md font-medium text-[11px] text-white bg-green-600 hover:bg-green-700 transition-opacity duration-200 flex-shrink-0"
-                          style={{ 
-                            fontFamily: 'DM Sans, sans-serif',
-                            width: '70px',
-                            minWidth: '70px',
-                            maxWidth: '70px',
-                            visibility: isAlreadyInCart ? 'visible' : 'hidden',
-                            opacity: isAlreadyInCart ? 1 : 0,
-                            position: 'absolute',
-                            right: 0,
-                          }}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="flex-shrink-0"
-                          >
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                          <span>In Cart</span>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* ROW 3: Actions - Mobile */}
-              <div className="h-10 flex items-center gap-2">
+            {/* Info row - pixel size, price, add button - centered, 2px smaller - Fixed height to prevent layout shift */}
+            <div className="flex items-center justify-center gap-4 mb-3" style={{ minHeight: '32px' }}>
+              {/* Loading state - show placeholder to prevent jump */}
+              {loadingHqInfo && (
+                <span className="text-white/60 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  Loading...
+                </span>
+              )}
+              
+              {/* Photo count (when image is NOT HQ) */}
+              {!isHQImage && !loadingHqInfo && (
+                <span className="text-white/90 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  {galleryPhotoCount} {galleryPhotoCount === 1 ? 'photo' : 'photos'}
+                  {hasOtherHqImages && ` / high quality available`}
+                </span>
+              )}
+              
+              {/* Pixel size and MB (when image IS HQ) */}
+              {hqImageInfo && (
+                <span className="text-white/90 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  {hqImageInfo.width.toLocaleString()} × {hqImageInfo.height.toLocaleString()} px
+                  {hqImageInfo.fileSizeMB && ` / ${hqImageInfo.fileSizeMB} MB`}
+                </span>
+              )}
+              
+              {/* Price (when image IS HQ) */}
+              {hqImageInfo && (
+                <span className="font-semibold text-white text-xs" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  ${hqImageInfo.price.toFixed(2)}
+                </span>
+              )}
+              
+              {/* Add button (when image IS HQ) - Icon only */}
+              {hqImageInfo && !isAlreadyInCart && (
                 <button
-                  onClick={handleViewDetails}
-                  className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-[11px] font-medium truncate"
+                  onClick={handleAddToCart}
+                  className="inline-flex items-center justify-center p-2 rounded-md font-medium text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-all duration-200 shadow-sm active:scale-[0.95]"
                   style={{ 
                     fontFamily: 'DM Sans, sans-serif',
-                    marginLeft: 0,
                   }}
-                  title="See actress page"
-                >
-                  See actress page →
-                </button>
-                
-                {/* Spacer to push favorite button to right */}
-                <div className="flex-1" />
-                
-                {/* Favorite button - Mobile */}
-                <button
-                  onClick={handleFavoriteClick}
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition-opacity duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)] flex-shrink-0"
-                  aria-label={isFavorited ? `Remove ${currentItem.actressName} from favorites` : `Add ${currentItem.actressName} to favorites`}
+                  aria-label="Add to cart"
                 >
                   <svg
-                    width="20"
-                    height="20"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
                     viewBox="0 0 24 24"
-                    fill={isFavorited ? '#8B4513' : 'none'}
-                    stroke={isFavorited ? '#8B4513' : 'currentColor'}
-                    strokeWidth="1.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="transition-opacity duration-200"
-                    style={{ 
-                      color: isFavorited ? '#8B4513' : 'white',
-                    }}
+                    className="flex-shrink-0"
                   >
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    <circle cx="9" cy="21" r="1" />
+                    <circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                   </svg>
                 </button>
-              </div>
+              )}
+              
+              {/* In Cart button - Icon only */}
+              {hqImageInfo && isAlreadyInCart && (
+                <button
+                  onClick={openCart}
+                  className="inline-flex items-center justify-center p-2 rounded-md font-medium text-white bg-green-600 hover:bg-green-700 transition-all duration-200"
+                  style={{ 
+                    fontFamily: 'DM Sans, sans-serif',
+                  }}
+                  aria-label="View cart"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="flex-shrink-0"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </button>
+              )}
             </div>
 
-            {/* Image counter - Mobile */}
-            <div className="mt-3 pt-3 border-t border-white/20">
+            {/* Actions row - See actress page and favorite - centered, 2px smaller */}
+            <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={handleViewDetails}
+                className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-[11px] font-medium"
+                style={{ 
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+                title="See actress page"
+              >
+                See actress page →
+              </button>
+              
+              {/* Favorite button */}
+              <button
+                onClick={handleFavoriteClick}
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-opacity duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)]"
+                aria-label={isFavorited ? `Remove ${currentItem.actressName} from favorites` : `Add ${currentItem.actressName} to favorites`}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill={isFavorited ? '#8B4513' : 'none'}
+                  stroke={isFavorited ? '#8B4513' : 'currentColor'}
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="transition-opacity duration-200"
+                  style={{ 
+                    color: isFavorited ? '#8B4513' : 'white',
+                  }}
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Image counter */}
+            <div className="mt-4">
               <p className="text-white/60 text-xs text-center" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                 {currentIndex + 1} of {items.length}
               </p>
@@ -791,19 +732,20 @@ export default function EraGridGalleryModal({
                 </span>
               )}
               
-              {/* Add button (when image IS HQ) */}
+              {/* Add button (when image IS HQ) - Icon only */}
               {hqImageInfo && !isAlreadyInCart && (
                 <button
                   onClick={handleAddToCart}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-md font-medium text-[11px] text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-all duration-200 shadow-sm active:scale-[0.95]"
+                  className="inline-flex items-center justify-center p-2 rounded-md font-medium text-white bg-[var(--accent-gold)] hover:bg-[var(--accent-gold)]/90 hover:shadow-lg transition-all duration-200 shadow-sm active:scale-[0.95]"
                   style={{ 
                     fontFamily: 'DM Sans, sans-serif',
                   }}
+                  aria-label="Add to cart"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
+                    width="18"
+                    height="18"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -816,23 +758,23 @@ export default function EraGridGalleryModal({
                     <circle cx="20" cy="21" r="1" />
                     <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
                   </svg>
-                  <span>Add</span>
                 </button>
               )}
               
-              {/* In Cart button */}
+              {/* In Cart button - Icon only */}
               {hqImageInfo && isAlreadyInCart && (
                 <button
                   onClick={openCart}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-md font-medium text-[11px] text-white bg-green-600 hover:bg-green-700 transition-all duration-200"
+                  className="inline-flex items-center justify-center p-2 rounded-md font-medium text-white bg-green-600 hover:bg-green-700 transition-all duration-200"
                   style={{ 
                     fontFamily: 'DM Sans, sans-serif',
                   }}
+                  aria-label="View cart"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
+                    width="18"
+                    height="18"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -843,7 +785,6 @@ export default function EraGridGalleryModal({
                   >
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <span>In Cart</span>
                 </button>
               )}
             </div>

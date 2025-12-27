@@ -137,9 +137,6 @@ export default function ActressTable({
                   letterSpacing: '0.02em',
                 }}
               >
-                {actress.hasNewPhotos && (
-                  <span className="inline-block w-4 h-4 mr-1">📷</span>
-                )}
                 {actress.photoCount > 0 ? actress.photoCount : '-'}
               </td>
               <td 

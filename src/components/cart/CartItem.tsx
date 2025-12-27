@@ -25,7 +25,6 @@ function CartItem({ item }: CartItemProps) {
         slug={item.actressSlug}
         thumbnailUrl={item.thumbnailUrl}
         nonClickable={true}
-        nameFontSize="clamp(14px, 0.4vw + 14px, 16px)"
         additionalContent={
           <div className="flex items-center justify-between mt-1">
             <p 
@@ -45,7 +44,7 @@ function CartItem({ item }: CartItemProps) {
               className={`${item.fileSizeMB !== undefined && item.fileSizeMB !== null ? 'font-bold' : 'font-semibold'} text-[var(--text-primary)]`} 
               style={{ 
                 fontFamily: 'var(--font-ui)',
-                fontSize: item.fileSizeMB !== undefined && item.fileSizeMB !== null ? '12px' : '10px',
+                fontSize: 'clamp(13px, 0.15vw + 12px, 13px)',
               }}
             >
               ${item.price.toFixed(2)}
