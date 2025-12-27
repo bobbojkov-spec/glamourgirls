@@ -9,9 +9,10 @@ interface HeadshotImageProps {
   className?: string;
   theirMan?: boolean;
   onLoad?: () => void;
+  priority?: boolean;
 }
 
-export default function HeadshotImage({ src, alt, fallbackSrc, className, theirMan, onLoad }: HeadshotImageProps) {
+export default function HeadshotImage({ src, alt, fallbackSrc, className, theirMan, onLoad, priority = false }: HeadshotImageProps) {
   const [imgSrc, setImgSrc] = useState(src);
   const [hasError, setHasError] = useState(false);
 
