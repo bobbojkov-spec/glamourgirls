@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/newdesign';
 import SearchPanel, { SearchFilters, YearFilterValue } from '@/components/search/SearchPanel';
@@ -15,10 +15,21 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
   const [displayedItems, setDisplayedItems] = useState<SearchActressResult[]>([]);
   const [columnCount, setColumnCount] = useState(2);
 
+  // Filter out actresses with no gallery images (placeholders) - memoized to prevent infinite loops
+  const actressesWithImages = useMemo(() => {
+    return actresses.filter((actress) => {
+      if (!actress.previewImageUrl) return false;
+      const imageUrl = actress.previewImageUrl.toLowerCase();
+      return !imageUrl.includes('placeholder') && 
+             !imageUrl.includes('placeholder-portrait') &&
+             !imageUrl.includes('placeholder-man');
+    });
+  }, [actresses]);
+
   useEffect(() => {
     const calculateDisplayedItems = () => {
       const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
-      const totalItems = actresses.length;
+      const totalItems = actressesWithImages.length;
       let cols: number;
       let maxItems: number;
 
@@ -52,7 +63,7 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
       const completeRows = Math.floor(itemsToShow / cols);
       const finalCount = completeRows * cols;
       
-      setDisplayedItems(actresses.slice(0, finalCount));
+      setDisplayedItems(actressesWithImages.slice(0, finalCount));
     };
 
     calculateDisplayedItems();
@@ -60,7 +71,7 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
       window.addEventListener('resize', calculateDisplayedItems);
       return () => window.removeEventListener('resize', calculateDisplayedItems);
     }
-  }, [actresses]);
+  }, [actressesWithImages]);
 
   return (
     <div 
@@ -89,7 +100,9 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
                 width: '100%',
                 aspectRatio: '3/4',
                 maxWidth: '100%',
-                maxHeight: 'clamp(160px, 20vw, 220px)', // Desktop: ~200-220px, Mobile: ~160-180px - SIGNIFICANTLY smaller than Featured
+                // NO maxHeight - aspect ratio controls dimensions at all breakpoints
+                // Portrait orientation is enforced by aspectRatio: 3/4 (height > width)
+                minHeight: 0,
                 borderRadius: '7px',
                 boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
                 cursor: 'pointer',
@@ -327,35 +340,74 @@ export default function HomePage() {
     }
   }, [featuredActresses]);
 
-  // Fetch latest additions (actresses marked as new OR with new photos)
-  // Order by created_at DESC (API will use id DESC as fallback if created_at not available)
+  // Fetch latest additions: First try new entries, then supplement with latest edited entries
+  // Goal: Always show 4-6 items on homepage
   useEffect(() => {
     setLoadingLatest(true);
-    // Fetch actresses that are new OR have new photos (need to merge results from two calls)
-    // Request ordering by created_at DESC for Latest Additions
     const fetchLatest = async () => {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-        const params1 = new URLSearchParams({ isNew: 'yes', orderBy: 'created_at' });
-        const params2 = new URLSearchParams({ hasNewPhotos: 'yes', orderBy: 'created_at' });
         
-        const [newEntries, newPhotos] = await Promise.all([
-          fetch(`${baseUrl}/api/actresses?${params1.toString()}`).then(r => r.json()),
-          fetch(`${baseUrl}/api/actresses?${params2.toString()}`).then(r => r.json())
-        ]);
+        // Step 1: Fetch new entries (isNew = 'yes') - up to 6
+        const newEntriesParams = new URLSearchParams({ isNew: 'yes', orderBy: 'created_at' });
+        const newEntriesResponse = await fetch(`${baseUrl}/api/actresses?${newEntriesParams.toString()}`);
         
-        // Merge and deduplicate by ID
-        const merged = [...newEntries, ...newPhotos];
-        const unique = merged.filter((actress, index, self) => 
-          index === self.findIndex(a => a.id === actress.id)
-        );
-        // All actresses have previewImageUrl (always populated)
-        const withPreviewImages = unique;
-        // Sort by ID descending (newer IDs are typically higher, works as fallback if created_at not available)
-        // API should have already ordered by created_at DESC or id DESC
-        const sorted = withPreviewImages.sort((a, b) => b.id - a.id);
-        // Limit to 6 for processing (we'll show max 4 based on even-count logic)
-        setLatestActresses(sorted.slice(0, 6));
+        if (!newEntriesResponse.ok) {
+          throw new Error(`Failed to fetch new entries: ${newEntriesResponse.status}`);
+        }
+        
+        const newEntriesData = await newEntriesResponse.json();
+        
+        // Ensure we have an array (API might return error object)
+        const newEntries: SearchActressResult[] = Array.isArray(newEntriesData) ? newEntriesData : [];
+        
+        // Filter out placeholders from new entries
+        const newEntriesFiltered = newEntries.filter((actress) => {
+          if (!actress.previewImageUrl) return false;
+          const imageUrl = actress.previewImageUrl.toLowerCase();
+          return !imageUrl.includes('placeholder') && 
+                 !imageUrl.includes('placeholder-portrait') &&
+                 !imageUrl.includes('placeholder-man');
+        });
+        
+        let latestActresses = newEntriesFiltered.slice(0, 6);
+        
+        // Step 2: If we have less than 6, supplement with latest edited entries (ordered by updated_at)
+        if (latestActresses.length < 6) {
+          const needed = 6 - latestActresses.length;
+          const editedParams = new URLSearchParams({ orderBy: 'updated_at' });
+          const editedResponse = await fetch(`${baseUrl}/api/actresses?${editedParams.toString()}`);
+          
+          if (!editedResponse.ok) {
+            // If edited entries fetch fails, just use what we have
+            console.warn('Failed to fetch edited entries, using only new entries');
+          } else {
+            const editedData = await editedResponse.json();
+            
+            // Ensure we have an array (API might return error object)
+            const editedEntries: SearchActressResult[] = Array.isArray(editedData) ? editedData : [];
+          
+            // Filter out placeholders and entries we already have
+            const editedFiltered = editedEntries
+              .filter((actress) => {
+                if (!actress.previewImageUrl) return false;
+                const imageUrl = actress.previewImageUrl.toLowerCase();
+                if (imageUrl.includes('placeholder') || 
+                    imageUrl.includes('placeholder-portrait') ||
+                    imageUrl.includes('placeholder-man')) {
+                  return false;
+                }
+                // Exclude entries we already have
+                return !latestActresses.some(a => a.id === actress.id);
+              })
+              .slice(0, needed);
+            
+            // Combine new entries with edited entries
+            latestActresses = [...latestActresses, ...editedFiltered].slice(0, 6);
+          }
+        }
+        
+        setLatestActresses(latestActresses);
       } catch (error) {
         logError('Error fetching latest actresses:', error);
         setLatestActresses([]);
@@ -580,7 +632,8 @@ export default function HomePage() {
                           width: '100%',
                           aspectRatio: '3/4',
                           maxWidth: '100%',
-                          maxHeight: 'clamp(220px, 35vw, 360px)', // Desktop: ~320-360px, Mobile: ~220-260px
+                          // NO maxHeight - aspect ratio controls dimensions at all breakpoints
+                          // Portrait orientation is enforced by aspectRatio: 3/4 (height > width)
                           borderRadius: '7px', // Subtle rounded corners (6-8px range)
                           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)', // Very soft shadow for grounding
                           cursor: 'pointer',

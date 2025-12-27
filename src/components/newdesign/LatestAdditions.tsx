@@ -25,7 +25,17 @@ export default function LatestAdditions({
   layout = 'section',
   columns = 2,
 }: LatestAdditionsProps) {
-  if (actresses.length === 0) {
+  // Filter out actresses with no gallery images (placeholders)
+  const actressesWithImages = actresses.filter((actress) => {
+    // Exclude if no imageUrl or if it's a placeholder
+    if (!actress.imageUrl) return false;
+    const imageUrl = actress.imageUrl.toLowerCase();
+    return !imageUrl.includes('placeholder') && 
+           !imageUrl.includes('placeholder-portrait') &&
+           !imageUrl.includes('placeholder-man');
+  });
+
+  if (actressesWithImages.length === 0) {
     return null;
   }
 
@@ -44,18 +54,33 @@ export default function LatestAdditions({
 
       {variant === 'grid' ? (
         <div className={`grid ${gridClass} gap-5`}>
-          {actresses.map((actress) => {
+          {actressesWithImages.map((actress) => {
             const href = actress.slug ? `/actress/${actress.id}/${actress.slug}` : `/actress/${actress.id}`;
             return (
               <Link key={actress.id} href={href} className="group">
                 <div className="rounded-2xl border border-[var(--border-subtle)] overflow-hidden bg-[var(--bg-page)]">
-                  <div className="relative aspect-[3/4] overflow-hidden">
+                  <div 
+                    className="relative overflow-hidden"
+                    style={{
+                      aspectRatio: '3/4', // Fixed portrait ratio - NEVER changes at any breakpoint
+                      width: '100%',
+                      // Portrait orientation enforced: height is always 4/3 of width
+                      // NO maxHeight - aspect ratio controls dimensions at all screen sizes
+                      minHeight: 0,
+                      position: 'relative',
+                    }}
+                  >
                     <Image
-                      src={actress.imageUrl || '/placeholder-portrait.svg'}
+                      src={actress.imageUrl!}
                       alt={actress.name}
                       fill
                       className="object-cover transition-transform duration-700 group-hover:scale-105"
                       sizes="(max-width: 768px) 50vw, 20vw"
+                      style={{
+                        objectFit: 'cover',
+                        width: '100%',
+                        height: '100%',
+                      }}
                     />
                   </div>
                   <div className="p-4">
@@ -76,14 +101,14 @@ export default function LatestAdditions({
         </div>
       ) : (
         <ul className="space-y-4">
-          {actresses.map((actress) => {
+          {actressesWithImages.map((actress) => {
             const href = actress.slug ? `/actress/${actress.id}/${actress.slug}` : `/actress/${actress.id}`;
             return (
               <li key={actress.id}>
                 <Link href={href} className="flex items-center gap-4 group rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-page)] p-3">
                   <div className="relative w-14 h-14 rounded-full overflow-hidden border border-[var(--border-strong)] bg-[var(--bg-page-alt)]">
                     <Image
-                      src={actress.imageUrl || '/placeholder-portrait.svg'}
+                      src={actress.imageUrl!}
                       alt={actress.name}
                       fill
                       className="object-cover"

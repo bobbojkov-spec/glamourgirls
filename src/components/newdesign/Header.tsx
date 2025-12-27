@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SearchModal from '@/components/layout/SearchModal';
 import ContactModal from '@/components/layout/ContactModal';
@@ -11,6 +12,7 @@ import { useFavorites } from '@/context/FavoritesContext';
 import { useContactModal } from '@/context/ContactModalContext';
 
 export default function Header() {
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [galleriesModalOpen, setGalleriesModalOpen] = useState(false);
@@ -180,7 +182,12 @@ export default function Header() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                toggleCart();
+                // On mobile (≤768px), navigate to /cart page; on desktop, open modal
+                if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+                  router.push('/cart');
+                } else {
+                  toggleCart();
+                }
               }}
               aria-label={`Shopping cart with ${itemCount} items`}
               className="relative flex items-center justify-center active:scale-95 active:opacity-80 transition-all duration-150 hover:text-[var(--accent-gold)] cursor-pointer"

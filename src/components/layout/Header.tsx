@@ -10,6 +10,7 @@ import { searchIndexService } from '@/lib/searchIndex';
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { toggleCart, itemCount } = useCart();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -91,7 +92,12 @@ export default function Header() {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                toggleCart();
+                // On mobile (≤768px), navigate to /cart page; on desktop, open modal
+                if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+                  router.push('/cart');
+                } else {
+                  toggleCart();
+                }
               }}
               className="relative text-gray-300 hover:text-white transition-colors cursor-pointer"
               aria-label={`Shopping cart with ${itemCount} items`}

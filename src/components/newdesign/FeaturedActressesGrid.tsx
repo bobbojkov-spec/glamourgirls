@@ -51,7 +51,17 @@ export default function FeaturedActressesGrid({
               href={href}
               className="group interactive-row rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-alt)] overflow-hidden hover:border-[var(--accent-gold)]"
             >
-              <div className="relative aspect-[3/4] overflow-hidden">
+              <div 
+                className="relative overflow-hidden"
+                style={{
+                  aspectRatio: '3/4', // Fixed portrait ratio - NEVER changes at any breakpoint
+                  width: '100%',
+                  // Portrait orientation enforced: height is always 4/3 of width
+                  // NO maxHeight - aspect ratio controls dimensions at all screen sizes
+                  minHeight: 0,
+                  position: 'relative',
+                }}
+              >
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/25 pointer-events-none z-10" />
                 <Image
                   src={actress.imageUrl}
@@ -59,6 +69,11 @@ export default function FeaturedActressesGrid({
                   fill
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                   sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 20vw"
+                  style={{
+                    objectFit: 'cover',
+                    width: '100%',
+                    height: '100%',
+                  }}
                 />
               </div>
               <div className="p-4">

@@ -10,9 +10,24 @@ export default function CartDrawer() {
   const router = useRouter();
   const { items, isOpen, closeCart, totalPrice, subtotal, discountRate, discountAmount, clearCart } = useCart();
 
-  // Handle ESC key to close
+  // Redirect to /cart page on mobile when modal tries to open, keep modal on desktop
   useEffect(() => {
     if (!isOpen) return;
+
+    // Check if we're on mobile - if so, redirect to /cart page
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    if (isMobile) {
+      closeCart();
+      router.push('/cart');
+      return;
+    }
+  }, [isOpen, closeCart, router]);
+
+  // Handle ESC key to close (desktop only)
+  useEffect(() => {
+    if (!isOpen) return;
+    // Only handle ESC on desktop
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) return;
     
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -42,7 +57,8 @@ export default function CartDrawer() {
     router.push('/checkout');
   }, [items, closeCart, router]);
 
-  if (!isOpen) return null;
+  // Don't render modal on mobile (redirects to /cart page instead)
+  if (!isOpen || (typeof window !== 'undefined' && window.innerWidth <= 768)) return null;
 
   return (
     <>
