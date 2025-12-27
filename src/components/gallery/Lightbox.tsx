@@ -160,7 +160,7 @@ export default function Lightbox({
       removeFavorite(actressId);
     } else {
       addFavorite({
-        id: parseInt(actressId),
+        id: actressId,
         name: actressName,
         slug: actressSlug,
         thumbnailUrl: image.thumbnailUrl,

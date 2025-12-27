@@ -340,76 +340,40 @@ export default function HomePage() {
     }
   }, [featuredActresses]);
 
-  // Fetch latest additions: First try new entries, then supplement with latest edited entries
-  // Goal: Always show 4-6 items on homepage
+  // Fetch latest additions from cached server-side API
+  // STRICT RULES: Only show section if we have 4-6 items with valid images
   useEffect(() => {
     setLoadingLatest(true);
     const fetchLatest = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-        
-        // Step 1: Fetch new entries (isNew = 'yes') - up to 6
-        const newEntriesParams = new URLSearchParams({ isNew: 'yes', orderBy: 'created_at' });
-        const newEntriesResponse = await fetch(`${baseUrl}/api/actresses?${newEntriesParams.toString()}`);
-        
-        if (!newEntriesResponse.ok) {
-          throw new Error(`Failed to fetch new entries: ${newEntriesResponse.status}`);
-        }
-        
-        const newEntriesData = await newEntriesResponse.json();
-        
-        // Ensure we have an array (API might return error object)
-        const newEntries: SearchActressResult[] = Array.isArray(newEntriesData) ? newEntriesData : [];
-        
-        // Filter out placeholders from new entries
-        const newEntriesFiltered = newEntries.filter((actress) => {
-          if (!actress.previewImageUrl) return false;
-          const imageUrl = actress.previewImageUrl.toLowerCase();
-          return !imageUrl.includes('placeholder') && 
-                 !imageUrl.includes('placeholder-portrait') &&
-                 !imageUrl.includes('placeholder-man');
+        // Use cached API endpoint (server-side cached for 1 hour)
+        const response = await fetch('/api/latest-additions?minItems=4&maxItems=6', {
+          // Use Next.js fetch cache (if available) or rely on API route caching
+          cache: 'force-cache',
+          next: { revalidate: 3600 }, // Revalidate every hour
         });
         
-        let latestActresses = newEntriesFiltered.slice(0, 6);
-        
-        // Step 2: If we have less than 6, supplement with latest edited entries (ordered by updated_at)
-        if (latestActresses.length < 6) {
-          const needed = 6 - latestActresses.length;
-          const editedParams = new URLSearchParams({ orderBy: 'updated_at' });
-          const editedResponse = await fetch(`${baseUrl}/api/actresses?${editedParams.toString()}`);
-          
-          if (!editedResponse.ok) {
-            // If edited entries fetch fails, just use what we have
-            console.warn('Failed to fetch edited entries, using only new entries');
-          } else {
-            const editedData = await editedResponse.json();
-            
-            // Ensure we have an array (API might return error object)
-            const editedEntries: SearchActressResult[] = Array.isArray(editedData) ? editedData : [];
-          
-            // Filter out placeholders and entries we already have
-            const editedFiltered = editedEntries
-              .filter((actress) => {
-                if (!actress.previewImageUrl) return false;
-                const imageUrl = actress.previewImageUrl.toLowerCase();
-                if (imageUrl.includes('placeholder') || 
-                    imageUrl.includes('placeholder-portrait') ||
-                    imageUrl.includes('placeholder-man')) {
-                  return false;
-                }
-                // Exclude entries we already have
-                return !latestActresses.some(a => a.id === actress.id);
-              })
-              .slice(0, needed);
-            
-            // Combine new entries with edited entries
-            latestActresses = [...latestActresses, ...editedFiltered].slice(0, 6);
-          }
+        if (!response.ok) {
+          // On error, don't render section (reliability > completeness)
+          setLatestActresses([]);
+          return;
         }
         
-        setLatestActresses(latestActresses);
+        const data = await response.json();
+        
+        // Ensure we have an array
+        const actresses: SearchActressResult[] = Array.isArray(data) ? data : [];
+        
+        // STRICT RULE: Only set if we have at least 4 items (API already filters placeholders)
+        if (actresses.length >= 4) {
+          setLatestActresses(actresses.slice(0, 6)); // Max 6 items
+        } else {
+          // Not enough items - don't render section
+          setLatestActresses([]);
+        }
       } catch (error) {
-        logError('Error fetching latest actresses:', error);
+        // On error, don't render section (silence is better than wrong data)
+        logError('Error fetching latest additions:', error);
         setLatestActresses([]);
       } finally {
         setLoadingLatest(false);
@@ -808,60 +772,40 @@ export default function HomePage() {
         </section>
 
         {/* Section 3: Latest Additions */}
-        <section className="w-full py-8 sm:py-10 md:py-14 lg:py-16 px-3 sm:px-4 md:px-6 lg:px-8 bg-[var(--bg-page)]" style={{ minWidth: 0, maxWidth: '100%' }}>
-          <div className="max-w-7xl mx-auto" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
-            {/* Section Title */}
-            <div 
-              className="mb-8 md:mb-10 lg:mb-10"
-              style={{ 
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <h2 
-                className="text-[var(--text-primary)]"
+        {/* STRICT RULE: Only render entire section if we have 4-6 items with valid images */}
+        {/* No loading state, no empty state, no placeholders - section disappears if data unavailable */}
+        {!loadingLatest && latestActresses.length >= 4 && latestActresses.length <= 6 && (
+          <section className="w-full py-8 sm:py-10 md:py-14 lg:py-16 px-3 sm:px-4 md:px-6 lg:px-8 bg-[var(--bg-page)]" style={{ minWidth: 0, maxWidth: '100%' }}>
+            <div className="max-w-7xl mx-auto" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
+              {/* Section Title */}
+              <div 
+                className="mb-8 md:mb-10 lg:mb-10"
                 style={{ 
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 'clamp(1.75rem, 2.5vw + 0.5rem, 2.5rem)', // Fluid: 28px mobile → 40px desktop
-                  fontWeight: 500,
-                  textAlign: 'center',
-                  letterSpacing: '0.1em',
-                  margin: 0,
-                  textTransform: 'uppercase',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
-                Latest Additions
-              </h2>
-            </div>
+                <h2 
+                  className="text-[var(--text-primary)]"
+                  style={{ 
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 'clamp(1.75rem, 2.5vw + 0.5rem, 2.5rem)', // Fluid: 28px mobile → 40px desktop
+                    fontWeight: 500,
+                    textAlign: 'center',
+                    letterSpacing: '0.1em',
+                    margin: 0,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Latest Additions
+                </h2>
+              </div>
 
-            {loadingLatest ? (
-              <div 
-                className="text-center text-[var(--text-secondary)] py-8"
-                style={{ 
-                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
-                  fontSize: 'clamp(0.8125rem, 0.3vw + 0.75rem, 0.9375rem)', // Fluid: 13px mobile → 15px desktop, smooth scaling
-                  letterSpacing: '0.01em',
-                }}
-              >
-                Loading...
-              </div>
-            ) : latestActresses.length > 0 ? (
               <LatestAdditionsGrid actresses={latestActresses} />
-            ) : (
-              <div 
-                className="text-center text-[var(--text-secondary)] py-8"
-                style={{ 
-                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
-                  fontSize: 'clamp(0.8125rem, 0.3vw + 0.75rem, 0.9375rem)', // Fluid: 13px mobile → 15px desktop, smooth scaling
-                  letterSpacing: '0.01em',
-                }}
-              >
-                No recent additions
-              </div>
-            )}
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
 
         {/* Section 4: Archive Entry CTA */}
         <section className="w-full py-8 sm:py-10 md:py-14 lg:py-16 px-3 sm:px-4 md:px-6 lg:px-8 bg-[var(--bg-page)]" style={{ minWidth: 0, maxWidth: '100%' }}>
@@ -895,7 +839,7 @@ export default function HomePage() {
         {/* Section 5: Homepage Content Text - Preserved from original homepage */}
         <section className="bg-[var(--bg-page)] px-4 md:px-6 lg:px-8 py-12 md:py-16">
           <div className="max-w-4xl mx-auto text-[var(--text-secondary)] leading-relaxed" style={{ fontFamily: 'Montserrat, var(--font-ui)' }}>
-            <p className="uppercase tracking-[0.25em] text-xs mb-4 text-[var(--text-muted)]">Dedicated to Cheryl Messina</p>
+            <p className="mb-4 font-semibold text-[var(--text-primary)] uppercase tracking-[0.2em]">Dedicated to Cheryl Messina</p>
             <p className="mb-4">
               Welcome to our website dedicated to the private lives of some of the most glamorous actresses of the Thirties, Forties, Fifties, and Sixties.
             </p>
