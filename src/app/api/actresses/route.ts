@@ -120,10 +120,6 @@ export async function GET(request: Request) {
     }
 
     // Check if we should order by created_at or updated_at (for Latest Additions)
-    // Note: created_at/updated_at may not exist in all database schemas, so we skip ordering by them
-    const orderBy = searchParams.get('orderBy');
-    
-    // Check if we should order by created_at or updated_at (for Latest Additions)
     const orderBy = searchParams.get('orderBy');
     const orderByCreatedAt = orderBy === 'created_at';
     const orderByUpdatedAt = orderBy === 'updated_at';
