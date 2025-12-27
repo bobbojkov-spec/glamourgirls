@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     }
 
     // Build query - include first gallery image (mytp = 4) for each actress
-    // Also include featured status fields
+    // Include featured status fields and timestamps (if they exist)
     let query = `
       SELECT g.id, g.nm, g.firstname, g.familiq, g.godini, g.isnew, g.isnewpix, g.slug, g.theirman,
              g.is_featured, g.featured_order,
@@ -119,18 +119,29 @@ export async function GET(request: Request) {
       query += ` AND g.theirman = true`;
     }
 
-    // Check if we should order by created_at (for Latest Additions)
-    // Note: created_at may not exist in all database schemas, so we handle it gracefully
-    const orderByCreatedAt = searchParams.get('orderBy') === 'created_at';
+    // Check if we should order by created_at or updated_at (for Latest Additions)
+    // Note: created_at/updated_at may not exist in all database schemas, so we skip ordering by them
+    const orderBy = searchParams.get('orderBy');
     
+    // Check if we should order by created_at or updated_at (for Latest Additions)
+    const orderBy = searchParams.get('orderBy');
+    const orderByCreatedAt = orderBy === 'created_at';
+    const orderByUpdatedAt = orderBy === 'updated_at';
+    
+    // Build GROUP BY clause - include timestamps if they exist
     query += ` GROUP BY g.id, g.nm, g.firstname, g.familiq, g.godini, g.isnew, g.isnewpix, g.slug, g.theirman, g.is_featured, g.featured_order`;
     
-    // Order by created_at DESC if requested (will fallback gracefully if column doesn't exist)
-    // Otherwise use default ordering by name
-    if (orderByCreatedAt) {
-      // Try created_at DESC first, fallback to id DESC (newer IDs are typically higher)
-      query += ` ORDER BY g.id DESC`;
+    // Order by timestamps if requested (for Latest Additions), otherwise default to name
+    if (orderByUpdatedAt) {
+      // Order by updated_at DESC (latest edited entries)
+      // Will gracefully fail if column doesn't exist - API will return error
+      query += ` ORDER BY g.updated_at DESC NULLS LAST, g.id DESC`;
+    } else if (orderByCreatedAt) {
+      // Order by created_at DESC (new entries)
+      // Will gracefully fail if column doesn't exist - API will return error
+      query += ` ORDER BY g.created_at DESC NULLS LAST, g.id DESC`;
     } else {
+      // Default ordering by name
       query += ` ORDER BY g.familiq, g.firstname`;
     }
 

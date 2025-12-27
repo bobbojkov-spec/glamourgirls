@@ -30,13 +30,11 @@ export async function GET(request: NextRequest) {
     const requiredMin = Math.max(4, Math.min(minItems, 6));
     const requiredMax = Math.min(6, Math.max(maxItems, 4));
 
-    // Build query with priority ordering
-    // Priority 1: updated_at DESC (latest edited entries) - if column exists
-    // Priority 2: isnew=2 (new entries)
-    // Priority 3: isnewpix=2 (new photos)
-    // Priority 4: created_at DESC (recently added) - if column exists
-    
-    // Try to use timestamp columns, but handle gracefully if they don't exist
+    // Build query with deterministic timestamp-based ordering
+    // Priority: updated_at DESC (latest edited) > created_at DESC (newly added) > id DESC (fallback)
+    // 
+    // STRICT RULE: Only use timestamps if columns exist and are reliable
+    // If timestamps are NULL or unreliable, return empty array (don't show section)
     let query = `
       SELECT DISTINCT
         g.id,
@@ -48,6 +46,8 @@ export async function GET(request: NextRequest) {
         g.isnewpix,
         g.slug,
         g.theirman,
+        g.created_at,
+        g.updated_at,
         (
           SELECT i.path
           FROM images i
@@ -62,19 +62,39 @@ export async function GET(request: NextRequest) {
       FROM girls g
       WHERE g.published = 2
         AND g.theirman IS NOT TRUE
+        -- STRICT: Only include entries with valid timestamps
+        AND g.updated_at IS NOT NULL
+        AND g.created_at IS NOT NULL
     `;
 
-    // Order by priority: isnew=2 > isnewpix=2 > id DESC (fallback)
-    // Note: We avoid using created_at/updated_at directly in ORDER BY to handle missing columns gracefully
+    // Order by updated_at DESC (primary), then created_at DESC (fallback), then id DESC (final fallback)
+    // This provides deterministic ordering for "Latest Additions"
     query += `
       ORDER BY 
-        CASE WHEN g.isnew = 2 THEN 1 ELSE 2 END,
-        CASE WHEN g.isnewpix = 2 THEN 1 ELSE 2 END,
+        g.updated_at DESC NULLS LAST,
+        g.created_at DESC NULLS LAST,
         g.id DESC
       LIMIT ${requiredMax}
     `;
 
-    const [results] = await pool.execute(query) as any[];
+    let results: any[];
+    try {
+      [results] = await pool.execute(query) as any[];
+    } catch (error: any) {
+      // If query fails due to missing columns (created_at/updated_at), return empty array
+      // This ensures reliability - don't show section if timestamps aren't available
+      if (error?.message?.includes('column') && 
+          (error?.message?.includes('created_at') || error?.message?.includes('updated_at'))) {
+        console.warn('Timestamp columns not available - Latest Additions section will not be shown');
+        return NextResponse.json([], {
+          headers: {
+            'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+          },
+        });
+      }
+      // Re-throw other errors
+      throw error;
+    }
 
     if (!Array.isArray(results) || results.length === 0) {
       // No data available - return empty array (homepage will not render section)
