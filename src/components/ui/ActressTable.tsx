@@ -103,13 +103,13 @@ export default function ActressTable({
                       }}
                     />
                   </div>
-                  {/* Name - Match Featured Actresses styling exactly */}
+                  {/* Name - FairPlay Semibold */}
                   <span 
                     className="text-[var(--text-primary)] leading-tight truncate" 
                     style={{ 
                       fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
                       fontSize: 'clamp(16px, 0.4vw + 16px, 18px)',
-                      fontWeight: 500,
+                      fontWeight: 600, // SemiBold
                       letterSpacing: '0.01em',
                     }}
                   >
@@ -122,7 +122,7 @@ export default function ActressTable({
                 style={{ 
                   fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
                   fontSize: 'clamp(14px, 0.3vw + 14px, 16px)',
-                  fontWeight: 400,
+                  fontWeight: 600, // SemiBold
                   letterSpacing: '0.02em',
                 }}
               >
@@ -133,7 +133,7 @@ export default function ActressTable({
                 style={{ 
                   fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
                   fontSize: 'clamp(14px, 0.3vw + 14px, 16px)',
-                  fontWeight: 400,
+                  fontWeight: 600, // SemiBold
                   letterSpacing: '0.02em',
                 }}
               >
@@ -147,7 +147,7 @@ export default function ActressTable({
                 style={{ 
                   fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
                   fontSize: 'clamp(14px, 0.3vw + 14px, 16px)',
-                  fontWeight: 400,
+                  fontWeight: 600, // SemiBold
                   letterSpacing: '0.02em',
                 }}
               >
@@ -174,7 +174,7 @@ export default function ActressTable({
                 style={{ 
                   fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
                   fontSize: 'clamp(14px, 0.3vw + 14px, 16px)',
-                  fontWeight: 400,
+                  fontWeight: 600, // SemiBold
                   letterSpacing: '0.02em',
                 }}
               >

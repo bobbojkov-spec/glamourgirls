@@ -114,7 +114,7 @@ export default function ActressListRow({
           style={{ 
             fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
             fontSize: nameFontSize || 'clamp(16px, 0.4vw + 16px, 18px)',
-            fontWeight: 500,
+            fontWeight: 600, // SemiBold
             letterSpacing: '0.01em',
           }}
         >

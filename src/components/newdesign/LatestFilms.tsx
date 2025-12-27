@@ -111,7 +111,7 @@ export default function TheirMen() {
                       style={{
                         fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
                         fontSize: 'clamp(1rem, 1.1vw, 1.125rem)', // 16px mobile, 18px desktop
-                        fontWeight: 500,
+                        fontWeight: 600, // SemiBold
                         color: 'var(--text-primary)',
                         lineHeight: '1.4',
                       }}

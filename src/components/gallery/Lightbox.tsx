@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useCart } from '@/context/CartContext';
 import { GalleryImage } from './GalleryGrid';
@@ -29,6 +29,8 @@ export default function Lightbox({
   onClose 
 }: LightboxProps) {
   const { addItem, isInCart, openCart } = useCart();
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
 
   const inCart = isInCart(image.id);
 
@@ -73,6 +75,52 @@ export default function Lightbox({
     };
   }, []);
 
+  // Touch/swipe handlers for mobile - same as EraGridGalleryModal
+  const minSwipeDistance = 50; // Minimum distance for a swipe
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart({
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY,
+    });
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    setTouchEnd({
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY,
+    });
+  }, []);
+
+  const onTouchEnd = useCallback(() => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distanceX = touchStart.x - touchEnd.x;
+    const distanceY = touchStart.y - touchEnd.y;
+    const isLeftSwipe = distanceX > minSwipeDistance;
+    const isRightSwipe = distanceX < -minSwipeDistance;
+    const isUpSwipe = distanceY > minSwipeDistance;
+    const isDownSwipe = distanceY < -minSwipeDistance;
+
+    // Handle horizontal swipes (left/right)
+    if (isLeftSwipe || isRightSwipe) {
+      if (isLeftSwipe) {
+        onNext();
+      } else {
+        onPrev();
+      }
+    }
+    // Handle vertical swipes (up/down)
+    else if (isUpSwipe || isDownSwipe) {
+      if (isUpSwipe) {
+        onNext();
+      } else {
+        onPrev();
+      }
+    }
+  }, [touchStart, touchEnd, onPrev, onNext]);
+
   const handleAddToCart = () => {
     if (!image.hasHQ || !image.price) return;
     
@@ -104,6 +152,9 @@ export default function Lightbox({
           onClose();
         }
       }}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
       style={{ 
         zIndex: 9999,
         touchAction: 'none', // Prevent touch scrolling on mobile

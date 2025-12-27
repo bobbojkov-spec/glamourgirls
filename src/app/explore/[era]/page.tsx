@@ -180,8 +180,8 @@ export default async function ExploreEraPage({ params }: { params: Promise<{ era
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section with Background Image */}
-        <section className="relative w-full h-[50vh] md:h-[60vh] lg:h-[68vh] overflow-hidden">
+        {/* Hero Section with Background Image - Same height as homepage */}
+        <section className="relative w-full py-8 sm:py-10 md:py-14 lg:py-20 px-3 sm:px-4 md:px-6 lg:px-8 overflow-hidden">
           {/* Background Image - Randomly selected from saved collages */}
           {heroImage && (
             <div className="absolute inset-0">
@@ -203,7 +203,7 @@ export default async function ExploreEraPage({ params }: { params: Promise<{ era
           />
 
           {/* Content - Big White Text "1930s Gallery" - exact same styles as homepage "Glamour Girls" */}
-          <div className="relative z-10 h-full flex flex-col justify-center items-center text-center px-4 md:px-6 lg:px-8 max-w-[1440px] mx-auto w-full">
+          <div className="relative z-10 flex flex-col justify-center items-center text-center max-w-7xl mx-auto w-full" style={{ minHeight: '100%' }}>
             <div className="max-w-5xl flex flex-col items-center w-full">
               <h1 
                 className="mb-4 font-normal text-center"

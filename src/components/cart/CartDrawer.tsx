@@ -52,10 +52,14 @@ export default function CartDrawer() {
         aria-hidden="true"
       />
 
-      {/* Mini-Cart Dropdown - Desktop: top-right dropdown, Mobile: bottom drawer */}
+      {/* Mini-Cart Dropdown - Fixed top-right on all screens */}
       <div 
-        className="fixed bottom-0 left-0 right-0 md:left-auto md:right-4 md:bottom-auto md:top-4 w-full md:w-[360px] md:max-h-[calc(100vh-20px)] bg-[var(--bg-surface)] shadow-[0_4px_20px_rgba(0,0,0,0.15)] md:rounded-lg md:border md:border-[var(--border-subtle)] z-[999] flex flex-col"
+        className="fixed top-4 right-4 w-full max-w-[360px] max-h-[calc(100vh-32px)] bg-[var(--bg-surface)] shadow-[0_4px_20px_rgba(0,0,0,0.15)] rounded-lg border border-[var(--border-subtle)] z-[999] flex flex-col"
         onClick={(e) => e.stopPropagation()}
+        style={{
+          // On mobile, ensure it doesn't exceed viewport
+          maxHeight: 'calc(100vh - 32px)',
+        }}
       >
         {/* Header - Compact */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] flex-shrink-0">
@@ -92,8 +96,16 @@ export default function CartDrawer() {
           </button>
         </div>
 
-        {/* Cart items */}
-        <div className="flex-1 overflow-y-auto px-4 py-3">
+        {/* Cart items - Scrollable container */}
+        <div 
+          className="flex-1 overflow-y-auto px-4 py-3"
+          style={{
+            // Enable scrolling on mobile
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
+            minHeight: 0, // Important for flex scrolling
+          }}
+        >
           {items.length === 0 ? (
             <div className="flex-1 flex items-center justify-center py-16">
               <div className="text-center">

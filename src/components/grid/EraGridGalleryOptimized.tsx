@@ -233,8 +233,18 @@ export default function EraGridGalleryOptimized({ era, initialData }: EraGridGal
               
               {/* Hover overlay with actress name */}
               {isVisible && (
-                <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none z-10" style={{ padding: '5px' }}>
-                  <p className="text-white text-[10px] font-bold text-center px-1 leading-tight uppercase" style={{ fontFamily: "'Kabel Black', sans-serif" }}>
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center pointer-events-none z-10" style={{ padding: '5px' }}>
+                  <p 
+                    className="text-white text-center px-1 leading-tight" 
+                    style={{ 
+                      fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                      fontSize: 'clamp(12px, 1.5vw, 16px)',
+                      fontWeight: 600, // SemiBold
+                      letterSpacing: '0.02em',
+                      textShadow: '0 2px 8px rgba(0, 0, 0, 0.8)',
+                      opacity: 1,
+                    }}
+                  >
                     {item.actressName}
                   </p>
                 </div>

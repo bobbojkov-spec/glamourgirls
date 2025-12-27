@@ -36,6 +36,7 @@ interface HqImageInfo {
   height: number;
   price: number;
   imageId: string;
+  fileSizeMB?: number;
 }
 
 export default function EraGridGalleryModal({
@@ -55,6 +56,9 @@ export default function EraGridGalleryModal({
   const [hqImageInfo, setHqImageInfo] = useState<HqImageInfo | null>(null);
   const [loadingHqInfo, setLoadingHqInfo] = useState(false);
   const [hasOtherHqImages, setHasOtherHqImages] = useState(false);
+  const [galleryPhotoCount, setGalleryPhotoCount] = useState(0);
+  const [hqPhotoCount, setHqPhotoCount] = useState(0);
+  const [actressDataCache, setActressDataCache] = useState<Map<number, any>>(new Map());
 
   const currentItem = items[currentIndex];
   const isFavorited = currentItem ? isFavorite(currentItem.actressId.toString()) : false;
@@ -77,75 +81,155 @@ export default function EraGridGalleryModal({
   const isHQImage = !!hqImageInfo && !loadingHqInfo;
   const showHQAvailable = !isHQImage && !loadingHqInfo; // Show "HQ available" when current image is NOT HQ
 
-  // Fetch HQ image info when current item changes
+  // Preload actress data for all items when modal opens
+  useEffect(() => {
+    if (!isOpen || items.length === 0) return;
+
+    const preloadActressData = async () => {
+      // Get unique actress IDs
+      const uniqueActressIds = Array.from(new Set(items.map(item => item.actressId)));
+      
+      // Prioritize current item - load it first
+      const currentActressId = currentItem?.actressId;
+      const otherActressIds = uniqueActressIds.filter(id => id !== currentActressId);
+      
+      // Load current item first (synchronously if not cached)
+      if (currentActressId && !actressDataCache.has(currentActressId)) {
+        try {
+          const response = await fetch(`/api/actresses/${currentActressId}`);
+          if (response.ok) {
+            const actressData = await response.json();
+            setActressDataCache(prev => new Map(prev).set(currentActressId, actressData));
+          }
+        } catch (error) {
+          console.error(`Error preloading current actress ${currentActressId}:`, error);
+        }
+      }
+      
+      // Then load others in parallel (non-blocking)
+      const fetchPromises = otherActressIds.map(async (actressId) => {
+        if (actressDataCache.has(actressId)) return; // Already cached
+        
+        try {
+          const response = await fetch(`/api/actresses/${actressId}`);
+          if (response.ok) {
+            const actressData = await response.json();
+            setActressDataCache(prev => new Map(prev).set(actressId, actressData));
+          }
+        } catch (error) {
+          console.error(`Error preloading actress ${actressId}:`, error);
+        }
+      });
+
+      // Don't await others - let them load in background
+      Promise.all(fetchPromises).catch(() => {});
+    };
+
+    preloadActressData();
+  }, [isOpen, items, currentItem?.actressId, actressDataCache]);
+
+  // Fetch HQ image info when current item changes (using cache if available)
   useEffect(() => {
     const fetchHqImageInfo = async () => {
       if (!currentItem) {
         setHqImageInfo(null);
         setHasOtherHqImages(false);
+        setGalleryPhotoCount(0);
+        setHqPhotoCount(0);
         return;
       }
 
-      setLoadingHqInfo(true);
+      // Check cache first - if available, process immediately without loading state
+      let actressData = actressDataCache.get(currentItem.actressId);
+      
+      if (actressData) {
+        // Process cached data immediately (no loading state)
+        setLoadingHqInfo(false);
+      } else {
+        // Need to fetch - show loading state
+        setLoadingHqInfo(true);
+      }
+      
       try {
-        const response = await fetch(`/api/actresses/${currentItem.actressId}`);
-        if (response.ok) {
-          const actressData = await response.json();
-          const galleryImages = actressData.images?.gallery || [];
-          const hqImages = actressData.images?.hq || [];
-          
-          // Check if there are any HQ images for this actress
-          const hasAnyHqImages = hqImages.length > 0 && hqImages.some((hq: any) => {
-            if (!hq.width || !hq.height) return false;
-            const longSide = Math.max(hq.width, hq.height);
-            return longSide >= 1200;
-          });
-          
-          // Find the gallery image that matches current image
-          const galleryImage = galleryImages.find((img: any) => 
-            img.id.toString() === currentItem.imageId?.toString()
+        if (!actressData) {
+          // Fetch if not in cache
+          const response = await fetch(`/api/actresses/${currentItem.actressId}`);
+          if (response.ok) {
+            actressData = await response.json();
+            setActressDataCache(prev => new Map(prev).set(currentItem.actressId, actressData));
+          } else {
+            setHqImageInfo(null);
+            setHasOtherHqImages(false);
+            setGalleryPhotoCount(0);
+            setHqPhotoCount(0);
+            setLoadingHqInfo(false);
+            return;
+          }
+        }
+
+        // Process actress data (from cache or fresh fetch)
+        const galleryImages = actressData.images?.gallery || [];
+        const hqImages = actressData.images?.hq || [];
+        
+        // Count total gallery photos
+        setGalleryPhotoCount(galleryImages.length);
+        
+        // Count HQ photos (meeting minimum 1200px requirement)
+        const validHqImages = hqImages.filter((hq: any) => {
+          if (!hq.width || !hq.height) return false;
+          const longSide = Math.max(hq.width, hq.height);
+          return longSide >= 1200;
+        });
+        setHqPhotoCount(validHqImages.length);
+        
+        // Check if there are any HQ images for this actress
+        const hasAnyHqImages = validHqImages.length > 0;
+        
+        // Find the gallery image that matches current image
+        const galleryImage = galleryImages.find((img: any) => 
+          img.id.toString() === currentItem.imageId?.toString()
+        );
+        
+        if (galleryImage) {
+          // Find corresponding HQ image (usually galleryId - 1 or + 1)
+          const galleryId = parseInt(galleryImage.id);
+          const hqImage = hqImages.find((hq: any) => 
+            parseInt(hq.id) === galleryId - 1 || parseInt(hq.id) === galleryId + 1
           );
           
-          if (galleryImage) {
-            // Find corresponding HQ image (usually galleryId - 1 or + 1)
-            const galleryId = parseInt(galleryImage.id);
-            const hqImage = hqImages.find((hq: any) => 
-              parseInt(hq.id) === galleryId - 1 || parseInt(hq.id) === galleryId + 1
-            );
-            
-            // Check if HQ image meets minimum requirements (1200px on long side)
-            if (hqImage && hqImage.width && hqImage.height) {
-              const longSide = Math.max(hqImage.width, hqImage.height);
-              if (longSide >= 1200) {
-                setHqImageInfo({
-                  width: hqImage.width,
-                  height: hqImage.height,
-                  price: 9.9,
-                  imageId: galleryImage.id.toString(), // Use gallery ID for cart consistency
-                });
-                setHasOtherHqImages(false);
-                return;
-              }
+          // Check if HQ image meets minimum requirements (1200px on long side)
+          if (hqImage && hqImage.width && hqImage.height) {
+            const longSide = Math.max(hqImage.width, hqImage.height);
+            if (longSide >= 1200) {
+              setHqImageInfo({
+                width: hqImage.width,
+                height: hqImage.height,
+                price: 9.9,
+                imageId: galleryImage.id.toString(), // Use gallery ID for cart consistency
+                fileSizeMB: hqImage.fileSizeMB,
+              });
+              setHasOtherHqImages(false);
+              setLoadingHqInfo(false);
+              return;
             }
           }
-          
-          // If current image doesn't have HQ but other images do
-          if (hasAnyHqImages) {
-            setHasOtherHqImages(true);
-          } else {
-            setHasOtherHqImages(false);
-          }
-          
-          setHqImageInfo(null);
+        }
+        
+        // If current image doesn't have HQ but other images do
+        if (hasAnyHqImages) {
+          setHasOtherHqImages(true);
         } else {
-          setHqImageInfo(null);
           setHasOtherHqImages(false);
         }
+        
+        setHqImageInfo(null);
+        setLoadingHqInfo(false);
       } catch (error) {
         console.error('Error fetching HQ image info:', error);
         setHqImageInfo(null);
         setHasOtherHqImages(false);
-      } finally {
+        setGalleryPhotoCount(0);
+        setHqPhotoCount(0);
         setLoadingHqInfo(false);
       }
     };
@@ -153,7 +237,7 @@ export default function EraGridGalleryModal({
     if (isOpen && currentItem) {
       fetchHqImageInfo();
     }
-  }, [isOpen, currentItem?.actressId, currentItem?.imageId, currentItem?.hasHqImages]);
+  }, [isOpen, currentItem?.actressId, currentItem?.imageId, currentItem?.hasHqImages, actressDataCache]);
 
   // Reset state when modal opens/closes or index changes
   useEffect(() => {
@@ -456,7 +540,7 @@ export default function EraGridGalleryModal({
                 style={{ 
                   fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
                   fontSize: '24px',
-                  fontWeight: 500,
+                  fontWeight: 600, // SemiBold
                   letterSpacing: '0.01em',
                   textTransform: 'none',
                   lineHeight: '1.2',
@@ -469,39 +553,42 @@ export default function EraGridGalleryModal({
 
             {/* ROW 2 & ROW 3: Shared container for alignment - Mobile */}
             <div className="space-y-2">
-              {/* ROW 2: Metadata - Mobile */}
-              <div className="h-[40px] flex items-center justify-between gap-4 relative">
-                {/* Version A: HQ available (when image is NOT HQ) */}
-                <div 
-                  className="flex items-center gap-2 text-white/90 h-[40px] md:h-[32px]"
-                  style={{ 
-                    fontFamily: 'DM Sans, sans-serif', 
-                    fontSize: '11px',
-                    visibility: showHQAvailable ? 'visible' : 'hidden',
-                    opacity: showHQAvailable ? 1 : 0,
-                    position: 'absolute',
-                    left: 0,
-                    alignItems: 'center',
-                  }}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="flex-shrink-0"
+              {/* ROW 2: Metadata - Mobile - Fixed height to prevent layout shift */}
+              <div className="h-[40px] flex items-center justify-between gap-4 relative" style={{ minHeight: '40px' }}>
+                {/* Loading state - show placeholder to prevent jump */}
+                {loadingHqInfo && (
+                  <div 
+                    className="flex items-center gap-2 text-white/60 h-[40px]"
+                    style={{ 
+                      fontFamily: 'DM Sans, sans-serif', 
+                      fontSize: '11px',
+                      position: 'absolute',
+                      left: 0,
+                      alignItems: 'center',
+                    }}
                   >
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                    <circle cx="8.5" cy="8.5" r="1.5" />
-                    <polyline points="21 15 16 10 5 21" />
-                  </svg>
-                  <span className="whitespace-nowrap">HQ available</span>
-                </div>
+                    <span className="whitespace-nowrap">Loading...</span>
+                  </div>
+                )}
+                
+                {/* Version A: Photo count (when image is NOT HQ) */}
+                {!isHQImage && !loadingHqInfo && (
+                  <div 
+                    className="flex items-center gap-2 text-white/90 h-[40px]"
+                    style={{ 
+                      fontFamily: 'DM Sans, sans-serif', 
+                      fontSize: '11px',
+                      position: 'absolute',
+                      left: 0,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span className="whitespace-nowrap">
+                      {galleryPhotoCount} {galleryPhotoCount === 1 ? 'photo' : 'photos'}
+                      {hasOtherHqImages && ` / high quality available`}
+                    </span>
+                  </div>
+                )}
 
                 {/* Version B: HQ details with price and button (when image IS HQ) */}
                 <div 
@@ -518,25 +605,10 @@ export default function EraGridGalleryModal({
                   }}
                 >
                   <div className="flex items-center gap-2 md:gap-1.5 text-white/90 flex-1 min-w-0">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="flex-shrink-0 md:w-3.5 md:h-3.5"
-                    >
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
                     {hqImageInfo && (
                       <span className="whitespace-nowrap text-[11px]">
-                        &gt; {hqImageInfo.width.toLocaleString()} × {hqImageInfo.height.toLocaleString()} px
+                        {hqImageInfo.width.toLocaleString()} × {hqImageInfo.height.toLocaleString()} px
+                        {hqImageInfo.fileSizeMB && ` / ${hqImageInfo.fileSizeMB} MB`}
                       </span>
                     )}
                   </div>
@@ -676,7 +748,7 @@ export default function EraGridGalleryModal({
                 style={{ 
                   fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
                   fontSize: '24px',
-                  fontWeight: 500,
+                  fontWeight: 600, // SemiBold
                   letterSpacing: '0.01em',
                   textTransform: 'none',
                   lineHeight: '1.2',
@@ -687,19 +759,28 @@ export default function EraGridGalleryModal({
               </h2>
             </div>
 
-            {/* Info row - pixel size, price, add button - centered, 2px smaller */}
-            <div className="flex items-center justify-center gap-4 mb-3">
-              {/* HQ available message (when image is NOT HQ) */}
-              {showHQAvailable && (
-                <span className="text-white/90 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                  HQ available
+            {/* Info row - pixel size, price, add button - centered, 2px smaller - Fixed height to prevent layout shift */}
+            <div className="flex items-center justify-center gap-4 mb-3" style={{ minHeight: '32px' }}>
+              {/* Loading state - show placeholder to prevent jump */}
+              {loadingHqInfo && (
+                <span className="text-white/60 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  Loading...
                 </span>
               )}
               
-              {/* Pixel size (when image IS HQ) */}
+              {/* Photo count (when image is NOT HQ) */}
+              {!isHQImage && !loadingHqInfo && (
+                <span className="text-white/90 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  {galleryPhotoCount} {galleryPhotoCount === 1 ? 'photo' : 'photos'}
+                  {hasOtherHqImages && ` / high quality available`}
+                </span>
+              )}
+              
+              {/* Pixel size and MB (when image IS HQ) */}
               {hqImageInfo && (
                 <span className="text-white/90 text-[11px]" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                   {hqImageInfo.width.toLocaleString()} × {hqImageInfo.height.toLocaleString()} px
+                  {hqImageInfo.fileSizeMB && ` / ${hqImageInfo.fileSizeMB} MB`}
                 </span>
               )}
               
