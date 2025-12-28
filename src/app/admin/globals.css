@@ -891,123 +891,34 @@ aside {
   margin-bottom: 12px !important;
 }
 
-/* Responsive tabs for mobile - horizontal scroll with better UX */
-.responsive-tabs .ant-tabs-nav {
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: #cbd5e0 transparent;
+/* Responsive tabs (all screens): fixed 130px width + wrap to as many per row as fit */
+.responsive-tabs .ant-tabs-nav,
+.responsive-tabs .ant-tabs-nav-wrap {
+  overflow: visible !important;
 }
 
-.responsive-tabs .ant-tabs-nav::-webkit-scrollbar {
-  height: 4px;
+.responsive-tabs .ant-tabs-nav-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  width: 100%;
 }
 
-.responsive-tabs .ant-tabs-nav::-webkit-scrollbar-track {
-  background: transparent;
+.responsive-tabs .ant-tabs-tab {
+  flex: 0 0 130px;
+  width: 130px;
+  max-width: 130px;
+  margin: 0 !important;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.responsive-tabs .ant-tabs-nav::-webkit-scrollbar-thumb {
-  background-color: #cbd5e0;
-  border-radius: 2px;
-}
-
-.responsive-tabs .ant-tabs-nav::-webkit-scrollbar-thumb:hover {
-  background-color: #a0aec0;
-}
-
-/* Tablet/Desktop: fixed-width tabs that wrap to as many as fit per row */
-@media (min-width: 769px) {
-  .responsive-tabs .ant-tabs-nav,
-  .responsive-tabs .ant-tabs-nav-wrap {
-    overflow: visible !important;
-  }
-
-  .responsive-tabs .ant-tabs-nav-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 8px;
-    width: 100%;
-  }
-
-  .responsive-tabs .ant-tabs-tab {
-    flex: 0 0 130px;
-    width: 130px;
-    max-width: 130px;
-    margin: 0 !important;
-    justify-content: center;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .responsive-tabs .ant-tabs-tab-btn {
-    width: 100%;
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
-
-/* On mobile, make tabs wrap to multiple rows to prevent overlay */
-@media (max-width: 768px) {
-  .responsive-tabs .ant-tabs-nav-wrap {
-    overflow: visible;
-  }
-
-  .responsive-tabs .ant-tabs-nav-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    width: 100%;
-  }
-
-  .responsive-tabs .ant-tabs-tab {
-    flex: 1 1 auto;
-    min-width: calc(50% - 2px);
-    max-width: calc(50% - 2px);
-    padding: 6px 8px !important;
-    font-size: 12px !important;
-    margin-right: 0 !important;
-    margin-bottom: 4px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .responsive-tabs .ant-tabs-tab-btn {
-    font-size: 12px !important;
-    width: 100%;
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Ensure tabs don't overflow container */
-  .responsive-tabs .ant-tabs-nav {
-    overflow: visible;
-    margin-bottom: 8px !important;
-  }
-
-  /* Make tab content area adjust for wrapped tabs */
-  .responsive-tabs .ant-tabs-content-holder {
-    margin-top: 8px;
-  }
-}
-
-/* On very small screens, make tabs even more compact */
-@media (max-width: 480px) {
-  .responsive-tabs .ant-tabs-tab {
-    min-width: calc(50% - 2px);
-    max-width: calc(50% - 2px);
-    padding: 5px 6px !important;
-    font-size: 11px !important;
-  }
-
-  .responsive-tabs .ant-tabs-tab-btn {
-    font-size: 11px !important;
-  }
+.responsive-tabs .ant-tabs-tab-btn {
+  width: 100%;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
