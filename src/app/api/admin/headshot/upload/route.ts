@@ -3,6 +3,7 @@ import path from 'path';
 import sharp from 'sharp';
 import { requireAdminApi } from '@/app/api/admin/_auth';
 import { createClient } from '@supabase/supabase-js';
+import pool from '@/lib/db';
 
 export const runtime = 'nodejs';
 
@@ -140,13 +141,54 @@ export async function POST(request: NextRequest) {
 
     // Get final dimensions
     const finalMetadata = await sharp(headshotBuffer).metadata();
+    const finalWidth = finalMetadata.width || TARGET_WIDTH;
+    const finalHeight = finalMetadata.height || TARGET_HEIGHT;
+
+    // IMPORTANT: Persist a matching DB record so `/api/actresses/:id/headshot` can find it.
+    // Convention: headshots are stored as mytp = 3 (same as other scripts in this repo).
+    try {
+      const [existingRows] = await pool.execute(
+        `SELECT id FROM images 
+         WHERE girlid = ? 
+           AND path IS NOT NULL 
+           AND path != '' 
+           AND (path ILIKE '%headshot.jpg' OR path ILIKE '%headshot.jpeg' OR path ILIKE '%headshot.png')
+         ORDER BY id ASC
+         LIMIT 1`,
+        [actressId]
+      ) as any[];
+
+      if (Array.isArray(existingRows) && existingRows.length > 0) {
+        const existingId = Number(existingRows[0].id);
+        await pool.execute(
+          `UPDATE images 
+           SET path = ?, width = ?, height = ?, mytp = 3, mimetype = ?, sz = ?
+           WHERE id = ?`,
+          [headshotDbPath, finalWidth, finalHeight, 'image/jpeg', String(headshotBuffer.length), existingId]
+        );
+      } else {
+        await pool.execute(
+          `INSERT INTO images (girlid, path, width, height, mytp, mimetype, sz)
+           VALUES (?, ?, ?, ?, 3, ?, ?)`,
+          [actressId, headshotDbPath, finalWidth, finalHeight, 'image/jpeg', String(headshotBuffer.length)]
+        );
+      }
+    } catch (dbErr: any) {
+      // Upload succeeded; DB write failing would make the headshot not visible.
+      // Return a 500 so the admin sees a failure and can retry, rather than "success but not visible".
+      console.error('[Headshot Upload] Failed to upsert images row:', dbErr);
+      return NextResponse.json(
+        { error: 'Headshot uploaded to storage, but failed to update database', details: dbErr?.message || String(dbErr) },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Headshot uploaded and processed successfully',
       path: headshotDbPath,
-      width: finalMetadata.width,
-      height: finalMetadata.height,
+      width: finalWidth,
+      height: finalHeight,
     });
   } catch (error) {
     console.error('Error uploading headshot:', error);

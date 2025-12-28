@@ -273,8 +273,10 @@ export default async function EditGirlPage({
 
     // Use the same headshot API route as the frontend (can generate if missing)
     // This ensures consistency and handles headshots that are generated on-the-fly
-    const headshotUrl = `/api/actresses/${girlId}/headshot`;
-    const headshot2Url = `/api/actresses/${girlId}/headshot2`;
+    // NOTE: The headshot endpoint uses long-lived caching headers.
+    // Add a cache-buster so admin immediately sees new uploads after refresh.
+    const headshotUrl = `/api/actresses/${girlId}/headshot?v=${Date.now()}`;
+    const headshot2Url = `/api/actresses/${girlId}/headshot2?v=${Date.now()}`;
 
     // Map to form data structure - ensure all values are serializable
     const girl = {
