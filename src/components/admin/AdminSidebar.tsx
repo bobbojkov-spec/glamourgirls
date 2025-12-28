@@ -172,8 +172,25 @@ export default function AdminSidebar() {
       {/* Logo and Toggle */}
       <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
         <Link href="/admin" className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 flex-shrink-0">
-            <span className="text-white font-bold text-sm">GG</span>
+          <div
+            className="flex h-9 w-9 items-center justify-center flex-shrink-0"
+            style={{
+              backgroundColor: 'var(--accent-gold)',
+              borderRadius: '6px',
+              boxShadow: '0 1px 0 rgba(0,0,0,0.12)',
+            }}
+          >
+            <span
+              style={{
+                fontFamily: 'var(--font-logo-hero)',
+                fontSize: '18px',
+                lineHeight: 1,
+                color: '#000000',
+                letterSpacing: '0.02em',
+              }}
+            >
+              GG
+            </span>
           </div>
           {!isCollapsed && (
             <span className="font-semibold text-gray-900 text-sm truncate">Admin</span>

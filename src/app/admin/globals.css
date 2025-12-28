@@ -1,6 +1,22 @@
 /* Critical admin styles - loaded synchronously to prevent FOUC */
 @import 'tailwindcss';
 
+/* Decorative logo font (same as public "Glamour Girls" header) */
+@font-face {
+  font-family: 'Dubba Dubba NF';
+  src: url('/fonts/dubba-dubba-nf/DubbaDubbaNF.otf') format('opentype'),
+       url('/fonts/dubba-dubba-nf/DubbaDubbaNF.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: optional;
+}
+
+/* Admin-only tokens for GG logo styling */
+:root {
+  --accent-gold: #C8A45D;
+  --font-logo-hero: 'Dubba Dubba NF', 'Great Vibes', cursive;
+}
+
 /* Prevent layout shift during font loading */
 body {
   font-family: var(--font-montserrat), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

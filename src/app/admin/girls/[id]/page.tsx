@@ -338,6 +338,7 @@ export default async function EditGirlPage({
         const imgPath = String(img.path || '');
         return {
           id: Number(img.id) || 0, // Ensure it's a number, not BigInt
+          girlId: Number(girlId),
           path: imgPath,
           url: imgPath ? (imgPath.startsWith('/') ? imgPath : `/${imgPath}`) : '',
           width: Number(img.width) || 0,
