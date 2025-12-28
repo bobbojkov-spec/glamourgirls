@@ -191,7 +191,9 @@ export async function POST(request: NextRequest) {
       used: false,
     };
 
-    // Store order using shared store (saves to file)
+    // Store order using shared store.
+    // IMPORTANT: In demo mode we must not fail payment due to persistence issues on serverless filesystems.
+    // `saveOrder` is best-effort and falls back to in-memory if file writes fail.
     await saveOrder(order);
 
     // Send confirmation email (non-blocking - don't fail payment if email fails)
@@ -268,7 +270,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Payment creation error:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to process payment' },
+      { success: false, error: 'Failed to process payment', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

@@ -51,13 +51,21 @@ async function loadCache() {
 }
 
 export async function saveOrder(order: Order) {
-  // Save to file
-  await fileStore.saveOrder(order);
+  // Save to file (best-effort)
+  // NOTE: On serverless platforms (e.g. Vercel) the filesystem can be read-only,
+  // which would otherwise crash demo checkout with EROFS/EPERM.
+  try {
+    await fileStore.saveOrder(order);
+  } catch (error) {
+    console.error('[OrderStore] Failed to persist order to filesystem (continuing in-memory):', error);
+  }
   
   // Update cache
   orderCache.set(order.orderId, order);
   orderCache.set(order.downloadCode, order);
   orderCache.set(order.downloadCode.toUpperCase(), order);
+  // Mark cache loaded so we don't wipe in-memory orders by trying to reload from a read-only filesystem.
+  cacheLoaded = true;
   
   console.log('Order saved:', order.orderId, 'Download code:', order.downloadCode);
 }
