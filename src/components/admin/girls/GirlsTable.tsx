@@ -228,6 +228,8 @@ export default function GirlsTable({ girls, total, currentPage, totalPages, sear
       title: <span style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>Created</span>,
       dataIndex: 'createdAt',
       key: 'createdAt',
+      // Hide on mobile to keep the table compact
+      responsive: ['md'],
       ellipsis: true,
       width: 105,
       render: (date: string) => (
@@ -240,6 +242,8 @@ export default function GirlsTable({ girls, total, currentPage, totalPages, sear
       title: <span style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>Last...</span>,
       dataIndex: 'updatedAt',
       key: 'updatedAt',
+      // Hide on mobile to keep the table compact
+      responsive: ['md'],
       ellipsis: true,
       width: 90,
       render: (date: string) => (
@@ -251,6 +255,8 @@ export default function GirlsTable({ girls, total, currentPage, totalPages, sear
     {
       title: <span style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>Action</span>,
       key: 'action',
+      // Hide on mobile (name is clickable anyway)
+      responsive: ['md'],
       width: 100,
       render: (_: any, record: Girl) => (
         <Link href={`/admin/girls/${record.id}?next=${encodeURIComponent(buildUrl({ published, isNew, hasNewPhotos, era, keyword, page }))}`}>
