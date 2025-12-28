@@ -1263,3 +1263,15 @@ a,
 [tabindex="0"] {
   cursor: pointer;
 }
+
+/* ========================================
+   COMPACT TABLE (Admin Girls List)
+   Reduced padding for mobile-friendly table
+   ======================================== */
+.compact-table .ant-table-thead > tr > th {
+  padding: 14px 14px !important; /* Reduced from default 16px by 2px */
+}
+
+.compact-table .ant-table-tbody > tr > td {
+  padding: 14px 14px !important; /* Reduced from default 16px by 2px */
+}

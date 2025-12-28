@@ -56,7 +56,7 @@ async function findHQImage(galleryId: number, girlId: number): Promise<any | nul
   try {
     // Try galleryId - 1 first (most common pattern)
     const [hqImages1] = await pool.execute(
-      `SELECT id, path FROM images WHERE id = ? AND mytp = 5 AND girlid = ?`,
+      `SELECT id, path, storage_paths FROM images WHERE id = ? AND mytp = 5 AND girlid = ?`,
       [galleryId - 1, girlId]
     ) as any[];
 
@@ -66,7 +66,7 @@ async function findHQImage(galleryId: number, girlId: number): Promise<any | nul
 
     // Try galleryId + 1
     const [hqImages2] = await pool.execute(
-      `SELECT id, path FROM images WHERE id = ? AND mytp = 5 AND girlid = ?`,
+      `SELECT id, path, storage_paths FROM images WHERE id = ? AND mytp = 5 AND girlid = ?`,
       [galleryId + 1, girlId]
     ) as any[];
 
@@ -88,6 +88,10 @@ export async function DELETE(
   const { error } = await requireAdminApi(request);
   if (error) return error;
   
+  // Check for debug mode
+  const url = new URL(request.url);
+  const isDebugMode = url.searchParams.get('debug') === '1' || process.env.NODE_ENV === 'development';
+  
   const deletionErrors: string[] = [];
   const deletionWarnings: string[] = [];
 
@@ -99,9 +103,11 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid image ID' }, { status: 400 });
     }
 
-    // Get image info from database
+    // ============================================
+    // STEP 1: LOOKUP IMAGE BY ID AND READ ALL STORAGE PATHS
+    // ============================================
     const [images] = await pool.execute(
-      `SELECT id, path, mytp, thumbid, girlid FROM images WHERE id = ?`,
+      `SELECT id, path, mytp, thumbid, girlid, storage_paths FROM images WHERE id = ?`,
       [imageId]
     );
 
@@ -111,75 +117,116 @@ export async function DELETE(
 
     const image = images[0] as any;
     const imageMytp = Number(image.mytp);
-    const imagePath = image.path;
     const imageGirlId = Number(image.girlid);
+    const imageStoragePaths = image.storage_paths ? (typeof image.storage_paths === 'string' ? JSON.parse(image.storage_paths) : image.storage_paths) : [];
+
+    console.log(`[Delete] Image ID ${imageId}, Girl ID ${imageGirlId}, Mytp ${imageMytp}, Storage paths: ${imageStoragePaths.length}`);
 
     // Track what needs to be deleted
-    const filesToDelete: Array<{ path: string; bucket: string; type: string }> = [];
+    const allStoragePaths: Array<{ path: string; bucket: string }> = [];
     const dbIdsToDelete: number[] = [imageId];
 
     // If this is a gallery image (mytp=4), find and delete related assets
     if (imageMytp === 4) {
-      // 1. Find and delete HQ image
+      // 1. Find and delete HQ image - try multiple strategies to ensure we find it
       const hqImage = await findHQImage(imageId, imageGirlId);
       if (hqImage) {
         dbIdsToDelete.push(Number(hqImage.id));
-        if (hqImage.path) {
-          // HQ images are in images_raw bucket
-          filesToDelete.push({
-            path: hqImage.path,
-            bucket: 'images_raw',
-            type: 'HQ image'
-          });
+        // Get HQ storage paths
+        const hqStoragePaths = hqImage.storage_paths ? (typeof hqImage.storage_paths === 'string' ? JSON.parse(hqImage.storage_paths) : hqImage.storage_paths) : [];
+        if (hqStoragePaths.length > 0) {
+          for (const sp of hqStoragePaths) {
+            const [bucket, path] = sp.includes(':') ? sp.split(':') : ['images_raw', sp];
+            allStoragePaths.push({ bucket, path });
+          }
+        } else if (hqImage.path) {
+          // Fallback: use path if storage_paths not available
+          allStoragePaths.push({ bucket: 'images_raw', path: hqImage.path.startsWith('/') ? hqImage.path.slice(1) : hqImage.path });
+        }
+      } else {
+        // Also check if there's an HQ image that references this gallery image via storage_paths
+        // This handles cases where the ID relationship isn't ±1
+        try {
+          const [hqByPath] = await pool.execute(
+            `SELECT id, path, storage_paths FROM images 
+             WHERE girlid = ? AND mytp = 5 
+             AND (storage_paths::text LIKE ? OR path LIKE ?)`,
+            [imageGirlId, `%${image.path}%`, `%${image.path?.replace(/^\//, '')}%`]
+          ) as any[];
+          
+          if (Array.isArray(hqByPath) && hqByPath.length > 0) {
+            const hq = hqByPath[0] as any;
+            if (!dbIdsToDelete.includes(Number(hq.id))) {
+              dbIdsToDelete.push(Number(hq.id));
+              const hqStoragePaths = hq.storage_paths ? (typeof hq.storage_paths === 'string' ? JSON.parse(hq.storage_paths) : hq.storage_paths) : [];
+              if (hqStoragePaths.length > 0) {
+                for (const sp of hqStoragePaths) {
+                  const [bucket, path] = sp.includes(':') ? sp.split(':') : ['images_raw', sp];
+                  allStoragePaths.push({ bucket, path });
+                }
+              } else if (hq.path) {
+                allStoragePaths.push({ bucket: 'images_raw', path: hq.path.startsWith('/') ? hq.path.slice(1) : hq.path });
+              }
+            }
+          }
+        } catch (e: any) {
+          console.warn('[Delete] Could not search for HQ by path:', e.message);
         }
       }
 
       // 2. Find and delete thumbnail
       if (image.thumbid) {
         const [thumbImages] = await pool.execute(
-          `SELECT id, path FROM images WHERE id = ?`,
+          `SELECT id, path, storage_paths FROM images WHERE id = ?`,
           [image.thumbid]
         ) as any[];
         
         if (Array.isArray(thumbImages) && thumbImages.length > 0) {
           const thumb = thumbImages[0] as any;
           dbIdsToDelete.push(Number(thumb.id));
-          if (thumb.path) {
-            // Thumbnails are in glamourgirls_images bucket
-            filesToDelete.push({
-              path: thumb.path,
-              bucket: 'glamourgirls_images',
-              type: 'thumbnail'
-            });
+          // Get thumbnail storage paths
+          const thumbStoragePaths = thumb.storage_paths ? (typeof thumb.storage_paths === 'string' ? JSON.parse(thumb.storage_paths) : thumb.storage_paths) : [];
+          if (thumbStoragePaths.length > 0) {
+            for (const sp of thumbStoragePaths) {
+              const [bucket, path] = sp.includes(':') ? sp.split(':') : ['glamourgirls_images', sp];
+              allStoragePaths.push({ bucket, path });
+            }
+          } else if (thumb.path) {
+            // Fallback: use path if storage_paths not available
+            allStoragePaths.push({ bucket: 'glamourgirls_images', path: thumb.path.startsWith('/') ? thumb.path.slice(1) : thumb.path });
           }
         }
       }
 
-      // 3. Delete gallery image from storage
-      if (imagePath) {
-        filesToDelete.push({
-          path: imagePath,
-          bucket: 'glamourgirls_images',
-          type: 'gallery image'
-        });
+      // 3. Add gallery image storage paths
+      if (imageStoragePaths.length > 0) {
+        for (const sp of imageStoragePaths) {
+          const [bucket, path] = sp.includes(':') ? sp.split(':') : ['glamourgirls_images', sp];
+          allStoragePaths.push({ bucket, path });
+        }
+      } else if (image.path) {
+        // Fallback: use path if storage_paths not available
+        allStoragePaths.push({ bucket: 'glamourgirls_images', path: image.path.startsWith('/') ? image.path.slice(1) : image.path });
       }
     } else if (imageMytp === 5) {
-      // If this is an HQ image, delete it from images_raw bucket
-      if (imagePath) {
-        filesToDelete.push({
-          path: imagePath,
-          bucket: 'images_raw',
-          type: 'HQ image'
-        });
+      // HQ image: use storage_paths
+      if (imageStoragePaths.length > 0) {
+        for (const sp of imageStoragePaths) {
+          const [bucket, path] = sp.includes(':') ? sp.split(':') : ['images_raw', sp];
+          allStoragePaths.push({ bucket, path });
+        }
+      } else if (image.path) {
+        allStoragePaths.push({ bucket: 'images_raw', path: image.path.startsWith('/') ? image.path.slice(1) : image.path });
       }
     } else if (imageMytp === 3) {
-      // If this is a thumbnail, delete it and update gallery image's thumbid
-      if (imagePath) {
-        filesToDelete.push({
-          path: imagePath,
-          bucket: 'glamourgirls_images',
-          type: 'thumbnail'
-        });
+      // Thumbnail: use storage_paths
+      if (imageStoragePaths.length > 0) {
+        for (const sp of imageStoragePaths) {
+          const [bucket, path] = sp.includes(':') ? sp.split(':') : ['glamourgirls_images', sp];
+          allStoragePaths.push({ bucket, path });
+        }
+      } else if (image.path) {
+        allStoragePaths.push({ bucket: 'glamourgirls_images', path: image.path.startsWith('/') ? image.path.slice(1) : image.path });
       }
       // Update gallery image's thumbid to 0
       await pool.execute(
@@ -188,52 +235,202 @@ export async function DELETE(
       );
     } else {
       // For other types, try to delete from glamourgirls_images bucket
-      if (imagePath) {
-        filesToDelete.push({
-          path: imagePath,
-          bucket: 'glamourgirls_images',
-          type: 'image'
-        });
+      if (imageStoragePaths.length > 0) {
+        for (const sp of imageStoragePaths) {
+          const [bucket, path] = sp.includes(':') ? sp.split(':') : ['glamourgirls_images', sp];
+          allStoragePaths.push({ bucket, path });
+        }
+      } else if (image.path) {
+        allStoragePaths.push({ bucket: 'glamourgirls_images', path: image.path.startsWith('/') ? image.path.slice(1) : image.path });
       }
     }
 
-    // Delete all files from Supabase Storage
-    for (const file of filesToDelete) {
-      const storagePath = file.path.startsWith('/') ? file.path.slice(1) : file.path;
-      const result = await deleteFromSupabaseStorage(storagePath, file.bucket);
+    // ============================================
+    // STEP 2: DELETE ALL STORAGE OBJECTS
+    // ============================================
+    for (const { bucket, path: storagePath } of allStoragePaths) {
+      const result = await deleteFromSupabaseStorage(storagePath, bucket);
       
       if (!result.success) {
-        const errorMsg = `Failed to delete ${file.type} from Supabase Storage (${file.bucket}/${storagePath}): ${result.error}`;
+        const errorMsg = `Failed to delete from Supabase Storage (${bucket}/${storagePath}): ${result.error}`;
         deletionErrors.push(errorMsg);
-        console.error(errorMsg);
+        console.error(`[Delete] ${errorMsg}`);
       } else {
-        console.log(`✓ Deleted ${file.type} from Supabase Storage: ${file.bucket}/${storagePath}`);
+        console.log(`[Delete] ✓ Deleted from Supabase Storage: ${bucket}/${storagePath}`);
       }
     }
 
-    // Also try to delete from local filesystem (legacy support)
-    if (imagePath) {
-      const filePath = path.join(process.cwd(), 'public', imagePath.startsWith('/') ? imagePath.slice(1) : imagePath);
-      try {
-        await unlink(filePath);
-      } catch (error) {
-        // Local file deletion is optional - files are in Supabase now
-        deletionWarnings.push(`Local file not found (expected if using Supabase): ${filePath}`);
+    // ============================================
+    // STEP 3: DELETE DB ROW BY ID + RENORMALIZE ORDER_NUM (SAME TRANSACTION)
+    // ============================================
+    // CRITICAL: DELETE and renormalization MUST be in the same transaction
+    // This ensures order_num is always continuous (1..N) after delete
+    const { getPool } = await import('@/lib/db');
+    const pgPool = getPool();
+    const deleteClient = await pgPool.connect();
+    
+    try {
+      await deleteClient.query('BEGIN');
+      
+      // PART A: DELETE IMAGE BY ID ONLY
+      let totalDeleted = 0;
+      for (const dbId of dbIdsToDelete) {
+        const deleteResult = await deleteClient.query(
+          `DELETE FROM images WHERE id = $1`,
+          [dbId]
+        );
+        const affectedRows = deleteResult.rowCount || 0;
+        
+        // Safety guard: DELETE must affect exactly 1 row
+        if (affectedRows > 1) {
+          await deleteClient.query('ROLLBACK');
+          const errorMsg = `CRITICAL: DELETE affected ${affectedRows} rows for id ${dbId} (expected 1)`;
+          console.error(`[Delete] ${errorMsg}`);
+          deletionErrors.push(errorMsg);
+          deleteClient.release();
+          return NextResponse.json(
+            { error: errorMsg, details: deletionErrors },
+            { status: 500 }
+          );
+        } else if (affectedRows === 1) {
+          totalDeleted++;
+          console.log(`[Delete] ✓ Deleted image record from database: ID ${dbId}`);
+        } else {
+          // Image not found - this is okay if it was already deleted
+          console.warn(`[Delete] Image record ID ${dbId} not found in database (may have been already deleted)`);
+        }
       }
+      
+      // PART B: RE-NORMALIZE ORDER_NUM FOR REMAINING GALLERY IMAGES (SAME TRANSACTION)
+      // Only renormalize if we deleted a gallery image (mytp = 4)
+      if (imageMytp === 4 && imageGirlId && totalDeleted > 0) {
+        console.log(`[Delete] Starting renormalization for girl ${imageGirlId} after deleting ${totalDeleted} gallery image(s)`);
+        
+        // Get remaining gallery images, ordered by current order_num (NULLs go last), then id
+        const remainingResult = await deleteClient.query(
+          `SELECT id FROM images WHERE girlid = $1 AND mytp = 4 ORDER BY COALESCE(order_num, 999999) ASC, id ASC`,
+          [imageGirlId]
+        );
+        
+        const remainingImages = remainingResult.rows;
+        console.log(`[Delete] Found ${remainingImages.length} remaining gallery images to renormalize`);
+        
+        if (remainingImages.length > 0) {
+          // Renormalize to 1..N sequentially (continuous, no gaps)
+          let updateCount = 0;
+          for (let i = 0; i < remainingImages.length; i++) {
+            const imageIdToUpdate = Number(remainingImages[i].id);
+            const newOrderNum = i + 1; // Start at 1, increment sequentially
+            
+            const updateResult = await deleteClient.query(
+              `UPDATE images SET order_num = $1 WHERE id = $2`,
+              [newOrderNum, imageIdToUpdate]
+            );
+            
+            const rowsAffected = updateResult.rowCount || 0;
+            if (rowsAffected === 1) {
+              updateCount++;
+              console.log(`[Delete] Renormalized image ID ${imageIdToUpdate} to order_num ${newOrderNum}`);
+            } else if (rowsAffected === 0) {
+              console.warn(`[Delete] Image ID ${imageIdToUpdate} not found during renormalization (may have been deleted)`);
+            } else {
+              await deleteClient.query('ROLLBACK');
+              deleteClient.release();
+              const errorMsg = `CRITICAL: UPDATE during renormalization for image ID ${imageIdToUpdate} affected ${rowsAffected} rows (expected 1)`;
+              console.error(`[Delete] ${errorMsg}`);
+              deletionErrors.push(errorMsg);
+              return NextResponse.json(
+                { error: errorMsg, details: deletionErrors },
+                { status: 500 }
+              );
+            }
+          }
+          
+          // SAFETY GUARD: Verify renormalization succeeded
+          if (updateCount !== remainingImages.length) {
+            await deleteClient.query('ROLLBACK');
+            deleteClient.release();
+            const errorMsg = `CRITICAL: Renormalization failed - updated ${updateCount} of ${remainingImages.length} images`;
+            console.error(`[Delete] ${errorMsg}`);
+            deletionErrors.push(errorMsg);
+            return NextResponse.json(
+              { error: errorMsg, details: deletionErrors },
+              { status: 500 }
+            );
+          }
+          
+          // SAFETY GUARD: Verify final state (COUNT == MAX(order_num), MIN == 1, no NULLs)
+          const verificationResult = await deleteClient.query(
+            `SELECT 
+              COUNT(*) as total_count,
+              COUNT(*) FILTER (WHERE order_num IS NOT NULL) as non_null_count,
+              COALESCE(MIN(order_num), 0) as min_order,
+              COALESCE(MAX(order_num), 0) as max_order
+             FROM images 
+             WHERE girlid = $1 AND mytp = 4`,
+            [imageGirlId]
+          );
+          
+          const verification = verificationResult.rows[0];
+          const totalCount = Number(verification.total_count) || 0;
+          const nonNullCount = Number(verification.non_null_count) || 0;
+          const minOrder = Number(verification.min_order) || 0;
+          const maxOrder = Number(verification.max_order) || 0;
+          
+          console.log(`[Delete] Verification after renormalization: total=${totalCount}, nonNull=${nonNullCount}, min=${minOrder}, max=${maxOrder}`);
+          
+          // Verify: no NULLs, COUNT == MAX(order_num), and MIN == 1
+          if (totalCount !== nonNullCount) {
+            await deleteClient.query('ROLLBACK');
+            deleteClient.release();
+            const errorMsg = `CRITICAL: Renormalization verification failed - found NULL order_num values (total=${totalCount}, nonNull=${nonNullCount})`;
+            console.error(`[Delete] ${errorMsg}`);
+            deletionErrors.push(errorMsg);
+            return NextResponse.json(
+              { error: errorMsg, details: deletionErrors },
+              { status: 500 }
+            );
+          }
+          
+          if (totalCount !== maxOrder || minOrder !== 1) {
+            await deleteClient.query('ROLLBACK');
+            deleteClient.release();
+            const errorMsg = `CRITICAL: Renormalization verification failed - total=${totalCount}, min=${minOrder}, max=${maxOrder} (expected: total=${maxOrder}, min=1)`;
+            console.error(`[Delete] ${errorMsg}`);
+            deletionErrors.push(errorMsg);
+            return NextResponse.json(
+              { error: errorMsg, details: deletionErrors },
+              { status: 500 }
+            );
+          }
+          
+          console.log(`[Delete] ✓ Renormalized order_num for ${updateCount} remaining images - verification passed (total=${totalCount}, min=${minOrder}, max=${maxOrder}, no NULLs)`);
+        } else {
+          console.log(`[Delete] No remaining gallery images to renormalize for girl ${imageGirlId}`);
+        }
+      }
+      
+      // Commit transaction (DELETE + renormalization)
+      await deleteClient.query('COMMIT');
+      console.log(`[Delete] ✓ Transaction committed: deleted ${totalDeleted} image(s), renormalization complete`);
+      
+    } catch (deleteError: any) {
+      await deleteClient.query('ROLLBACK').catch(() => {});
+      const errorMsg = `Failed to delete image(s) or renormalize order_num: ${deleteError.message}`;
+      console.error(`[Delete] ${errorMsg}`, deleteError);
+      deletionErrors.push(errorMsg);
+      deleteClient.release();
+      return NextResponse.json(
+        { error: errorMsg, details: deletionErrors },
+        { status: 500 }
+      );
+    } finally {
+      deleteClient.release();
     }
 
-    // Delete all related database records
-    for (const dbId of dbIdsToDelete) {
-      try {
-        await pool.execute(`DELETE FROM images WHERE id = ?`, [dbId]);
-        console.log(`✓ Deleted image record from database: ID ${dbId}`);
-      } catch (error: any) {
-        const errorMsg = `Failed to delete image record from database (ID ${dbId}): ${error.message}`;
-        deletionErrors.push(errorMsg);
-        console.error(errorMsg);
-      }
-    }
-
+    // ============================================
+    // STEP 5: RETURN RESULT
+    // ============================================
     // If there were critical errors (database deletion failures), return error
     // Storage deletion failures are logged but don't block the operation
     if (deletionErrors.length > 0) {
@@ -245,13 +442,29 @@ export async function DELETE(
       }, { status: 500 });
     }
 
-    return NextResponse.json({
+    const response: any = {
       success: true,
       message: 'Image and all related assets deleted successfully',
+      deleted: true,
+      deletedStoragePaths: allStoragePaths.length,
+      deletedDbRows: dbIdsToDelete.length,
       warnings: deletionWarnings.length > 0 ? deletionWarnings : undefined,
-    });
+    };
+    
+    // Add debug info if debug mode is enabled
+    if (isDebugMode) {
+      response.debug = {
+        imageId: imageId,
+        deletedIds: dbIdsToDelete,
+        deletedStoragePaths: allStoragePaths.length,
+        deletedDbRows: dbIdsToDelete.length,
+        storagePaths: allStoragePaths,
+      };
+    }
+    
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Error deleting image:', error);
+    console.error('[Delete] Error:', error);
     return NextResponse.json(
       { error: 'Failed to delete image', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

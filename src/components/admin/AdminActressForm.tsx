@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SimpleEditor from './SimpleEditor';
+import type { AdminImage } from '@/types/admin-image';
 
 interface AdminActressFormProps {
   actress: any;
@@ -95,19 +96,100 @@ export default function AdminActressForm({ actress: initialActress, isNew }: Adm
       });
 
       if (res.ok) {
-        // Remove from local state
-        setActress((prev: any) => ({
-          ...prev,
-          images: (prev.images || []).filter((img: any) => img.id !== imageId),
-        }));
+        // Refresh images from server to get updated order
+        const fetchRes = await fetch(`/api/admin/actresses/${actress.id}`);
+        if (fetchRes.ok) {
+          const updatedActress = await fetchRes.json();
+          setActress((prev: any) => ({
+            ...prev,
+            images: updatedActress.images || [],
+          }));
+        }
         alert('Image deleted successfully');
+        
+        // Invalidate cache to refresh image counts in listing
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('admin-girls-cache-invalidate'));
+        }
       } else {
-        alert('Failed to delete image');
+        const error = await res.json();
+        alert(`Failed to delete image: ${error.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error deleting image:', error);
       alert('Error deleting image');
     }
+  };
+
+  const handleReorderImages = async () => {
+    if (!actress.images || actress.images.length === 0) return;
+    
+    try {
+      // Normalize order before sending: ensure 1..N with no gaps
+      const sortedImages = [...actress.images].sort((a: AdminImage, b: AdminImage) => {
+        const orderA = a.orderNum ?? 999999;
+        const orderB = b.orderNum ?? 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.id - b.id;
+      });
+      
+      const imagesToReorder = sortedImages.map((img: AdminImage, index: number) => ({
+        id: img.id,
+        orderNum: index + 1, // Normalize to 1..N
+      }));
+      
+      console.log('[AdminActressForm] Saving image order:', imagesToReorder);
+      
+      const res = await fetch('/api/admin/images/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images: imagesToReorder }),
+      });
+      
+      if (res.ok) {
+        // Refresh images from server
+        const fetchRes = await fetch(`/api/admin/actresses/${actress.id}`);
+        if (fetchRes.ok) {
+          const updatedActress = await fetchRes.json();
+          setActress((prev: any) => ({
+            ...prev,
+            images: updatedActress.images || [],
+          }));
+        }
+        alert('Image order saved successfully');
+      } else {
+        const error = await res.json();
+        alert(`Failed to save order: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error reordering images:', error);
+      alert('Error saving image order');
+    }
+  };
+
+  const updateImageOrder = (imageId: number, newOrder: number) => {
+    setActress((prev: any) => {
+      const images = [...(prev.images || [])];
+      const imageIndex = images.findIndex((img: any) => img.id === imageId);
+      if (imageIndex === -1) return prev;
+      
+      images[imageIndex] = { ...images[imageIndex], orderNum: newOrder };
+      
+      // Normalize order: ensure 1..N with no gaps
+      images.sort((a: any, b: any) => {
+        const orderA = a.orderNum ?? 999999;
+        const orderB = b.orderNum ?? 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.id - b.id;
+      });
+      
+      // Renormalize to 1..N
+      images.forEach((img: any, idx: number) => {
+        img.orderNum = idx + 1;
+      });
+      
+      return { ...prev, images };
+    });
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
@@ -144,6 +226,11 @@ export default function AdminActressForm({ actress: initialActress, isNew }: Adm
           }));
         }
         alert('Images uploaded successfully');
+        
+        // Invalidate cache to refresh image counts in listing
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('admin-girls-cache-invalidate'));
+        }
         // Reset file input
         e.target.value = '';
       } else {
@@ -424,7 +511,13 @@ export default function AdminActressForm({ actress: initialActress, isNew }: Adm
                 <td className="border border-gray-300 px-2 py-1">{book.text}</td>
                 <td className="border border-gray-300 px-2 py-1">{book.link}</td>
                 <td className="border border-gray-300 px-2 py-1">
-                  <button className="text-red-600 hover:underline text-sm">Change/Delete</button>
+                  <button 
+                    className="bg-red-600 text-white w-6 h-6 flex items-center justify-center text-sm font-bold hover:bg-red-700 rounded border border-red-700"
+                    title="Delete book"
+                    style={{ minWidth: '24px', minHeight: '24px' }}
+                  >
+                    ×
+                  </button>
                 </td>
               </tr>
             ))}
@@ -454,7 +547,13 @@ export default function AdminActressForm({ actress: initialActress, isNew }: Adm
                 <td className="border border-gray-300 px-2 py-1">{link.text}</td>
                 <td className="border border-gray-300 px-2 py-1">{link.url}</td>
                 <td className="border border-gray-300 px-2 py-1">
-                  <button className="text-red-600 hover:underline text-sm">Change/Delete</button>
+                  <button 
+                    className="bg-red-600 text-white w-6 h-6 flex items-center justify-center text-sm font-bold hover:bg-red-700 rounded border border-red-700"
+                    title="Delete link"
+                    style={{ minWidth: '24px', minHeight: '24px' }}
+                  >
+                    ×
+                  </button>
                 </td>
               </tr>
             ))}
@@ -467,55 +566,125 @@ export default function AdminActressForm({ actress: initialActress, isNew }: Adm
 
       {/* Images */}
       <div className="border-b border-gray-300 pb-6">
-        <h3 className="font-protest mb-3" style={{ fontSize: '14px' }}>Images:</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-protest" style={{ fontSize: '14px' }}>Images:</h3>
+          {actress.images && actress.images.length > 0 && (
+            <button
+              onClick={handleReorderImages}
+              className="vintage-condensed bg-blue-600 text-white px-3 py-1 text-xs tracking-wider hover:bg-blue-700"
+            >
+              Save Order
+            </button>
+          )}
+        </div>
         {actress.images && actress.images.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-            {actress.images.map((img: any, index: number) => {
-              // Use gallery image path for sharp thumbnail generation
-              const galleryPath = img.url || '';
-              const cleanPath = galleryPath.startsWith('/') ? galleryPath.slice(1) : galleryPath;
-              
-              // Use sharp thumbnail API route for high-quality thumbnails
-              const thumbnailUrl = galleryPath 
-                ? `/api/images/thumbnail?path=${encodeURIComponent(galleryPath)}&width=200&height=250`
-                : '';
-              
-              return (
-                <div key={img.id || index} className="border border-gray-300 p-2 bg-white">
-                  <div className="relative">
-                    {thumbnailUrl ? (
-                      <img 
-                        src={thumbnailUrl} 
-                        alt={`Image ${index + 1}`}
-                        className="w-full h-48 object-cover border border-gray-300" 
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+            {[...actress.images]
+              .sort((a: AdminImage, b: AdminImage) => {
+                const orderA = a.orderNum ?? 999999;
+                const orderB = b.orderNum ?? 999999;
+                if (orderA !== orderB) return orderA - orderB;
+                return a.id - b.id;
+              })
+              .map((img: AdminImage, index: number) => {
+                // Use gallery image path for sharp thumbnail generation
+                const galleryPath = img.galleryUrl || '';
+                const cleanPath = galleryPath.startsWith('/') ? galleryPath.slice(1) : galleryPath;
+                
+                // Use larger, higher quality thumbnails for admin (500x600px for better quality)
+                const thumbnailUrl = galleryPath 
+                  ? `/api/images/thumbnail?path=${encodeURIComponent(galleryPath)}&width=500&height=600`
+                  : '';
+                
+                // Full size image URL for zoom
+                const fullImageUrl = galleryPath 
+                  ? (galleryPath.startsWith('http') ? galleryPath : `/api/images/thumbnail?path=${encodeURIComponent(galleryPath)}&width=1200&height=1600`)
+                  : '';
+                
+                // Format file size
+                const fileSizeMB = img.originalFileBytes 
+                  ? (img.originalFileBytes / (1024 * 1024)).toFixed(1)
+                  : null;
+                
+                return (
+                  <div key={img.id} className="border border-gray-300 p-2 bg-white">
+                    <div className="relative">
+                      {thumbnailUrl ? (
+                        <img 
+                          src={thumbnailUrl} 
+                          alt={`Image ${img.orderNum || index + 1}`}
+                          className="w-full h-64 object-cover border border-gray-300 cursor-pointer hover:opacity-90 transition-opacity" 
+                          onClick={() => {
+                            if (fullImageUrl) {
+                              window.open(fullImageUrl, '_blank');
+                            }
+                          }}
+                          title="Click to view full size"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-64 bg-gray-200 flex items-center justify-center text-xs text-gray-400">
+                          No image
+                        </div>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent triggering image click
+                          handleDeleteImage(img.id);
                         }}
-                      />
-                    ) : (
-                      <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-xs text-gray-400">
-                        No image
+                        className="absolute top-1 right-1 bg-red-600 text-white w-6 h-6 flex items-center justify-center text-sm font-bold hover:bg-red-700 rounded border border-red-700 z-10"
+                        title="Delete image"
+                        style={{ minWidth: '24px', minHeight: '24px' }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="text-xs mt-2 space-y-1">
+                      {/* Order Control */}
+                      <div className="flex items-center gap-2 border-b border-gray-200 pb-1 mb-1">
+                        <label className="text-gray-700 font-medium" style={{ fontSize: '11px' }}>Order:</label>
+                        <select
+                          value={img.orderNum || index + 1}
+                          onChange={(e) => {
+                            const newOrder = parseInt(e.target.value) || 1;
+                            updateImageOrder(img.id, newOrder);
+                          }}
+                          className="px-2 py-1 border border-gray-400 text-center text-xs font-medium bg-white"
+                          style={{ minWidth: '60px', fontSize: '11px' }}
+                        >
+                          {Array.from({ length: actress.images?.length || 1 }, (_, i) => i + 1).map((order) => (
+                            <option key={order} value={order}>
+                              {order}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="text-gray-500" style={{ fontSize: '10px' }}>
+                          (#{img.orderNum || index + 1})
+                        </span>
                       </div>
-                    )}
-                    <button
-                      onClick={() => handleDeleteImage(img.id)}
-                      className="absolute top-1 right-1 bg-red-600 text-white px-2 py-1 text-xs hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                  <div className="text-xs mt-2 space-y-1">
-                    <div>Size: {img.width}×{img.height}</div>
-                    {img.hqUrl && <div className="text-green-600">✓ HQ Available</div>}
-                    {galleryPath && (
-                      <div className="text-gray-500 truncate" title={galleryPath}>
-                        {galleryPath.split('/').pop()}
+                      {/* Original Metadata */}
+                      {img.originalWidth && img.originalHeight && (
+                        <div className="text-gray-700 font-medium">
+                          {img.originalWidth} × {img.originalHeight} px
+                          {fileSizeMB && ` (${fileSizeMB} MB)`}
+                        </div>
+                      )}
+                      {/* Gallery Size (after processing) */}
+                      <div className="text-gray-500">
+                        Gallery: {img.width}×{img.height}
                       </div>
-                    )}
+                      {img.hqUrl && <div className="text-green-600">✓ HQ Available</div>}
+                      {galleryPath && (
+                        <div className="text-gray-400 truncate text-xs" title={galleryPath}>
+                          {galleryPath.split('/').pop()}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         ) : (
           <p className="text-gray-500 mb-4">No images yet. Upload images below.</p>

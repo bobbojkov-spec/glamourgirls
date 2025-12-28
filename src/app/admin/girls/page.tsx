@@ -35,14 +35,26 @@ export default async function GirlsListPage({ searchParams }: PageProps) {
   let total = 0;
 
   try {
-    // Use EXACT same query logic as /api/actresses
+    // Canonical counting: photoCount = gallery images (mytp=4), hqPhotoCount = HQ images with matching gallery
+    // Use subquery for HQ count to avoid cartesian product and ensure HQ <= gallery count
     let query = `
       SELECT g.id, g.nm, g.firstname, g.familiq, g.godini, g.isnew, g.isnewpix, 
              g.published, g.theirman,
-             COUNT(DISTINCT CASE WHEN i.mytp = 4 THEN i.id END)::int as "photoCount",
-             COUNT(DISTINCT CASE WHEN i.mytp = 5 THEN i.id END)::int as "hqPhotoCount"
+             COALESCE(COUNT(DISTINCT CASE WHEN i.mytp = 4 THEN i.id END), 0)::int as "photoCount",
+             COALESCE((
+               SELECT COUNT(DISTINCT hq.id)
+               FROM images hq
+               WHERE hq.girlid = g.id
+                 AND hq.mytp = 5
+                 AND EXISTS (
+                   SELECT 1 FROM images i2 
+                   WHERE i2.girlid = hq.girlid 
+                     AND i2.mytp = 4 
+                     AND (i2.id = hq.id - 1 OR i2.id = hq.id + 1)
+                 )
+             ), 0)::int as "hqPhotoCount"
       FROM girls g
-      LEFT JOIN images i ON g.id = i.girlid
+      LEFT JOIN images i ON g.id = i.girlid AND i.mytp IN (3, 4, 5)
       WHERE 1=1
     `;
 
@@ -122,9 +134,19 @@ export default async function GirlsListPage({ searchParams }: PageProps) {
       query += ` AND g.isnewpix = 1`;
     }
 
-    query += ` GROUP BY g.id ORDER BY g.nm ASC LIMIT ${limit} OFFSET ${skip}`;
+    query += ` GROUP BY g.id, g.nm, g.firstname, g.familiq, g.godini, g.isnew, g.isnewpix, g.published, g.theirman ORDER BY g.nm ASC LIMIT ${limit} OFFSET ${skip}`;
 
     const [results] = await pool.execute(query, queryParams) as any[];
+    
+    // Debug: Log query results for troubleshooting
+    if (results && results.length > 0) {
+      console.log('[GirlsList] Sample result:', {
+        id: results[0]?.id,
+        name: results[0]?.nm,
+        photoCount: results[0]?.photoCount,
+        photoCountType: typeof results[0]?.photoCount,
+      });
+    }
 
     // Get total count (same filters)
     let countQuery = `SELECT COUNT(DISTINCT g.id) as total FROM girls g WHERE 1=1`;
@@ -192,17 +214,27 @@ export default async function GirlsListPage({ searchParams }: PageProps) {
     const [countResult] = await pool.execute(countQuery, countParams) as any[];
     total = countResult[0]?.total || 0;
 
-    girls = Array.isArray(results) ? results.map((row: any) => ({
-      id: row.id,
-      name: row.nm,
-      firstName: row.firstname,
-      lastName: row.familiq,
-      slug: `${row.firstname || ''}-${row.familiq || ''}`.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-      photoCount: row.photoCount || 0,
-      hqPhotoCount: row.hqPhotoCount || 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    })) : [];
+    girls = Array.isArray(results) ? results.map((row: any) => {
+      // Ensure photoCount is a number (handle string conversion from PostgreSQL)
+      const photoCount = typeof row.photoCount === 'string' 
+        ? parseInt(row.photoCount, 10) || 0 
+        : Number(row.photoCount) || 0;
+      const hqPhotoCount = typeof row.hqPhotoCount === 'string'
+        ? parseInt(row.hqPhotoCount, 10) || 0
+        : Number(row.hqPhotoCount) || 0;
+      
+      return {
+        id: row.id,
+        name: row.nm,
+        firstName: row.firstname,
+        lastName: row.familiq,
+        slug: `${row.firstname || ''}-${row.familiq || ''}`.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        photoCount: photoCount,
+        hqPhotoCount: hqPhotoCount,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    }) : [];
   } catch (error) {
     console.error('Error fetching girls:', error);
     girls = [];

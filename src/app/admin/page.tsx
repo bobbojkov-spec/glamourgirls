@@ -5,6 +5,7 @@ import { UserOutlined, PictureOutlined, CheckCircleOutlined, CameraOutlined, Thu
 import { Title, Text } from '@/components/admin/AdminTypography';
 import RelatedActressesAction from '@/components/admin/RelatedActressesAction';
 import CalculateHQFileSizesAction from '@/components/admin/CalculateHQFileSizesAction';
+import BackfillOrderNumAction from '@/components/admin/BackfillOrderNumAction';
 
 export default async function AdminDashboard() {
   // Get basic statistics from PostgreSQL
@@ -183,6 +184,9 @@ export default async function AdminDashboard() {
             </Col>
             <Col xs={24} sm={12} lg={8}>
               <CalculateHQFileSizesAction />
+            </Col>
+            <Col xs={24} sm={12} lg={8}>
+              <BackfillOrderNumAction />
             </Col>
           </Row>
         </Card>

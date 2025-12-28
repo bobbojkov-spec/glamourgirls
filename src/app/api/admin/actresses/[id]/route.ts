@@ -36,9 +36,16 @@ export async function GET(
     const timeline = Array.isArray(timelineRows) ? timelineRows : [];
 
     // Fetch images - separate by type
+    // IMPORTANT: Sort gallery images by order_num ASC (with fallback to id ASC for legacy rows)
     const [allImages] = await pool.execute(
-      `SELECT id, path, width, height, mytp, thumbid, sz FROM images 
-       WHERE girlid = ? AND mytp IN (3, 4, 5) ORDER BY id ASC`,
+      `SELECT id, path, width, height, mytp, thumbid, sz, order_num, 
+              original_width, original_height, original_file_bytes, original_mime, original_filename, storage_paths
+       FROM images 
+       WHERE girlid = ? AND mytp IN (3, 4, 5) 
+       ORDER BY 
+         CASE WHEN mytp = 4 THEN 0 ELSE 1 END,
+         CASE WHEN mytp = 4 THEN COALESCE(order_num, 999999) ELSE id END,
+         id ASC`,
       [actressId]
     );
 
@@ -47,28 +54,55 @@ export async function GET(
     const hqImages = imageList.filter((img: any) => img.mytp === 5);
     const thumbnails = imageList.filter((img: any) => img.mytp === 3);
 
-    // Format images for display
-    const formattedImages = galleryImages.map((galleryImg: any) => {
-      const thumbnail = thumbnails.find((thumb: any) => 
-        thumb.id === galleryImg.thumbid || 
-        thumb.path?.includes(`thumb${galleryImg.id}`)
-      );
-      const hq = hqImages.find((hqImg: any) => hqImg.id === galleryImg.id - 1);
-      
-      // Ensure paths start with /
-      const galleryPath = galleryImg.path?.startsWith('/') ? galleryImg.path : `/${galleryImg.path}`;
-      const thumbPath = thumbnail?.path?.startsWith('/') ? thumbnail.path : thumbnail?.path ? `/${thumbnail.path}` : '';
-      const hqPath = hq?.path?.startsWith('/') ? hq.path : hq?.path ? `/${hq.path}` : '';
-      
-      return {
-        id: galleryImg.id,
-        url: galleryPath,
-        thumbnailUrl: thumbPath,
-        hqUrl: hqPath,
-        width: galleryImg.width,
-        height: galleryImg.height,
-      };
-    });
+    // Format images for display - sorted by order_num
+    const formattedImages = galleryImages
+      .sort((a: any, b: any) => {
+        const orderA = a.order_num ?? 999999;
+        const orderB = b.order_num ?? 999999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.id - b.id;
+      })
+      .map((galleryImg: any) => {
+        const thumbnail = thumbnails.find((thumb: any) => 
+          thumb.id === galleryImg.thumbid || 
+          thumb.path?.includes(`thumb${galleryImg.id}`)
+        );
+        const hq = hqImages.find((hqImg: any) => hqImg.id === galleryImg.id - 1);
+        
+        // Ensure paths start with /
+        const galleryPath = galleryImg.path?.startsWith('/') ? galleryImg.path : `/${galleryImg.path}`;
+        const thumbPath = thumbnail?.path?.startsWith('/') ? thumbnail.path : thumbnail?.path ? `/${thumbnail.path}` : '';
+        const hqPath = hq?.path?.startsWith('/') ? hq.path : hq?.path ? `/${hq.path}` : '';
+        
+        // Parse storage_paths
+        let storagePaths: string[] = [];
+        try {
+          if (galleryImg.storage_paths) {
+            storagePaths = typeof galleryImg.storage_paths === 'string' 
+              ? JSON.parse(galleryImg.storage_paths) 
+              : galleryImg.storage_paths;
+          }
+        } catch (e) {
+          console.warn(`Failed to parse storage_paths for image ${galleryImg.id}:`, e);
+        }
+        
+        return {
+          id: galleryImg.id,
+          girlId: actressId,
+          orderNum: galleryImg.order_num ?? 0,
+          originalWidth: galleryImg.original_width ?? galleryImg.width ?? 0,
+          originalHeight: galleryImg.original_height ?? galleryImg.height ?? 0,
+          originalFileBytes: galleryImg.original_file_bytes ?? 0,
+          originalMime: galleryImg.original_mime ?? null,
+          originalFilename: galleryImg.original_filename ?? null,
+          url: galleryPath,
+          thumbnailUrl: thumbPath,
+          hqUrl: hqPath,
+          width: galleryImg.width ?? 0,
+          height: galleryImg.height ?? 0,
+          storagePaths: storagePaths,
+        };
+      });
 
     // Fetch links (if girllinks table exists)
     let links: any[] = [];

@@ -8,14 +8,25 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     
-    // Build query with image counts
+    // Canonical counting: photoCount = gallery images (mytp=4), hqPhotoCount = HQ images with matching gallery
     let query = `
       SELECT g.id, g.nm, g.firstname, g.familiq, g.godini, g.isnew, g.isnewpix, 
              g.published, g.theirman,
              COUNT(DISTINCT CASE WHEN i.mytp = 4 THEN i.id END)::int as "photoCount",
-             COUNT(DISTINCT CASE WHEN i.mytp = 5 THEN i.id END)::int as "hqPhotoCount"
+             COALESCE((
+               SELECT COUNT(DISTINCT hq.id)
+               FROM images hq
+               WHERE hq.girlid = g.id
+                 AND hq.mytp = 5
+                 AND EXISTS (
+                   SELECT 1 FROM images i2 
+                   WHERE i2.girlid = hq.girlid 
+                     AND i2.mytp = 4 
+                     AND (i2.id = hq.id - 1 OR i2.id = hq.id + 1)
+                 )
+             ), 0)::int as "hqPhotoCount"
       FROM girls g
-      LEFT JOIN images i ON g.id = i.girlid
+      LEFT JOIN images i ON g.id = i.girlid AND i.mytp IN (3, 4, 5)
       WHERE 1=1
     `;
 

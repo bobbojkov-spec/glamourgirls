@@ -45,7 +45,60 @@ interface GirlsTableProps {
 
 export default function GirlsTable({ girls, total, currentPage, totalPages, searchParams: initialSearchParams }: GirlsTableProps) {
   const CACHE_KEY = 'admin_girls_cache_v1';
-  const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6h
+  const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes (reduced from 6h to prevent stale data)
+  
+  // Function to clear cache (can be called after image uploads)
+  const clearCache = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.removeItem(CACHE_KEY);
+        setCachedGirls(null);
+        // Trigger refetch
+        const fetchAll = async () => {
+          setCacheLoading(true);
+          setCacheError(null);
+          try {
+            const res = await fetch('/api/admin/girls?limit=5000', { method: 'GET', credentials: 'include' });
+            if (res.status === 401 && typeof window !== 'undefined') {
+              const next = encodeURIComponent(window.location.pathname + window.location.search);
+              window.location.href = `/admin/login?next=${next}`;
+              return;
+            }
+            if (!res.ok) throw new Error(`Fetch failed (${res.status})`);
+            const data = await res.json();
+            const rows: CachedGirl[] = Array.isArray(data?.girls) ? data.girls.map(normalizeCachedGirl) : [];
+            setCachedGirls(rows);
+            if (typeof window !== 'undefined') {
+              window.sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), girls: rows }));
+            }
+          } catch (e: any) {
+            setCacheError(e?.message || 'Failed to cache girls');
+            setCachedGirls(null);
+          } finally {
+            setCacheLoading(false);
+          }
+        };
+        fetchAll();
+      } catch (e) {
+        // ignore
+      }
+    }
+  };
+  
+  // Listen for cache invalidation events (triggered after image uploads)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleCacheInvalidation = () => {
+      clearCache();
+    };
+    
+    window.addEventListener('admin-girls-cache-invalidate', handleCacheInvalidation);
+    
+    return () => {
+      window.removeEventListener('admin-girls-cache-invalidate', handleCacheInvalidation);
+    };
+  }, []);
   const PAGE_SIZE = 100;
 
   const [published, setPublished] = useState<string>(initialSearchParams.published || 'all');
@@ -138,41 +191,41 @@ export default function GirlsTable({ girls, total, currentPage, totalPages, sear
 
   const columns: ColumnsType<Girl> = [
     {
-      title: 'Name',
+      title: <span style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>Name</span>,
       dataIndex: 'name',
       key: 'name',
       sorter: (a, b) => a.name.localeCompare(b.name),
+      width: 180,
+      ellipsis: true,
       render: (text: string, record: Girl) => (
         <Link
           href={`/admin/girls/${record.id}?next=${encodeURIComponent(buildUrl({ published, isNew, hasNewPhotos, era, keyword, page }))}`}
-          style={{ color: '#1890ff' }}
+          style={{ color: '#1890ff', whiteSpace: 'nowrap' }}
         >
           {text}
         </Link>
       ),
     },
     {
-      title: 'Slug',
-      dataIndex: 'slug',
-      key: 'slug',
-      render: (slug: string) => <Text type="secondary" style={{ fontSize: '12px' }}>{slug}</Text>,
-    },
-    {
-      title: 'Images',
+      title: <span style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>Images</span>,
       key: 'images',
       ellipsis: true,
       width: 110,
-      render: (_: any, record: Girl) => (
-        <Space size={4} style={{ whiteSpace: 'nowrap' }}>
-          <Text style={{ whiteSpace: 'nowrap' }}>{record.photoCount}</Text>
-          {record.hqPhotoCount > 0 && (
-            <Text type="secondary" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>({record.hqPhotoCount} HQ)</Text>
-          )}
-        </Space>
-      ),
+      render: (_: any, record: Girl) => {
+        // Safety clamp: HQ count can never exceed gallery count
+        const safeHQCount = Math.min(record.hqPhotoCount, record.photoCount);
+        return (
+          <Space size={4} style={{ whiteSpace: 'nowrap' }}>
+            <Text style={{ whiteSpace: 'nowrap' }}>{record.photoCount}</Text>
+            {safeHQCount > 0 && (
+              <Text type="secondary" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>({safeHQCount} HQ)</Text>
+            )}
+          </Space>
+        );
+      },
     },
     {
-      title: 'Created',
+      title: <span style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>Created</span>,
       dataIndex: 'createdAt',
       key: 'createdAt',
       ellipsis: true,
@@ -184,11 +237,11 @@ export default function GirlsTable({ girls, total, currentPage, totalPages, sear
       ),
     },
     {
-      title: 'Last Edited',
+      title: <span style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>Last...</span>,
       dataIndex: 'updatedAt',
       key: 'updatedAt',
       ellipsis: true,
-      width: 105,
+      width: 90,
       render: (date: string) => (
         <Text type="secondary" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
           {new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })}
@@ -196,8 +249,9 @@ export default function GirlsTable({ girls, total, currentPage, totalPages, sear
       ),
     },
     {
-      title: 'Action',
+      title: <span style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>Action</span>,
       key: 'action',
+      width: 100,
       render: (_: any, record: Girl) => (
         <Link href={`/admin/girls/${record.id}?next=${encodeURIComponent(buildUrl({ published, isNew, hasNewPhotos, era, keyword, page }))}`}>
           <Button type="link" icon={<EditOutlined />} size="small">
@@ -363,7 +417,7 @@ export default function GirlsTable({ girls, total, currentPage, totalPages, sear
               <Title level={4} style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>
                 Girls Database
               </Title>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+              <Text type="secondary" style={{ fontSize: '11px' }}>
                 Manage all actress entries
               </Text>
             </Space>
@@ -542,6 +596,10 @@ export default function GirlsTable({ girls, total, currentPage, totalPages, sear
                 </div>
               ),
             }}
+            style={{
+              fontSize: '14px',
+            }}
+            className="compact-table"
           />
         </Card>
       </Space>

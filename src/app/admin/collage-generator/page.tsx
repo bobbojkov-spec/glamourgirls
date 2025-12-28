@@ -247,7 +247,7 @@ export default function CollageGeneratorPage() {
       const data = await response.json();
       
       if (data.success) {
-        setResult(data);
+        setResults((prev: any) => prev.map((c: any) => c.era === collage.era ? { ...c, ...data } : c));
         message.success(`Collage regenerated successfully for ${collage.era}!`);
         loadCollages();
       } else {

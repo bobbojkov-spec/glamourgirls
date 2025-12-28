@@ -112,8 +112,10 @@ export async function GET(
       }));
 
     // Fetch images - match frontend filtering exactly: mytp IN (3, 4, 5) with valid paths and dimensions
+    // Include order_num for gallery images
+    // CRITICAL: Order gallery images (mytp=4) by order_num, others by id
     const [imageRows] = await pool.execute(
-      `SELECT id, path, width, height, mytp, description
+      `SELECT id, path, width, height, mytp, description, order_num
        FROM images 
        WHERE girlid = ? 
          AND mytp IN (3, 4, 5)
@@ -121,13 +123,15 @@ export async function GET(
          AND path != ''
          AND width > 0 
          AND height > 0
-       ORDER BY id ASC`,
+       ORDER BY 
+         CASE WHEN mytp = 4 THEN COALESCE(order_num, 999999) ELSE 999998 END ASC,
+         id ASC`,
       [girlId]
     ) as any[];
     
-    // Also fetch HQ images with description
+    // Also fetch HQ images with description and file size (sz)
     const [hqImageRows] = await pool.execute(
-      `SELECT id, path, width, height, description
+      `SELECT id, path, width, height, description, sz
        FROM images 
        WHERE girlid = ? 
          AND mytp = 5
@@ -175,18 +179,36 @@ export async function GET(
       const imgPath = String(img.path || '');
       const hqImage = hqMap.get(img.id);
       
+      // Handle order_num field - PostgreSQL returns it as order_num, check both variations
+      const orderNumValue = img.order_num !== null && img.order_num !== undefined 
+        ? img.order_num 
+        : (img.orderNum !== null && img.orderNum !== undefined ? img.orderNum : null);
+      const orderNum = orderNumValue !== null ? Number(orderNumValue) : null;
+      
+      // Calculate HQ sizeMB from sz field (stored bytes)
+      let hqSizeMB: number | null = null;
+      if (hqImage && hqImage.sz !== null && hqImage.sz !== undefined && hqImage.sz !== '') {
+        const parsed = Number(hqImage.sz);
+        if (!isNaN(parsed) && parsed > 0 && Number.isFinite(parsed)) {
+          hqSizeMB = parseFloat((parsed / (1024 * 1024)).toFixed(2));
+        }
+      }
+      
       return {
         id: Number(img.id) || 0,
+        girlId: girlId,
         path: imgPath,
         url: getStorageUrl(imgPath), // Convert to Supabase URL
         width: Number(img.width) || 0,
         height: Number(img.height) || 0,
         description: img.description || null,
         type: Number(img.mytp) || 0,
+        orderNum: orderNum,
         hq: hqImage ? {
           id: Number(hqImage.id) || 0,
           width: Number(hqImage.width) || 0,
           height: Number(hqImage.height) || 0,
+          sizeMB: hqSizeMB,
           url: getStorageUrl(hqImage.path), // Convert to Supabase URL
           description: hqImage.description || null,
         } : null,

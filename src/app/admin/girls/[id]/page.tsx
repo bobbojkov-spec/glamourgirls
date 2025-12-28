@@ -105,8 +105,10 @@ export default async function EditGirlPage({
     }
 
     // Fetch images - match frontend filtering exactly: mytp IN (3, 4, 5) with valid paths and dimensions
+    // Include sz (file size in bytes) for HQ images and order_num for gallery images
+    // CRITICAL: Order gallery images (mytp=4) by order_num, others by id
     const [imageRows] = await pool.execute(
-      `SELECT id, path, width, height, mytp 
+      `SELECT id, path, width, height, mytp, sz, order_num 
        FROM images 
        WHERE girlid = ? 
          AND mytp IN (3, 4, 5)
@@ -114,13 +116,26 @@ export default async function EditGirlPage({
          AND path != ''
          AND width > 0 
          AND height > 0
-       ORDER BY id ASC`,
+       ORDER BY 
+         CASE WHEN mytp = 4 THEN COALESCE(order_num, 999999) ELSE 999998 END ASC,
+         id ASC`,
       [girlId]
     ) as any[];
 
     // Separate gallery and HQ images
     const galleryImages = imageRows.filter((img: any) => img.mytp === 4);
     const hqImages = imageRows.filter((img: any) => img.mytp === 5);
+    
+    // Debug: Log first gallery image to check order_num field
+    if (galleryImages.length > 0) {
+      console.log(`[Admin Edit Page] First gallery image sample:`, {
+        id: galleryImages[0].id,
+        order_num: galleryImages[0].order_num,
+        orderNum: galleryImages[0].orderNum,
+        hasOrderNum: 'order_num' in galleryImages[0],
+        keys: Object.keys(galleryImages[0]),
+      });
+    }
     
     // Create a map of HQ images by matching ID pattern
     // HQ images are typically galleryImageId - 1 or galleryImageId + 1
@@ -168,17 +183,35 @@ export default async function EditGirlPage({
       if (hqImage && hqImage.path) {
         // HQ images are in Supabase Storage (images_raw bucket or public bucket)
         const hqPathStr = String(hqImage.path || '');
-        // Include all HQ images - estimate file size based on dimensions
-        const estimatedSizeMB = ((Number(hqImage.width) || 0) * (Number(hqImage.height) || 0) * 3) / (1024 * 1024);
+        // Use actual file size from sz column (stored bytes), not estimated from dimensions
+        // sz is stored as varchar in PostgreSQL, so handle string conversion safely
+        let hqFileBytes: number | null = null;
+        if (hqImage.sz !== null && hqImage.sz !== undefined && hqImage.sz !== '') {
+          const parsed = Number(hqImage.sz);
+          if (!isNaN(parsed) && parsed > 0 && Number.isFinite(parsed)) {
+            hqFileBytes = parsed;
+          }
+        }
+        // Convert bytes to MB: bytes / (1024 * 1024), show 2 decimals
+        // If sz is null/0/missing/invalid, show null (will display as "—" in UI)
+        const sizeMB = hqFileBytes !== null
+          ? parseFloat((hqFileBytes / (1024 * 1024)).toFixed(2))
+          : null;
         
         hqInfo = {
           id: Number(hqImage.id) || 0,
           width: Number(hqImage.width) || 0,
           height: Number(hqImage.height) || 0,
-          sizeMB: parseFloat(estimatedSizeMB.toFixed(2)),
+          sizeMB: sizeMB,
           url: hqPathStr,
         };
       }
+      
+      // Handle order_num field - PostgreSQL returns it as order_num, but check both variations
+      const orderNumValue = img.order_num !== null && img.order_num !== undefined 
+        ? img.order_num 
+        : (img.orderNum !== null && img.orderNum !== undefined ? img.orderNum : null);
+      const orderNum = orderNumValue !== null ? Number(orderNumValue) : null;
       
       validImages.push({
         id: Number(img.id) || 0,
@@ -186,11 +219,13 @@ export default async function EditGirlPage({
         width: Number(img.width) || 0,
         height: Number(img.height) || 0,
         mytp: Number(img.mytp) || 0,
+        orderNum: orderNum,
+        order_num: orderNum, // Keep both for compatibility
         hq: hqInfo ? {
           id: Number(hqInfo.id) || 0,
           width: Number(hqInfo.width) || 0,
           height: Number(hqInfo.height) || 0,
-          sizeMB: Number(hqInfo.sizeMB) || 0,
+          sizeMB: hqInfo.sizeMB !== null && hqInfo.sizeMB !== undefined ? Number(hqInfo.sizeMB) : null,
           url: String(hqInfo.url || ''),
         } : null,
       });
@@ -306,11 +341,12 @@ export default async function EditGirlPage({
           width: Number(img.width) || 0,
           height: Number(img.height) || 0,
           type: Number(img.mytp) || 0,
+          orderNum: img.orderNum !== null && img.orderNum !== undefined ? Number(img.orderNum) : null,
           hq: img.hq && typeof img.hq === 'object' ? {
             id: Number(img.hq.id) || 0,
             width: Number(img.hq.width) || 0,
             height: Number(img.hq.height) || 0,
-            sizeMB: Number(img.hq.sizeMB) || 0,
+            sizeMB: img.hq.sizeMB !== null && img.hq.sizeMB !== undefined ? Number(img.hq.sizeMB) : null,
             url: String(img.hq.url || ''),
           } : null,
         };

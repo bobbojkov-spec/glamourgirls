@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { generateSlug } from '@/lib/validations/girl';
 import SimpleEditor from '@/components/admin/SimpleEditor';
 import SEOFormSectionEnhanced from '@/components/admin/girls/SEOFormSectionEnhanced';
@@ -10,6 +9,7 @@ import type { SEOData } from '@/lib/seo/generate-seo-enhanced';
 import { Tabs, Button, Upload, Typography, App, Input, Select, Checkbox, Form, Row, Col, Space, Card, Alert } from 'antd';
 import { DeleteOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd';
+import ImageDebugPanel from './ImageDebugPanel';
 
 const { Title, Text } = Typography;
 const { useApp } = App;
@@ -28,6 +28,7 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
   const { message, modal } = useApp();
   // Use ref (not state) so the submit handler always sees the latest intent synchronously.
   const saveModeRef = useRef<'stay' | 'back'>('stay');
+  const formRef = useRef<HTMLFormElement | null>(null);
   
   // Debug: Log initial timeline data
   useEffect(() => {
@@ -137,6 +138,20 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
   const [headshotFileList, setHeadshotFileList] = useState<UploadFile[]>([]);
   const [galleryFileList, setGalleryFileList] = useState<UploadFile[]>([]);
   const [activeTab, setActiveTab] = useState('general');
+  
+  // Debug state (only in development or with ?debug=1)
+  const [debugInfo, setDebugInfo] = useState<{
+    uploadQueue: Array<{ filename: string; status: 'pending' | 'uploading' | 'storage-uploaded' | 'db-inserted' | 'success' | 'failed'; error?: string; imageId?: number; orderNum?: number }>;
+    apiResponses: Array<{ endpoint: string; method: string; status: number; timestamp: number; payload?: any; response?: any; rowsReceived?: number; rowsUpdated?: number; rowsInserted?: number; rowsDeleted?: number; error?: string }>;
+  }>({
+    uploadQueue: [],
+    apiResponses: [],
+  });
+  
+  const isDebugMode = typeof window !== 'undefined' && (
+    process.env.NODE_ENV === 'development' || 
+    new URLSearchParams(window.location.search).get('debug') === '1'
+  );
 
   // Auto-generate slug from name
   useEffect(() => {
@@ -291,6 +306,115 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
     setErrors({});
 
     try {
+      // Persist current gallery image order as part of Save / Save & Back.
+      // This replaces the standalone "Save Order" button.
+      const persistGalleryOrderIfNeeded = async (): Promise<
+        | { skipped: true }
+        | { ok: true; updateCount: number }
+        | { ok: false; errorMsg: string; debug?: any }
+      > => {
+        if (!initialData?.id) return { skipped: true };
+        const girlId = Number(initialData.id);
+        if (!Number.isFinite(girlId) || girlId < 1) return { skipped: true };
+
+        const images = Array.isArray(formData.images) ? formData.images : [];
+        if (images.length === 0) return { skipped: true };
+
+        const orderedImageIds = [...images]
+          .sort((a: any, b: any) => {
+            const orderA = a.orderNum ?? 999999;
+            const orderB = b.orderNum ?? 999999;
+            if (orderA !== orderB) return orderA - orderB;
+            return a.id - b.id;
+          })
+          .map((img: any) => Number(img.id))
+          .filter((id: number) => Number.isFinite(id) && id > 0);
+
+        if (orderedImageIds.length !== images.length) {
+          return {
+            ok: false,
+            errorMsg: `Reorder payload invalid: expected ${images.length} ids, got ${orderedImageIds.length}`,
+            debug: { girlId, orderedImageIds, imagesIds: images.map((i: any) => i.id) },
+          };
+        }
+
+        const payload = { girlId, orderedImageIds };
+        const url = isDebugMode ? '/api/admin/images/reorder?debug=1' : '/api/admin/images/reorder';
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const contentType = res.headers.get('content-type') || '';
+        const rawText = await res.text();
+        let responseData: any = {};
+        try {
+          responseData = rawText ? JSON.parse(rawText) : {};
+        } catch {
+          responseData = {
+            error: 'Non-JSON response from server',
+            details: rawText ? rawText.slice(0, 500) : '(empty body)',
+          };
+        }
+
+        // Debug: Track API response
+        if (isDebugMode) {
+          setDebugInfo(prev => ({
+            ...prev,
+            apiResponses: [...prev.apiResponses, {
+              endpoint: '/api/admin/images/reorder',
+              method: 'POST',
+              status: res.status,
+              timestamp: Date.now(),
+              payload: payload,
+              response: responseData,
+              rowsReceived: orderedImageIds.length,
+              rowsUpdated: responseData.updateCount || 0,
+              error: res.ok ? undefined : (responseData.error || 'Unknown error'),
+            }],
+          }));
+        }
+
+        const looksSuccessful =
+          res.ok &&
+          (responseData?.success === true ||
+            (typeof responseData?.updateCount === 'number' && responseData.updateCount > 0));
+
+        if (!looksSuccessful) {
+          const errorMsg =
+            responseData?.error ||
+            responseData?.details ||
+            responseData?.message ||
+            `HTTP ${res.status} ${res.statusText}${contentType ? ` (${contentType})` : ''}`;
+          return {
+            ok: false,
+            errorMsg,
+            debug: {
+              status: res.status,
+              statusText: res.statusText,
+              contentType,
+              rawText: rawText ? rawText.slice(0, 1000) : '(empty body)',
+              response: responseData,
+              payload,
+            },
+          };
+        }
+
+        // Refresh images from server to match DB truth (best-effort)
+        try {
+          const fetchRes = await fetch(`/api/admin/girls/${girlId}`);
+          if (fetchRes.ok) {
+            const updatedGirl = await fetchRes.json();
+            handleChange('images', updatedGirl.images || []);
+          }
+        } catch {
+          // ignore
+        }
+
+        return { ok: true, updateCount: Number(responseData?.updateCount || 0) };
+      };
+
       // Validate links/books: do not allow partially-filled rows to be saved.
       const trim = (v: any) => String(v ?? '').trim();
 
@@ -451,6 +575,16 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
       // EDIT: by default stay on the page (so you don't lose context/filters).
       // Provide "Save & Back" for returning to the list.
       if (initialData?.id) {
+        const reorderResult = await persistGalleryOrderIfNeeded();
+        if ((reorderResult as any)?.ok === false) {
+          const msg = `Saved, but failed to save image order: ${(reorderResult as any).errorMsg || 'Unknown error'}`;
+          message.error(msg);
+          console.error('[GirlForm] Reorder-on-save failed:', reorderResult);
+          setErrors({ submit: msg });
+          setIsSubmitting(false);
+          return;
+        }
+
         message.success('Saved');
         if (saveModeRef.current === 'back') {
           // reset so next save doesn't unexpectedly kick you back
@@ -506,6 +640,12 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
           const data = JSON.parse(xhr.responseText);
           message.success(`Headshot uploaded and processed successfully! Dimensions: ${data.width}x${data.height}px`);
           onSuccess?.(data);
+          
+          // Invalidate cache to refresh image counts in listing
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('admin-girls-cache-invalidate'));
+          }
+          
           // Reload page to show new headshot
           setTimeout(() => {
             window.location.reload();
@@ -531,6 +671,11 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
     }
   };
 
+  // Track files that need to be uploaded (batched)
+  const pendingUploadRef = useRef<Array<{ file: File; fileName: string; onSuccess?: (response?: any) => void; onError?: (error: any) => void; onProgress?: (event: { percent: number }) => void }>>([]);
+  const isUploadingRef = useRef(false);
+  const uploadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const handleGalleryImageUpload: UploadProps['customRequest'] = async ({ file, onSuccess, onError, onProgress }) => {
     if (!initialData?.id) {
       message.warning('Please save the entry first before uploading gallery images.');
@@ -538,80 +683,207 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
       return;
     }
 
-    const formData = new FormData();
-    formData.append('images', file as File);
-    formData.append('actressId', initialData.id.toString());
-    formData.append('type', 'gallery');
+    const fileName = (file as File).name;
+    
+    // Add file to pending queue
+    pendingUploadRef.current.push({ file: file as File, fileName, onSuccess, onError, onProgress });
 
-    try {
-      const xhr = new XMLHttpRequest();
+    // Debug: Track upload start
+    if (isDebugMode) {
+      setDebugInfo(prev => ({
+        ...prev,
+        uploadQueue: [...prev.uploadQueue, { filename: fileName, status: 'pending' }],
+      }));
+    }
 
-      // Track upload progress
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const percent = Math.round((e.loaded / e.total) * 100);
-          onProgress?.({ percent });
-        }
+    // Clear any existing timeout
+    if (uploadTimeoutRef.current) {
+      clearTimeout(uploadTimeoutRef.current);
+    }
+
+    // Wait a short time (100ms) to batch multiple files together (if user selects multiple at once)
+    uploadTimeoutRef.current = setTimeout(async () => {
+      // Check if already uploading or queue is empty
+      if (isUploadingRef.current || pendingUploadRef.current.length === 0) {
+        return;
+      }
+
+      isUploadingRef.current = true;
+      const filesToUpload = [...pendingUploadRef.current];
+      pendingUploadRef.current = [];
+      uploadTimeoutRef.current = null;
+
+      const formData = new FormData();
+      filesToUpload.forEach(({ file }) => {
+        formData.append('images', file);
       });
+      formData.append('actressId', initialData.id.toString());
+      formData.append('type', 'gallery');
+      if (isDebugMode) {
+        formData.append('debug', '1');
+      }
 
-      xhr.addEventListener('load', async () => {
-        if (xhr.status === 200) {
-          const data = JSON.parse(xhr.responseText);
-          message.success(`Gallery images uploaded successfully! ${data.images?.length || 1} image(s) processed.`);
-          onSuccess?.(data);
-          
-          // Fetch updated images from the API instead of reloading the page
-          if (initialData?.id) {
-            try {
-              const response = await fetch(`/api/admin/girls/${initialData.id}`);
-              if (response.ok) {
-                const updatedGirl = await response.json();
-                // Update images in formData
-                handleChange('images', updatedGirl.images || []);
-                // Keep the gallery tab active
+      // Update all files to uploading status
+      if (isDebugMode) {
+        setDebugInfo(prev => ({
+          ...prev,
+          uploadQueue: prev.uploadQueue.map(f => 
+            filesToUpload.some(u => u.fileName === f.filename) ? { ...f, status: 'uploading' } : f
+          ),
+        }));
+      }
+
+      try {
+        const xhr = new XMLHttpRequest();
+
+        // Track upload progress for all files (show combined progress)
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            // Report progress to all file handlers
+            filesToUpload.forEach(({ onProgress }) => {
+              onProgress?.({ percent });
+            });
+          }
+        });
+
+        xhr.addEventListener('load', async () => {
+        let parsed: any = null;
+        try {
+          parsed = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+        } catch {
+          parsed = null;
+        }
+
+          // Debug: Track API response
+          if (isDebugMode) {
+            const uploadedImages = parsed?.images || [];
+            setDebugInfo(prev => ({
+              ...prev,
+              apiResponses: [...prev.apiResponses, {
+                endpoint: '/api/admin/images/upload',
+                method: 'POST',
+                status: xhr.status,
+                timestamp: Date.now(),
+                response: parsed,
+                rowsInserted: uploadedImages.length,
+                error: xhr.status !== 200 ? (parsed?.error || parsed?.details || 'Unknown error') : undefined,
+              }],
+              uploadQueue: prev.uploadQueue.map(f => {
+                const uploaded = uploadedImages.find((img: any, idx: number) => filesToUpload[idx]?.fileName === f.filename);
+                if (uploaded) {
+                  return {
+                    ...f,
+                    status: 'success',
+                    imageId: uploaded.id,
+                    orderNum: uploaded.orderNum,
+                  };
+                } else if (xhr.status !== 200) {
+                  return {
+                    ...f,
+                    status: 'failed',
+                    error: parsed?.error || parsed?.details || 'Upload failed',
+                  };
+                }
+                return f;
+              }),
+            }));
+          }
+
+          if (xhr.status === 200) {
+            const data = parsed;
+            message.success(`Gallery images uploaded successfully! ${data.images?.length || filesToUpload.length} image(s) processed.`);
+            
+            // Call onSuccess for all files
+            filesToUpload.forEach(({ onSuccess }) => {
+              onSuccess?.(data);
+            });
+            
+            // Invalidate cache to refresh image counts in listing
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new Event('admin-girls-cache-invalidate'));
+            }
+            
+            // Fetch updated images from the API instead of reloading the page
+            if (initialData?.id) {
+              try {
+                const response = await fetch(`/api/admin/girls/${initialData.id}`);
+                if (response.ok) {
+                  const updatedGirl = await response.json();
+                  // Update images in formData
+                  handleChange('images', updatedGirl.images || []);
+                  // Keep the gallery tab active
+                  setActiveTab('gallery');
+                }
+              } catch (error) {
+                console.error('Error fetching updated images:', error);
+                // Fallback: still update the tab even if fetch fails
                 setActiveTab('gallery');
               }
-            } catch (error) {
-              console.error('Error fetching updated images:', error);
-              // Fallback: still update the tab even if fetch fails
-              setActiveTab('gallery');
             }
+          } else {
+            const details = String(parsed?.details || parsed?.message || '').trim();
+            const errMsgRaw = String(parsed?.error || 'Upload failed').trim();
+
+            // Avoid duplicated "Failed to upload images: Failed to upload images"
+            const errMsg =
+              details ||
+              (errMsgRaw.toLowerCase().startsWith('failed to upload images')
+                ? 'Upload failed (server did not provide details)'
+                : errMsgRaw);
+
+            message.error(`Failed to upload images: ${errMsg}`);
+            // Call onError for all files
+            filesToUpload.forEach(({ onError }) => {
+              if (onError) onError(new Error(errMsg));
+            });
           }
-        } else {
-          let parsed: any = null;
-          try {
-            parsed = xhr.responseText ? JSON.parse(xhr.responseText) : null;
-          } catch {
-            parsed = null;
+
+          // Reset upload flag
+          isUploadingRef.current = false;
+        });
+
+        xhr.addEventListener('error', () => {
+          // Debug: Track error
+          if (isDebugMode) {
+            setDebugInfo(prev => ({
+              ...prev,
+              uploadQueue: prev.uploadQueue.map(f => 
+                filesToUpload.some(u => u.fileName === f.filename) ? { ...f, status: 'failed', error: 'Network error' } : f
+              ),
+            }));
           }
+          message.error('Error uploading gallery images');
+          // Call onError for all files
+          filesToUpload.forEach(({ onError }) => {
+            if (onError) onError(new Error('Network error'));
+          });
+          // Reset upload flag
+          isUploadingRef.current = false;
+        });
 
-          const details = String(parsed?.details || parsed?.message || '').trim();
-          const errMsgRaw = String(parsed?.error || 'Upload failed').trim();
-
-          // Avoid duplicated "Failed to upload images: Failed to upload images"
-          const errMsg =
-            details ||
-            (errMsgRaw.toLowerCase().startsWith('failed to upload images')
-              ? 'Upload failed (server did not provide details)'
-              : errMsgRaw);
-
-          message.error(`Failed to upload images: ${errMsg}`);
-          onError?.(new Error(errMsg));
+        xhr.open('POST', '/api/admin/images/upload');
+        xhr.send(formData);
+      } catch (error) {
+        // Debug: Track error
+        if (isDebugMode) {
+          setDebugInfo(prev => ({
+            ...prev,
+            uploadQueue: prev.uploadQueue.map(f => 
+              filesToUpload.some(u => u.fileName === f.filename) ? { ...f, status: 'failed', error: String(error) } : f
+            ),
+          }));
         }
-      });
-
-      xhr.addEventListener('error', () => {
+        console.error('Error uploading gallery images:', error);
         message.error('Error uploading gallery images');
-        onError?.(new Error('Network error'));
-      });
-
-      xhr.open('POST', '/api/admin/images/upload');
-      xhr.send(formData);
-    } catch (error) {
-      console.error('Error uploading gallery images:', error);
-      message.error('Error uploading gallery images');
-      onError?.(error as Error);
-    }
+        // Call onError for all files
+        filesToUpload.forEach(({ onError }) => {
+          if (onError) onError(error as Error);
+        });
+        // Reset upload flag
+        isUploadingRef.current = false;
+      }
+    }, 100); // 100ms batching delay
   };
 
   const tabItems = [
@@ -626,12 +898,12 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
             <div className="flex items-start gap-3">
               {initialData?.headshotUrl && (
                 <div className="relative flex-shrink-0">
-                  <div className="relative bg-gray-100 border border-gray-300 rounded overflow-hidden" style={{ width: 'auto', height: '150px', aspectRatio: '190/245' }}>
+                  <div className="relative bg-gray-100 border border-gray-300 rounded overflow-hidden" style={{ width: 'auto', height: '200px', aspectRatio: '190/245' }}>
                     <img 
                       src={initialData.headshotUrl} 
                       alt="Headshot" 
                       className="h-full w-auto object-cover"
-                      style={{ height: '150px', width: 'auto' }}
+                      style={{ height: '200px', width: 'auto' }}
                       loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
@@ -879,12 +1151,13 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                 <Card key={uniqueKey} size="small">
                   <Row gutter={[16, 12]}>
                     {/* Column 1: Order number, Date, Order dropdown */}
-                    <Col xs={24} sm={8} md={6}>
-                      <div className="space-y-2">
+                    <Col xs={24} sm={8} md={4}>
+                      <div className="space-y-3">
                         <div>
                           <Text type="secondary" style={{ fontSize: '12px' }}>#{event.ord || eventIndex + 1}</Text>
                         </div>
-                        <Form.Item label={<Text style={{ fontSize: '12px' }}>Date:</Text>} style={{ marginBottom: 0 }}>
+                        <div>
+                          <Text style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>Date:</Text>
                           <Input
                             value={event.date || ''}
                             onChange={(e) => {
@@ -903,8 +1176,9 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                             placeholder="e.g., 15 May 36"
                             size="small"
                           />
-                        </Form.Item>
-                        <Form.Item label={<Text style={{ fontSize: '12px' }}>Order:</Text>} style={{ marginBottom: 0, marginTop: '8px' }}>
+                        </div>
+                        <div>
+                          <Text style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>Order:</Text>
                           <Select
                             value={event.ord || displayIndex + 1}
                             onChange={(value) => handleTimelineOrderChange(displayIndex, value)}
@@ -917,7 +1191,7 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                               </Option>
                             ))}
                           </Select>
-                        </Form.Item>
+                        </div>
                       </div>
                     </Col>
                     {/* Column 2: Event label, text area, delete button */}
@@ -1294,6 +1568,31 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
       label: 'Gallery Images',
       children: (
         <div>
+          {/* Debug Panel */}
+          {isDebugMode && (
+                <ImageDebugPanel
+                  images={formData.images || []}
+                  uploadQueue={debugInfo.uploadQueue}
+                  apiResponses={debugInfo.apiResponses}
+                  isVisible={isDebugMode}
+                  girlId={initialData?.id}
+                  onReloadFromDb={async () => {
+                    // Reload images from API after DB truth check
+                    if (initialData?.id) {
+                      try {
+                        const fetchRes = await fetch(`/api/admin/girls/${initialData.id}`);
+                        if (fetchRes.ok) {
+                          const updatedGirl = await fetchRes.json();
+                          handleChange('images', updatedGirl.images || []);
+                        }
+                      } catch (error) {
+                        console.error('[GirlForm] Error reloading images:', error);
+                      }
+                    }
+                  }}
+                />
+          )}
+          
           <div className="flex items-center justify-between mb-4">
             {initialData?.id && (
               <Upload
@@ -1327,20 +1626,63 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
           )}
           {formData.images && formData.images.length > 0 ? (
             <div>
-              <div className="mb-2 text-sm text-gray-600">
-                {formData.images.length} image{formData.images.length !== 1 ? 's' : ''} found
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm text-gray-600">
+                  {formData.images.length} image{formData.images.length !== 1 ? 's' : ''} found
+                </div>
+                <Text style={{ fontSize: '12px', color: '#666' }}>
+                  Order saves on <Text strong>Save</Text> / <Text strong>Save &amp; Back</Text>
+                </Text>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {formData.images.map((img: any, index: number) => {
+                {[...formData.images]
+                  .sort((a: any, b: any) => {
+                    const orderA = a.orderNum ?? 999999;
+                    const orderB = b.orderNum ?? 999999;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return a.id - b.id;
+                  })
+                  .map((img: any, displayIndex: number) => {
                   // Use the database path (img.path) for thumbnail API, not the Supabase URL
                   const galleryPath = img.path || '';
                   
-                  // Use thumbnail API with the database path
-                  // The thumbnail API will fetch from Supabase storage
+                  // Use larger, higher quality thumbnails for admin (500x600px for better quality)
                   let thumbnailUrl = '';
+                  let fullImageUrl = '';
                   if (galleryPath) {
-                    thumbnailUrl = `/api/images/thumbnail?path=${encodeURIComponent(galleryPath)}&width=200&height=250`;
+                    thumbnailUrl = `/api/images/thumbnail?path=${encodeURIComponent(galleryPath)}&width=500&height=600`;
+                    fullImageUrl = `/api/images/thumbnail?path=${encodeURIComponent(galleryPath)}&width=1200&height=1600`;
                   }
+                  
+                  // SERVER-AUTHORITATIVE: Frontend only updates visual order in local state
+                  // Actual order_num is assigned by server when the main form is saved
+                  // CRITICAL: Must create new objects to trigger React re-render
+                  const updateImageOrder = (imageId: number, newOrder: number) => {
+                    setFormData((prev: any) => {
+                      // First, sort by current orderNum to get stable base order
+                      const sortedImages = [...(prev.images || [])].sort((a: any, b: any) => {
+                        const orderA = a.orderNum ?? 999999;
+                        const orderB = b.orderNum ?? 999999;
+                        if (orderA !== orderB) return orderA - orderB;
+                        return a.id - b.id;
+                      });
+                      
+                      const imageIndex = sortedImages.findIndex((i: any) => i.id === imageId);
+                      if (imageIndex === -1) return prev;
+                      
+                      // Move image to new position (visual reorder only)
+                      const [movedImage] = sortedImages.splice(imageIndex, 1);
+                      sortedImages.splice(newOrder - 1, 0, movedImage);
+                      
+                      // Create NEW objects with updated orderNum (don't mutate)
+                      const reorderedImages = sortedImages.map((img: any, idx: number) => ({
+                        ...img,
+                        orderNum: idx + 1, // Update orderNum for display (temporary, server will reassign on save)
+                      }));
+                      
+                      return { ...prev, images: reorderedImages };
+                    });
+                  };
                   
                   const handleDeleteImage = async () => {
                     modal.confirm({
@@ -1348,17 +1690,71 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                       content: 'Are you sure you want to delete this image? This action cannot be undone.',
                       onOk: async () => {
                         try {
-                          const res = await fetch(`/api/admin/images/${img.id}`, {
+                          const url = isDebugMode ? `/api/admin/images/${img.id}?debug=1` : `/api/admin/images/${img.id}`;
+                          const res = await fetch(url, {
                             method: 'DELETE',
                           });
+                          
+                          const responseData = await res.json();
+                          
+                          // Debug: Track API response
+                          if (isDebugMode) {
+                            setDebugInfo(prev => ({
+                              ...prev,
+                              apiResponses: [...prev.apiResponses, {
+                                endpoint: `/api/admin/images/${img.id}`,
+                                method: 'DELETE',
+                                status: res.status,
+                                timestamp: Date.now(),
+                                payload: { id: img.id },
+                                response: responseData,
+                                rowsDeleted: responseData.deleted ? 1 : 0,
+                                error: res.ok ? undefined : (responseData.error || 'Unknown error'),
+                              }],
+                            }));
+                          }
 
                           if (res.ok) {
-                            const newImages = formData.images.filter((i: any) => i.id !== img.id);
-                            handleChange('images', newImages);
+                            // Optimistic UI update: remove and re-pack orderNum to avoid gappy state (e.g. 1,2,4)
+                            // Backend also renormalizes order_num, but we must keep UI state consistent immediately.
+                            const remaining = (formData.images || []).filter((i: any) => i.id !== img.id);
+                            const normalized = [...remaining]
+                              .sort((a: any, b: any) => {
+                                const orderA = a.orderNum ?? 999999;
+                                const orderB = b.orderNum ?? 999999;
+                                if (orderA !== orderB) return orderA - orderB;
+                                return a.id - b.id;
+                              })
+                              .map((i: any, idx: number) => ({
+                                ...i,
+                                orderNum: idx + 1,
+                              }));
+                            handleChange('images', normalized);
                             message.success('Image deleted successfully');
+
+                            // Server-authoritative refresh: re-fetch to ensure we match DB truth (and any backend adjustments)
+                            if (initialData?.id) {
+                              try {
+                                const fetchRes = await fetch(`/api/admin/girls/${initialData.id}`);
+                                if (fetchRes.ok) {
+                                  const updatedGirl = await fetchRes.json();
+                                  handleChange('images', updatedGirl.images || []);
+                                } else {
+                                  console.error('[GirlForm] Failed to refresh images after delete:', fetchRes.status);
+                                  message.warning('Deleted, but failed to refresh from server. Please reload the page.');
+                                }
+                              } catch (fetchError) {
+                                console.error('[GirlForm] Error refreshing images after delete:', fetchError);
+                                message.warning('Deleted, but failed to refresh from server. Please reload the page.');
+                              }
+                            }
+                            
+                            // Invalidate cache to refresh image counts in listing
+                            if (typeof window !== 'undefined') {
+                              window.dispatchEvent(new Event('admin-girls-cache-invalidate'));
+                            }
                           } else {
-                            const error = await res.json();
-                            message.error(`Failed to delete image: ${error.error || 'Unknown error'}`);
+                            message.error(`Failed to delete image: ${responseData.error || 'Unknown error'}`);
                           }
                         } catch (error) {
                           console.error('Error deleting image:', error);
@@ -1369,15 +1765,21 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                   };
                   
                   return (
-                    <div key={img.id || index} className="border border-gray-300 p-1.5 bg-white relative">
+                    <div key={img.id || displayIndex} className="border border-gray-300 p-1.5 bg-white relative">
                       <div className="relative" style={{ aspectRatio: '4/5', minHeight: '200px' }}>
                         {thumbnailUrl ? (
                           <img 
                             src={thumbnailUrl} 
-                            alt={`Image ${index + 1}`}
-                            className="w-full h-full object-cover bg-gray-100"
+                            alt={`Image ${img.orderNum || displayIndex + 1}`}
+                            className="w-full h-full object-cover bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
                             loading="lazy"
                             style={{ minHeight: '200px' }}
+                            onClick={() => {
+                              if (fullImageUrl) {
+                                window.open(fullImageUrl, '_blank');
+                              }
+                            }}
+                            title="Click to view full size"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.style.display = 'none';
@@ -1397,20 +1799,64 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                         )}
                         <Button
                           size="small"
-                          icon={<DeleteOutlined />}
-                          onClick={handleDeleteImage}
-                          style={{ position: 'absolute', top: '4px', right: '4px', zIndex: 10 }}
+                          danger
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent triggering image click
+                            handleDeleteImage();
+                          }}
+                          style={{ 
+                            position: 'absolute', 
+                            top: '4px', 
+                            right: '4px', 
+                            zIndex: 10,
+                            minWidth: '24px',
+                            width: '24px',
+                            height: '24px',
+                            padding: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          title="Delete image"
                         >
-                          Delete
+                          ×
                         </Button>
                       </div>
-                      <div className="mt-1.5 text-xs text-gray-600 space-y-0.5" style={{ fontSize: '10px' }}>
+                      <div className="mt-1.5 text-xs text-gray-600 space-y-1" style={{ fontSize: '10px' }}>
+                        {/* Order Control */}
+                        <div className="flex items-center gap-2">
+                          <Text style={{ fontSize: '10px' }}>Order:</Text>
+                          <Select
+                            value={img.orderNum || displayIndex + 1}
+                            onChange={(value) => {
+                              const newOrder = parseInt(String(value)) || 1;
+                              updateImageOrder(img.id, newOrder);
+                            }}
+                            size="small"
+                            style={{ width: '60px', fontSize: '10px' }}
+                          >
+                            {Array.from({ length: formData.images?.length || 1 }, (_, i) => i + 1).map((order) => (
+                              <Option key={order} value={order}>
+                                {order}
+                              </Option>
+                            ))}
+                          </Select>
+                        </div>
                         <div>
                           Gallery: {img.width && img.height ? `${img.width} × ${img.height} px` : 'Unknown size'}
                         </div>
                         {img.hq && (
                           <div className="text-green-600 font-semibold">
-                            ✓ HQ Available: {img.hq.width} × {img.hq.height} px ({img.hq.sizeMB} MB)
+                            ✓ HQ Available: {img.hq.width} × {img.hq.height} px
+                            {img.hq.sizeMB !== null && img.hq.sizeMB !== undefined 
+                              ? ` (${img.hq.sizeMB} MB)` 
+                              : ' (—)'}
+                          </div>
+                        )}
+                        {img.originalWidth && img.originalHeight && (
+                          <div className="text-gray-700 font-medium">
+                            Original: {img.originalWidth} × {img.originalHeight} px
+                            {img.originalFileBytes && ` (${(img.originalFileBytes / (1024 * 1024)).toFixed(1)} MB)`}
                           </div>
                         )}
                       </div>
@@ -1432,11 +1878,30 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
   return (
     <Card>
       <div style={{ marginBottom: 12 }}>
-        <Link href={backHref} style={{ fontSize: 12, color: '#1890ff' }}>
-          ← Back to list
-        </Link>
+        {initialData?.id ? (
+          <Button
+            type="link"
+            style={{ padding: 0, height: 'auto', fontSize: 12 }}
+            onClick={(evt) => {
+              evt.preventDefault();
+              saveModeRef.current = 'back';
+              if (formRef.current) formRef.current.requestSubmit();
+              else router.push(backHref);
+            }}
+          >
+            ← Back to list
+          </Button>
+        ) : (
+          <Button
+            type="link"
+            style={{ padding: 0, height: 'auto', fontSize: 12 }}
+            onClick={() => router.push(backHref)}
+          >
+            ← Back to list
+          </Button>
+        )}
       </div>
-      <form onSubmit={handleSubmit}>
+      <form ref={formRef} onSubmit={handleSubmit}>
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
