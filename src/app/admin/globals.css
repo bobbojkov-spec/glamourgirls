@@ -898,6 +898,40 @@ aside {
   background-color: #a0aec0;
 }
 
+/* Tablet/Desktop: fixed-width tabs that wrap to as many as fit per row */
+@media (min-width: 769px) {
+  .responsive-tabs .ant-tabs-nav,
+  .responsive-tabs .ant-tabs-nav-wrap {
+    overflow: visible !important;
+  }
+
+  .responsive-tabs .ant-tabs-nav-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    width: 100%;
+  }
+
+  .responsive-tabs .ant-tabs-tab {
+    flex: 0 0 130px;
+    width: 130px;
+    max-width: 130px;
+    margin: 0 !important;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .responsive-tabs .ant-tabs-tab-btn {
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 /* On mobile, make tabs wrap to multiple rows to prevent overlay */
 @media (max-width: 768px) {
   .responsive-tabs .ant-tabs-nav-wrap {
