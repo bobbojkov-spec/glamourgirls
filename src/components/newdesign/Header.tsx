@@ -47,19 +47,20 @@ export default function Header() {
 
   return (
     <>
-      <header className="bg-[var(--bg-page)] border-b border-[var(--border-subtle)] sticky top-0 z-50 shadow-[0_2px_20px_rgba(0,0,0,0.06)]" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
+      <header className="sticky top-0 z-50 shadow-[0_2px_20px_rgba(0,0,0,0.3)]" style={{ minWidth: 0, width: '100%', maxWidth: '100%', backgroundColor: '#1e1e1e', borderBottom: '1px solid rgba(245, 245, 245, 0.1)' }}>
       <div className="max-w-[1440px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
         <div className="flex items-center justify-between h-16 md:h-20 flex-wrap" style={{ minWidth: 0, width: '100%', gap: '8px' }}>
           {/* Logo - Dubba Dubba NF wordmark */}
           <Link href="/" className="leading-none flex-shrink" style={{ minWidth: 0, maxWidth: '100%', flex: '1 1 auto' }}>
             <span
-              className="tracking-[0.015em] text-[var(--text-primary)] uppercase"
+              className="tracking-[0.015em] uppercase"
               style={{ 
                 fontFamily: 'var(--font-logo-hero)',
                 // 20% bigger on mobile: 1.25rem * 1.2 = 1.5rem (24px)
                 // Smooth scaling from 24px (320px viewport) to 38px (1440px+ viewport)
                 // Formula: clamp(min, preferred, max) where preferred scales linearly
                 fontSize: 'clamp(1.5rem, 1.5rem + 1.25vw, 2.375rem)',
+                color: '#f5f5f5',
                 opacity: fontLoaded ? 1 : 0,
                 transition: 'opacity 0.2s ease-in',
                 whiteSpace: 'nowrap',
@@ -82,20 +83,21 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8 text-sm tracking-[0.08em] uppercase">
+          <nav className="hidden md:flex items-center gap-8 uppercase" style={{ fontSize: '12px', letterSpacing: '0.1em' }}>
             <button
               type="button"
               onClick={() => setSearchModalOpen(true)}
-              className="text-[var(--text-primary)] font-medium transition-all duration-200 relative px-2 py-1 rounded"
+              className="font-medium transition-all duration-200 relative px-2 py-1 rounded"
               style={{ 
                 fontFamily: 'DM Sans, sans-serif',
+                color: '#f5f5f5',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.color = 'var(--accent-gold)';
                 e.currentTarget.style.textShadow = '0 2px 4px rgba(200, 164, 93, 0.3)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'var(--text-primary)';
+                e.currentTarget.style.color = '#f5f5f5';
                 e.currentTarget.style.textShadow = 'none';
               }}
             >
@@ -104,9 +106,10 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setGalleriesModalOpen(true)}
-              className="interactive-link text-[var(--text-primary)] font-medium relative px-2 py-1 rounded"
+              className="interactive-link font-medium relative px-2 py-1 rounded"
               style={{ 
                 fontFamily: 'DM Sans, sans-serif',
+                color: '#f5f5f5',
               }}
               onMouseEnter={(e) => {
                 if (window.innerWidth >= 768) {
@@ -115,7 +118,7 @@ export default function Header() {
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'var(--text-primary)';
+                e.currentTarget.style.color = '#f5f5f5';
                 e.currentTarget.style.textShadow = 'none';
               }}
             >
@@ -123,9 +126,10 @@ export default function Header() {
             </button>
             <Link
               href="/contact"
-              className="interactive-link text-[var(--text-primary)] font-medium relative px-2 py-1 rounded"
+              className="interactive-link font-medium relative px-2 py-1 rounded"
               style={{ 
                 fontFamily: 'DM Sans, sans-serif',
+                color: '#f5f5f5',
               }}
               onMouseEnter={(e) => {
                 if (window.innerWidth >= 768) {
@@ -134,7 +138,7 @@ export default function Header() {
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'var(--text-primary)';
+                e.currentTarget.style.color = '#f5f5f5';
                 e.currentTarget.style.textShadow = 'none';
               }}
             >
@@ -164,11 +168,10 @@ export default function Header() {
                 height="25" 
                 viewBox="0 0 24 24" 
                 fill="none" 
-                stroke="currentColor" 
+                stroke="#f5f5f5" 
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-[var(--text-primary)]"
               >
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
@@ -205,9 +208,8 @@ export default function Header() {
                 height="25" 
                 viewBox="0 0 24 24" 
                 fill="none" 
-                stroke="currentColor" 
+                stroke="#f5f5f5" 
                 strokeWidth="1.5"
-                className="text-[var(--text-primary)]"
               >
                 <path d="M6 6h15l-1.5 9h-12z" />
                 <circle cx="9" cy="20" r="1" />
@@ -245,11 +247,10 @@ export default function Header() {
                 height="25" 
                 viewBox="0 0 24 24" 
                 fill="none" 
-                stroke="currentColor" 
+                stroke="#f5f5f5" 
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-[var(--text-primary)]"
               >
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
@@ -281,9 +282,8 @@ export default function Header() {
                 height="25" 
                 viewBox="0 0 24 24" 
                 fill="none" 
-                stroke="currentColor" 
+                stroke="#f5f5f5" 
                 strokeWidth="1.5"
-                className="text-[var(--text-primary)]"
               >
                 <path d="M6 6h15l-1.5 9h-12z" />
                 <circle cx="9" cy="20" r="1" />
@@ -313,9 +313,8 @@ export default function Header() {
                 height="25" 
                 viewBox="0 0 24 24" 
                 fill="none" 
-                stroke="currentColor" 
+                stroke="#f5f5f5" 
                 strokeWidth="2"
-                className="text-[var(--text-primary)]"
               >
                 {mobileMenuOpen ? (
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -329,11 +328,16 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <nav className="md:hidden py-4 border-t border-[var(--border-subtle)]">
+          <nav className="md:hidden py-4" style={{ backgroundColor: '#1e1e1e', borderTop: '1px solid rgba(245, 245, 245, 0.1)' }}>
             <div className="flex flex-col gap-4">
               <button
-                className="text-[var(--text-primary)] hover:text-[var(--accent-gold)] transition-colors text-left uppercase font-medium"
-                style={{ fontFamily: 'DM Sans, sans-serif' }}
+                className="hover:text-[var(--accent-gold)] transition-colors text-left uppercase font-medium"
+                style={{ 
+                  fontFamily: 'DM Sans, sans-serif',
+                  color: '#f5f5f5',
+                  fontSize: '12px',
+                  letterSpacing: '0.1em',
+                }}
                 onClick={() => {
                   setSearchModalOpen(true);
                   setMobileMenuOpen(false);
@@ -342,8 +346,13 @@ export default function Header() {
                 SEARCH
               </button>
               <button
-                className="text-[var(--text-primary)] hover:text-[var(--accent-gold)] transition-colors text-left uppercase font-medium"
-                style={{ fontFamily: 'DM Sans, sans-serif' }}
+                className="hover:text-[var(--accent-gold)] transition-colors text-left uppercase font-medium"
+                style={{ 
+                  fontFamily: 'DM Sans, sans-serif',
+                  color: '#f5f5f5',
+                  fontSize: '12px',
+                  letterSpacing: '0.1em',
+                }}
                 onClick={() => {
                   setGalleriesModalOpen(true);
                   setMobileMenuOpen(false);
@@ -353,8 +362,13 @@ export default function Header() {
               </button>
               <Link
                 href="/contact"
-                className="text-[var(--text-primary)] hover:text-[var(--accent-gold)] transition-colors text-left uppercase font-medium"
-                style={{ fontFamily: 'DM Sans, sans-serif' }}
+                className="hover:text-[var(--accent-gold)] transition-colors text-left uppercase font-medium"
+                style={{ 
+                  fontFamily: 'DM Sans, sans-serif',
+                  color: '#f5f5f5',
+                  fontSize: '12px',
+                  letterSpacing: '0.1em',
+                }}
                 onClick={() => {
                   setMobileMenuOpen(false);
                 }}

@@ -34,11 +34,21 @@ export async function GET(request: Request) {
 
     // Build query - include first gallery image (mytp = 4) for each actress
     // Include featured status fields and timestamps (if they exist)
+    // HQ count is calculated by counting HQ images that have a matching gallery image
+    // This ensures HQ count never exceeds gallery count
     let query = `
       SELECT g.id, g.nm, g.firstname, g.familiq, g.godini, g.isnew, g.isnewpix, g.slug, g.theirman,
              g.is_featured, g.featured_order,
              COUNT(DISTINCT CASE WHEN i.mytp = 4 THEN i.id END)::int as "photoCount",
-             COUNT(DISTINCT CASE WHEN i.mytp = 5 THEN i.id END)::int as "hqPhotoCount",
+             COUNT(DISTINCT CASE 
+               WHEN i.mytp = 5 AND EXISTS (
+                 SELECT 1 FROM images i2 
+                 WHERE i2.girlid = g.id 
+                   AND i2.mytp = 4 
+                   AND (i2.id = i.id - 1 OR i2.id = i.id + 1)
+               ) 
+               THEN i.id 
+             END)::int as "hqPhotoCount",
              (SELECT i2.path 
               FROM images i2 
               WHERE i2.girlid = g.id 

@@ -11,12 +11,21 @@ export async function GET() {
     ) as any[];
 
     // Get images counts by type
+    // HQ count only includes HQ images that have a matching gallery image
     const [imagesCountResult] = await pool.execute(
       `SELECT 
-        COUNT(CASE WHEN mytp = 4 THEN 1 END) as gallery,
-        COUNT(CASE WHEN mytp = 5 THEN 1 END) as hq
-       FROM images
-       WHERE mytp IN (4, 5)`
+        COUNT(CASE WHEN i.mytp = 4 THEN 1 END) as gallery,
+        COUNT(CASE 
+          WHEN i.mytp = 5 AND EXISTS (
+            SELECT 1 FROM images i2 
+            WHERE i2.girlid = i.girlid 
+              AND i2.mytp = 4 
+              AND (i2.id = i.id - 1 OR i2.id = i.id + 1)
+          ) 
+          THEN 1 
+        END) as hq
+       FROM images i
+       WHERE i.mytp IN (4, 5)`
     ) as any[];
 
     const totalEntries = girlsCountResult && girlsCountResult.length > 0 

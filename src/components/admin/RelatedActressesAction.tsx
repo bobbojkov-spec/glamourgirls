@@ -99,7 +99,7 @@ export default function RelatedActressesAction() {
             <SearchOutlined />
           </div>
           <div>
-            <Text strong style={{ display: 'block', fontSize: '28px', lineHeight: '1.2' }}>
+            <Text strong style={{ display: 'block', fontSize: '18px', lineHeight: '1.2', textTransform: 'uppercase' }}>
               🔍 Search for related actresses
             </Text>
             <Text type="secondary" style={{ fontSize: '13px' }}>

@@ -231,16 +231,34 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Years Filter - Above Search Input */}
               <div>
-                {/* Mobile: Fixed 3 columns x 2 rows (all | 20–30s | 40s / 50s | 60s | Their Men), Desktop: flex row */}
-                <div className="grid grid-cols-3 gap-1.5 sm:gap-1.5 sm:grid-cols-none sm:flex sm:items-center sm:border sm:border-gray-300 sm:rounded-md sm:p-0.5 sm:bg-white sm:flex-nowrap sm:overflow-x-auto">
+                {/* Mobile: Single horizontal row with scrolling (no wrapping, no visible scrollbar) */}
+                {/* Desktop/Tablet: flex row (unchanged) */}
+                <div 
+                  className="flex items-center gap-1.5 overflow-x-auto sm:flex-nowrap sm:overflow-x-auto years-filter-scroll"
+                  style={{
+                    // Mobile: Hide scrollbar, enable smooth scrolling
+                    scrollbarWidth: 'none', // Firefox
+                    msOverflowStyle: 'none', // IE/Edge
+                    WebkitOverflowScrolling: 'touch', // iOS smooth scrolling
+                  }}
+                >
                   {['all', '20-30s', '40s', '50s', '60s', 'men'].map(era => (
-                    <label key={era} className="flex items-center cursor-pointer flex-shrink-0">
+                    <label 
+                      key={era} 
+                      className="flex items-center cursor-pointer flex-shrink-0"
+                      style={{
+                        whiteSpace: 'nowrap', // Prevent text wrapping
+                      }}
+                    >
                       <input
                         type="radio"
                         name="era"
                         value={era}
                         checked={selectedEra === era}
-                        onChange={(e) => setSelectedEra(e.target.value)}
+                        onChange={(e) => {
+                          // If "All" is selected, it resets the filter (unfiltered state)
+                          setSelectedEra(e.target.value);
+                        }}
                         className="sr-only peer"
                       />
                       <span className={`
@@ -256,6 +274,17 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     </label>
                   ))}
                 </div>
+                {/* Hide scrollbar on WebKit browsers (Chrome, Safari) - mobile only */}
+                <style dangerouslySetInnerHTML={{__html: `
+                  .years-filter-scroll::-webkit-scrollbar {
+                    display: none;
+                  }
+                  @media (min-width: 640px) {
+                    .years-filter-scroll::-webkit-scrollbar {
+                      display: block;
+                    }
+                  }
+                `}} />
               </div>
 
               {/* Search Input */}

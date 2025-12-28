@@ -28,8 +28,9 @@ export const dmSans = DM_Sans({
 
 export const montserrat = Montserrat({
   subsets: ['latin'],
-  display: 'swap',
+  display: 'optional', // Use optional for admin to prevent blocking - fallback to system font if not ready
   variable: '--font-montserrat',
   preload: true,
+  adjustFontFallback: true, // Better fallback metrics
 });
 

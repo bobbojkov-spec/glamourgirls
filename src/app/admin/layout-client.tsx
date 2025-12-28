@@ -14,7 +14,7 @@ function MobileMenuButton() {
   return (
     <button
       onClick={toggleMobileSidebar}
-      className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-lg bg-white border border-gray-200 shadow-md hover:bg-gray-50 transition-colors max-[700px]:flex min-[700px]:hidden"
+      className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-lg bg-white border border-gray-200 shadow-md hover:bg-gray-50 transition-colors max-[768px]:flex min-[768px]:hidden"
       aria-label="Toggle Menu"
     >
       {isMobileOpen ? (
@@ -74,7 +74,12 @@ function AdminLayoutContent({
 }) {
   const pathname = usePathname();
   const isLogin = pathname === '/admin/login';
-  const { isExpanded, isHovered } = useSidebar();
+  const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Login page should NOT show the admin chrome (sidebar/backdrop/mobile button).
   if (isLogin) {
@@ -85,11 +90,11 @@ function AdminLayoutContent({
     );
   }
 
-  // Calculate margin: sidebar collapsed (not expanded and not hovered) = 72px, else 232px
-  // Initial state: isExpanded defaults to true, so margin starts at 232px (prevents layout shift)
-  const mainContentMargin = (!isExpanded && !isHovered) 
-    ? 'min-[700px]:ml-[72px]' 
-    : 'min-[700px]:ml-[232px]';
+  // Calculate margin: sidebar collapsed (not expanded and not hovered) = 64px, else 200px
+  // Initial state: isExpanded defaults to true, so margin starts at 200px (prevents layout shift)
+  // Use stable calculation to prevent flickering during hydration
+  const isCollapsed = !isExpanded && !isHovered && !isMobileOpen;
+  const sidebarWidth = isCollapsed ? 64 : 200;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -101,8 +106,14 @@ function AdminLayoutContent({
       <MobileMenuButton />
       
       {/* Main Content Area - margin matches sidebar width, transitions smoothly */}
-      <div className={`min-h-screen transition-all duration-300 ease-in-out ${mainContentMargin}`}>
-        <div className="p-4 md:p-6 pt-16 max-[700px]:pt-20">
+      {/* Use will-change to optimize transitions and prevent layout shifts */}
+      <div 
+        className="min-h-screen transition-all duration-300 ease-in-out will-change-[margin-left]"
+        style={{
+          marginLeft: isMounted ? (typeof window !== 'undefined' && window.innerWidth >= 768 ? `${sidebarWidth}px` : 0) : '200px',
+        }}
+      >
+        <div className="p-4 md:p-6 pt-16 max-[768px]:pt-20">
           {children}
         </div>
       </div>
@@ -115,35 +126,10 @@ export default function AdminLayoutClient({
 }: {
   children: React.ReactNode;
 }) {
-  const [fontsReady, setFontsReady] = useState(false);
-
-  useEffect(() => {
-    // Hide content until fonts are ready to prevent FOUC
-    if (typeof document !== 'undefined') {
-      document.body.style.visibility = 'hidden';
-      
-      const loadFonts = async () => {
-        try {
-          await document.fonts.ready;
-          // Small delay to ensure fonts are rendered
-          setTimeout(() => {
-            document.body.style.visibility = 'visible';
-            setFontsReady(true);
-          }, 50);
-        } catch (error) {
-          console.error('Error loading fonts:', error);
-          // Fallback: show content after timeout if fonts fail
-          setTimeout(() => {
-            document.body.style.visibility = 'visible';
-            setFontsReady(true);
-          }, 500);
-        }
-      };
-      
-      loadFonts();
-    }
-  }, []);
-
+  // Removed font loading delay - fonts use display: optional and won't block rendering
+  // CSS is loaded synchronously via server component (layout.tsx imports globals.css)
+  // This eliminates flickering and provides smooth, professional loading experience
+  
   return (
     <AntdProvider>
       <SidebarProvider>

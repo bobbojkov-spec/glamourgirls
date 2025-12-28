@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button, Card, Space, Typography, Select, InputNumber, Alert, App, Spin, Image, Table, Tag, Switch, Popconfirm, Tabs } from 'antd';
+import { Button, Card, Space, Typography, Select, InputNumber, Alert, App, Spin, Image, Table, Tag, Switch, Popconfirm, Tabs, Row, Col } from 'antd';
 import { PictureOutlined, CheckCircleOutlined, LoadingOutlined, DeleteOutlined, ReloadOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -24,8 +24,8 @@ export default function CollageGeneratorPage() {
   const { message } = useApp();
   const [loading, setLoading] = useState(false);
   const [era, setEra] = useState<string>('1930s');
-  const [version, setVersion] = useState<number>(1);
-  const [result, setResult] = useState<{ filepath: string; era: string; version: number; id?: string } | null>(null);
+  const [numCollages, setNumCollages] = useState<number>(3);
+  const [results, setResults] = useState<Array<{ filepath: string; era: string; version: number; id?: string; storagePath?: string }>>([]);
   const [collages, setCollages] = useState<CollageMetadata[]>([]);
   const [loadingCollages, setLoadingCollages] = useState(false);
   const [selectedEraFilter, setSelectedEraFilter] = useState<string>('all');
@@ -83,37 +83,95 @@ export default function CollageGeneratorPage() {
       return;
     }
 
+    if (numCollages < 1 || numCollages > 3) {
+      message.error('Please select 1-3 collages to generate');
+      return;
+    }
+
     setLoading(true);
-    setResult(null);
+    setResults([]);
     
     try {
-      const response = await fetch('/api/admin/generate-collage', {
+      // First, get the current max version for this era to assign sequential versions
+      const maxVersionResponse = await fetch(`/api/admin/collages?era=${era}`);
+      const maxVersionData = await maxVersionResponse.json();
+      const existingCollages = maxVersionData.success ? (maxVersionData.collages || []) : [];
+      const maxVersion = existingCollages.length > 0 
+        ? Math.max(...existingCollages.map((c: CollageMetadata) => c.version))
+        : 0;
+      
+      // Generate collages in parallel with truly unique generation IDs and sequential versions
+      const baseTime = Date.now();
+      const generationPromises = Array.from({ length: numCollages }, (_, index) => {
+        // Use large offset (1 million per collage) + random to ensure completely different seeded random results
+        const uniqueGenerationId = baseTime + (index * 1000000) + Math.floor(Math.random() * 1000000);
+        return fetch('/api/admin/generate-collage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            era,
+            version: maxVersion + 1 + index, // Sequential versions starting from max+1
+            generationId: uniqueGenerationId, // Truly unique ID for each collage
+            active: false, // Save as inactive initially - user will select which ones to use
+          }),
+        }).then(res => res.json());
+      });
+
+      const responses = await Promise.all(generationPromises);
+      
+      const successfulResults = responses
+        .filter(data => data.success)
+        .map(data => ({
+          filepath: data.filepath,
+          storagePath: data.storagePath,
+          era: data.era,
+          version: data.version,
+          id: data.id,
+        }));
+
+      if (successfulResults.length > 0) {
+        setResults(successfulResults);
+        message.success(`Generated ${successfulResults.length} collages for ${era}! Select which ones to use in the pool.`);
+        // Reload collages list
+        loadCollages();
+      } else {
+        message.error(responses[0]?.error || 'Failed to generate collages');
+      }
+    } catch (error: any) {
+      console.error('Error generating collages:', error);
+      message.error('Error generating collages. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUseInPool = async (collageId: string) => {
+    try {
+      const response = await fetch('/api/admin/collages/toggle-active', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          era,
-          version: version || 1,
-          generationId: Date.now(), // Ensure unique collage each time
-        }),
+        body: JSON.stringify({ id: collageId }),
       });
 
       const data = await response.json();
       
       if (data.success) {
-        setResult(data);
-        message.success(`Collage generated successfully for ${era}!`);
-        // Reload collages list
+        message.success('Collage added to pool successfully!');
+        // Update local results to show it's active
+        setResults(prev => prev.map(r => 
+          r.id === collageId ? { ...r, active: true } : r
+        ));
         loadCollages();
       } else {
-        message.error(data.error || 'Failed to generate collage');
+        message.error(data.error || 'Failed to add collage to pool');
       }
     } catch (error: any) {
-      console.error('Error generating collage:', error);
-      message.error('Error generating collage. Please try again.');
-    } finally {
-      setLoading(false);
+      console.error('Error adding collage to pool:', error);
+      message.error('Error adding collage to pool');
     }
   };
 
@@ -156,10 +214,8 @@ export default function CollageGeneratorPage() {
       if (data.success) {
         message.success('Collage deleted successfully');
         loadCollages();
-        // Clear result if it was the deleted collage
-        if (result?.id === id) {
-          setResult(null);
-        }
+        // Clear results if any were the deleted collage
+        setResults(prev => prev.filter(r => r.id !== id));
       } else {
         message.error(data.error || 'Failed to delete collage');
       }
@@ -171,8 +227,8 @@ export default function CollageGeneratorPage() {
 
   const handleRegenerate = async (collage: CollageMetadata) => {
     setEra(collage.era);
-    setVersion(collage.version);
-    setResult(null);
+    setNumCollages(1);
+    setResults([]);
     
     setLoading(true);
     try {
@@ -359,16 +415,16 @@ export default function CollageGeneratorPage() {
                     </div>
 
                     <div>
-                      <Text strong style={{ display: 'block', marginBottom: '8px' }}>Version:</Text>
+                      <Text strong style={{ display: 'block', marginBottom: '8px' }}>Number of Collages:</Text>
                       <InputNumber
-                        value={version}
-                        onChange={(val) => setVersion(val || 1)}
+                        value={numCollages}
+                        onChange={(val) => setNumCollages(val || 1)}
                         min={1}
-                        max={10}
+                        max={3}
                         style={{ width: '100%', maxWidth: '200px' }}
                       />
                       <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '4px' }}>
-                        Version number for the output filename (default: 1)
+                        Generate 1-3 unique collages at once. Version numbers are assigned automatically.
                       </Text>
                     </div>
                     
@@ -384,9 +440,9 @@ export default function CollageGeneratorPage() {
                     </Button>
 
                     <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
-                      Note: The collage will be saved to /public/images/ and can be used as a hero background. 
-                      Each generation creates a unique layout with random image positions and rotations.
-                      New collages are automatically set as active for random selection.
+                      Note: Clicking "Generate Collage" will create 3 unique collages. 
+                      Review them and click "Use Header in Pool" on the ones you want to use. 
+                      Only collages added to the pool will be randomly selected for display on the website.
                     </Text>
                   </Space>
                 </Card>
@@ -480,48 +536,83 @@ export default function CollageGeneratorPage() {
           <Card>
             <Space orientation="vertical" align="center" style={{ width: '100%', padding: '40px' }}>
               <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
-              <Text>Generating collage...</Text>
+              <Text>Generating 3 collages...</Text>
             </Space>
           </Card>
         )}
 
-        {result && !loading && (
+        {results.length > 0 && !loading && (
           <Card 
             title={
               <Space>
                 <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                <span>Collage Generated Successfully</span>
+                <span>Collages Generated Successfully</span>
               </Space>
             }
           >
-            <Space orientation="vertical" style={{ width: '100%' }} size="middle">
-              <div>
-                <Text strong>Era: </Text>
-                <Text>{result.era}</Text>
-              </div>
-              <div>
-                <Text strong>Version: </Text>
-                <Text>{result.version}</Text>
-              </div>
-              <div>
-                <Text strong>File Path: </Text>
-                <Text code>{result.filepath}</Text>
-              </div>
-              
-              {result.filepath && (
-                <div style={{ marginTop: '16px' }}>
-                  <Text strong style={{ display: 'block', marginBottom: '8px' }}>Preview:</Text>
-                  <Image
-                    src={result.filepath}
-                    alt={`Hero collage for ${result.era}`}
-                    style={{ maxWidth: '100%', border: '1px solid #d9d9d9', borderRadius: '4px' }}
-                    preview={{
-                      mask: 'View Full Size',
-                    }}
-                  />
-                </div>
-              )}
-            </Space>
+            <Alert
+              message="Select which collages to use in the pool"
+              description="Click 'Use Header in Pool' on the collages you want to use. Only collages in the pool will be randomly selected for display on the website."
+              type="info"
+              showIcon
+              style={{ marginBottom: '24px' }}
+            />
+            <Row gutter={[16, 16]}>
+              {results.map((result, index) => {
+                const isActive = collages.find(c => c.id === result.id)?.active || false;
+                return (
+                  <Col xs={24} sm={12} lg={8} key={result.id || index}>
+                    <Card
+                      hoverable
+                      style={{ height: '100%' }}
+                      actions={[
+                        <Button
+                          key="use"
+                          type={isActive ? 'default' : 'primary'}
+                          icon={isActive ? <CheckCircleOutlined /> : <PictureOutlined />}
+                          onClick={() => result.id && handleUseInPool(result.id)}
+                          disabled={isActive}
+                          block
+                        >
+                          {isActive ? 'In Pool' : 'Use Header in Pool'}
+                        </Button>
+                      ]}
+                    >
+                      <Space orientation="vertical" style={{ width: '100%' }} size="middle">
+                        <div>
+                          <Text strong>Era: </Text>
+                          <Text>{result.era}</Text>
+                        </div>
+                        <div>
+                          <Text strong>Version: </Text>
+                          <Text>{result.version}</Text>
+                        </div>
+                        
+                        {result.filepath && (
+                          <div>
+                            <Text strong style={{ display: 'block', marginBottom: '8px' }}>Preview:</Text>
+                            <Image
+                              src={result.filepath}
+                              alt={`Hero collage ${index + 1} for ${result.era}`}
+                              style={{ 
+                                width: '100%', 
+                                border: '1px solid #d9d9d9', 
+                                borderRadius: '4px',
+                                aspectRatio: '16/9',
+                                objectFit: 'cover'
+                              }}
+                              preview={{
+                                mask: 'View Full Size',
+                              }}
+                            />
+                          </div>
+                        )}
+                      </Space>
+                    </Card>
+                  </Col>
+                );
+              })}
+            </Row>
           </Card>
         )}
       </Space>

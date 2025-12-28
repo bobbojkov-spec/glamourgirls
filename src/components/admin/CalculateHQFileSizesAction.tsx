@@ -139,7 +139,7 @@ export default function CalculateHQFileSizesAction() {
             <FileOutlined />
           </div>
           <div>
-            <Text strong style={{ display: 'block', fontSize: '28px', lineHeight: '1.2' }}>
+            <Text strong style={{ display: 'block', fontSize: '18px', lineHeight: '1.2', textTransform: 'uppercase' }}>
               📊 Calculate HQ File Sizes
             </Text>
             <Text type="secondary" style={{ fontSize: '13px' }}>

@@ -1,4 +1,11 @@
+/* Critical admin styles - loaded synchronously to prevent FOUC */
 @import 'tailwindcss';
+
+/* Prevent layout shift during font loading */
+body {
+  font-family: var(--font-montserrat), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Use system font as immediate fallback to prevent flash */
+}
 
 /* Montserrat font loaded via next/font/google - use CSS variable */
 /* Local @font-face removed - using optimized next/font version */
@@ -805,5 +812,133 @@ img {
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+/* Prevent layout shifts during initial render */
+.admin-layout-content {
+  min-height: 100vh;
+  /* Ensure content area maintains stable dimensions */
+}
+
+/* Prevent flash of unstyled content for sidebar */
+aside {
+  /* Ensure sidebar renders immediately with correct dimensions */
+  contain: layout style paint;
+}
+
+/* Smooth transitions without layout shifts */
+.transition-all {
+  will-change: transform, margin-left, width;
+}
+
+/* Prevent content flash during hydration */
+[data-hydrated="false"] {
+  visibility: hidden;
+}
+
+[data-hydrated="true"] {
+  visibility: visible;
+}
+
+/* Compact tabs styling */
+.compact-tabs .ant-tabs-tab {
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
+.compact-tabs .ant-tabs-tab-btn {
+  font-size: 13px !important;
+}
+
+.compact-tabs .ant-tabs-nav {
+  margin-bottom: 12px !important;
+}
+
+/* Responsive tabs for mobile - horizontal scroll with better UX */
+.responsive-tabs .ant-tabs-nav {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 transparent;
+}
+
+.responsive-tabs .ant-tabs-nav::-webkit-scrollbar {
+  height: 4px;
+}
+
+.responsive-tabs .ant-tabs-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.responsive-tabs .ant-tabs-nav::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 2px;
+}
+
+.responsive-tabs .ant-tabs-nav::-webkit-scrollbar-thumb:hover {
+  background-color: #a0aec0;
+}
+
+/* On mobile, make tabs wrap to multiple rows to prevent overlay */
+@media (max-width: 768px) {
+  .responsive-tabs .ant-tabs-nav-wrap {
+    overflow: visible;
+  }
+
+  .responsive-tabs .ant-tabs-nav-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .responsive-tabs .ant-tabs-tab {
+    flex: 1 1 auto;
+    min-width: calc(50% - 2px);
+    max-width: calc(50% - 2px);
+    padding: 6px 8px !important;
+    font-size: 12px !important;
+    margin-right: 0 !important;
+    margin-bottom: 4px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .responsive-tabs .ant-tabs-tab-btn {
+    font-size: 12px !important;
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Ensure tabs don't overflow container */
+  .responsive-tabs .ant-tabs-nav {
+    overflow: visible;
+    margin-bottom: 8px !important;
+  }
+
+  /* Make tab content area adjust for wrapped tabs */
+  .responsive-tabs .ant-tabs-content-holder {
+    margin-top: 8px;
+  }
+}
+
+/* On very small screens, make tabs even more compact */
+@media (max-width: 480px) {
+  .responsive-tabs .ant-tabs-tab {
+    min-width: calc(50% - 2px);
+    max-width: calc(50% - 2px);
+    padding: 5px 6px !important;
+    font-size: 11px !important;
+  }
+
+  .responsive-tabs .ant-tabs-tab-btn {
+    font-size: 11px !important;
   }
 }

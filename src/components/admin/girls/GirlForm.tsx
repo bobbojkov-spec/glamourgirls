@@ -28,6 +28,31 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
   const { message, modal } = useApp();
   // Use ref (not state) so the submit handler always sees the latest intent synchronously.
   const saveModeRef = useRef<'stay' | 'back'>('stay');
+  
+  // Debug: Log initial timeline data
+  useEffect(() => {
+    console.log(`[GirlForm] initialData received:`, {
+      hasTimeline: !!initialData?.timeline,
+      timelineType: typeof initialData?.timeline,
+      timelineIsArray: Array.isArray(initialData?.timeline),
+      timelineLength: Array.isArray(initialData?.timeline) ? initialData.timeline.length : 'N/A',
+    });
+    
+    if (initialData?.timeline) {
+      console.log(`[GirlForm] Initial timeline data received: ${Array.isArray(initialData.timeline) ? initialData.timeline.length : 0} events`);
+      if (Array.isArray(initialData.timeline)) {
+        console.log(`[GirlForm] All timeline events:`, JSON.stringify(initialData.timeline, null, 2));
+        if (initialData.timeline.length > 0) {
+          console.log(`[GirlForm] First few events:`, initialData.timeline.slice(0, 3));
+        }
+      } else {
+        console.error(`[GirlForm] Timeline is not an array!`, initialData.timeline);
+      }
+    } else {
+      console.warn(`[GirlForm] No timeline data in initialData`);
+    }
+  }, [initialData?.timeline]);
+  
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     firstName: initialData?.firstName || '',
@@ -39,7 +64,28 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
     theirMan: initialData?.theirMan ?? false,
     published: initialData?.published ?? false,
     sources: initialData?.sources || '',
-    timeline: initialData?.timeline || [],
+    timeline: (() => {
+      const timeline = initialData?.timeline;
+      console.log(`[GirlForm useState] Initializing timeline from initialData:`, {
+        hasTimeline: !!timeline,
+        isArray: Array.isArray(timeline),
+        length: Array.isArray(timeline) ? timeline.length : 'N/A',
+      });
+      
+      if (Array.isArray(timeline)) {
+        const mapped = timeline.map((event: any, idx: number) => {
+          const mappedEvent = {
+            ...event,
+            _originalIndex: idx, // Add stable identifier for tracking
+          };
+          return mappedEvent;
+        });
+        console.log(`[GirlForm useState] Mapped ${mapped.length} timeline events`);
+        return mapped;
+      }
+      console.warn(`[GirlForm useState] Timeline is not an array, using empty array`);
+      return [];
+    })(),
     images: initialData?.images || [],
     links: initialData?.links || [],
     books: initialData?.books || [],
@@ -63,10 +109,27 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
     },
   });
 
-  // Debug: Log images when initialData changes
+  // Debug: Log images and timeline when initialData changes
   useEffect(() => {
     if (initialData?.images) {
       console.log('Admin: Initial images received:', initialData.images.length, initialData.images);
+    }
+    if (initialData?.timeline) {
+      console.log('Admin: Initial timeline received:', initialData.timeline.length, 'events');
+      console.log('Admin: Timeline events:', initialData.timeline);
+    } else {
+      console.warn('Admin: No timeline data in initialData!', { 
+        hasInitialData: !!initialData,
+        timeline: initialData?.timeline 
+      });
+    }
+    
+    // Ensure timeline is properly set in formData
+    if (initialData?.timeline && Array.isArray(initialData.timeline) && initialData.timeline.length > 0) {
+      if (formData.timeline.length === 0) {
+        console.warn('Admin: Timeline in initialData but not in formData! Updating...');
+        setFormData(prev => ({ ...prev, timeline: initialData.timeline }));
+      }
     }
   }, [initialData]);
 
@@ -95,6 +158,127 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
         return newErrors;
       });
     }
+  };
+
+  // Normalize timeline orders to continuous sequence (1...N, no duplicates)
+  const normalizeTimelineOrders = (timeline: any[]): any[] => {
+    if (!Array.isArray(timeline) || timeline.length === 0) return [];
+    
+    // Sort by current ord (or index), then assign sequential orders
+    // Preserve _originalIndex if it exists
+    const sorted = [...timeline].sort((a, b) => {
+      const ordA = a.ord || 0;
+      const ordB = b.ord || 0;
+      return ordA - ordB;
+    });
+    
+    return sorted.map((event, index) => ({
+      ...event,
+      ord: index + 1,
+      // Preserve _originalIndex if it exists
+      _originalIndex: event._originalIndex !== undefined ? event._originalIndex : index,
+    }));
+  };
+
+  // Reorder timeline when Order dropdown changes
+  const handleTimelineOrderChange = (sortedIndex: number, newOrder: number) => {
+    console.log(`[handleTimelineOrderChange] sortedIndex=${sortedIndex}, newOrder=${newOrder}`);
+    
+    // First, ensure all events have valid ord values and sort
+    const timelineWithOrd = formData.timeline.map((event, idx) => ({
+      ...event,
+      ord: event.ord || (idx + 1),
+      _originalIndex: event._originalIndex !== undefined ? event._originalIndex : idx,
+    }));
+    
+    const sortedByOrd = [...timelineWithOrd].sort((a, b) => (a.ord || 0) - (b.ord || 0));
+    const totalEvents = sortedByOrd.length;
+    
+    console.log(`[handleTimelineOrderChange] Total events: ${totalEvents}`);
+    console.log(`[handleTimelineOrderChange] Current timeline ord values:`, sortedByOrd.map(e => e.ord));
+    
+    if (newOrder < 1 || newOrder > totalEvents) {
+      console.error(`[handleTimelineOrderChange] Invalid newOrder: ${newOrder}`);
+      return;
+    }
+    
+    // Get the event being moved from the sorted array
+    const eventToMove = sortedByOrd[sortedIndex];
+    if (!eventToMove) {
+      console.error(`[handleTimelineOrderChange] Event at sorted index ${sortedIndex} not found`);
+      return;
+    }
+    
+    const oldOrder = eventToMove.ord || (sortedIndex + 1);
+    console.log(`[handleTimelineOrderChange] Moving event from ord=${oldOrder} to ord=${newOrder}`);
+    
+    // If order didn't change, do nothing
+    if (oldOrder === newOrder) {
+      console.log(`[handleTimelineOrderChange] Order unchanged, skipping`);
+      return;
+    }
+    
+    // Create new timeline with updated orders
+    const newTimeline = sortedByOrd.map((event) => {
+      const currentOrd = event.ord || 0;
+      
+      // Use _originalIndex to identify the event being moved
+      const isMovingEvent = event._originalIndex === eventToMove._originalIndex;
+      
+      if (isMovingEvent) {
+        // This is the event being moved
+        console.log(`[handleTimelineOrderChange] Moving event: ord ${currentOrd} -> ${newOrder}`);
+        return { ...event, ord: newOrder };
+      } else if (oldOrder < newOrder) {
+        // Moving down: shift events between oldOrder and newOrder up by 1
+        if (currentOrd > oldOrder && currentOrd <= newOrder) {
+          console.log(`[handleTimelineOrderChange] Shifting event up: ord ${currentOrd} -> ${currentOrd - 1}`);
+          return { ...event, ord: currentOrd - 1 };
+        }
+      } else {
+        // Moving up: shift events between newOrder and oldOrder down by 1
+        if (currentOrd >= newOrder && currentOrd < oldOrder) {
+          console.log(`[handleTimelineOrderChange] Shifting event down: ord ${currentOrd} -> ${currentOrd + 1}`);
+          return { ...event, ord: currentOrd + 1 };
+        }
+      }
+      
+      return event;
+    });
+    
+    console.log(`[handleTimelineOrderChange] After reordering, ord values:`, newTimeline.map(e => e.ord));
+    
+    // Normalize to ensure continuous sequence (1...N)
+    const normalized = normalizeTimelineOrders(newTimeline);
+    console.log(`[handleTimelineOrderChange] After normalization, ord values:`, normalized.map(e => e.ord));
+    
+    // Preserve _originalIndex in normalized timeline
+    // Ensure normalized is an array before mapping
+    if (!Array.isArray(normalized)) {
+      console.error('[handleTimelineOrderChange] normalized is not an array:', typeof normalized, normalized);
+      return;
+    }
+    
+    const normalizedWithIds = normalized.map((event, idx) => {
+      if (!event || typeof event !== 'object') {
+        console.error('[handleTimelineOrderChange] Invalid event in normalized:', event);
+        return null;
+      }
+      return {
+        ...event,
+        _originalIndex: event._originalIndex !== undefined ? event._originalIndex : idx,
+      };
+    }).filter((event): event is any => event !== null);
+    
+    console.log(`[handleTimelineOrderChange] Final timeline length: ${normalizedWithIds.length}`);
+    
+    // Ensure we have a valid array before updating state
+    if (!Array.isArray(normalizedWithIds)) {
+      console.error('[handleTimelineOrderChange] normalizedWithIds is not an array:', typeof normalizedWithIds);
+      return;
+    }
+    
+    handleChange('timeline', normalizedWithIds);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -151,11 +335,56 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
       const normalizedBooks = normalizeBooks(formData.books);
       if (normalizedBooks === null) return;
 
+      // Normalize timeline orders before saving
+      // Ensure formData.timeline is an array
+      if (!Array.isArray(formData.timeline)) {
+        console.error('[Save] formData.timeline is not an array:', typeof formData.timeline, formData.timeline);
+        throw new Error('Timeline data is invalid');
+      }
+      
+      const normalizedTimeline = normalizeTimelineOrders(formData.timeline);
+      
+      // Ensure normalizedTimeline is an array
+      if (!Array.isArray(normalizedTimeline)) {
+        console.error('[Save] normalizedTimeline is not an array:', typeof normalizedTimeline, normalizedTimeline);
+        throw new Error('Timeline normalization failed');
+      }
+      
+      // Strip _originalIndex before saving (it's only for frontend tracking)
+      // Preserve id for UPDATE operations
+      const timelineForSave = normalizedTimeline.map((event: any) => {
+        if (!event || typeof event !== 'object') {
+          console.error('[Save] Invalid event in timeline:', event);
+          throw new Error('Invalid event in timeline');
+        }
+        const { _originalIndex, ...eventForSave } = event;
+        // Ensure id is a number or null (not undefined)
+        if (eventForSave.id !== undefined && eventForSave.id !== null) {
+          eventForSave.id = Number(eventForSave.id);
+        } else {
+          eventForSave.id = null;
+        }
+        return eventForSave;
+      });
+
+      // Ensure all arrays are valid before creating payload
+      if (!Array.isArray(timelineForSave)) {
+        console.error('[Save] timelineForSave is not an array:', typeof timelineForSave, timelineForSave);
+        throw new Error('Timeline data preparation failed');
+      }
+      
       const payload: any = {
         ...formData,
         links: normalizedLinks,
         books: normalizedBooks,
+        timeline: timelineForSave,
       };
+      
+      // Final validation before sending
+      if (!Array.isArray(payload.timeline)) {
+        console.error('[Save] payload.timeline is not an array:', typeof payload.timeline, payload.timeline);
+        throw new Error('Timeline in payload is invalid');
+      }
 
       // SEO is saved by SEOFormSectionEnhanced via its own API calls.
       // Avoid overwriting SEO with stale/empty values on the main Save.
@@ -168,6 +397,22 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
         : '/api/admin/girls';
       
       const method = initialData ? 'PUT' : 'POST';
+
+      // Validate payload before stringifying
+      try {
+        // Test if payload can be stringified
+        JSON.stringify(payload);
+      } catch (stringifyError: any) {
+        console.error('[Save] Failed to stringify payload:', stringifyError);
+        console.error('[Save] Payload structure:', {
+          hasTimeline: Array.isArray(payload.timeline),
+          timelineType: typeof payload.timeline,
+          timelineLength: Array.isArray(payload.timeline) ? payload.timeline.length : 'N/A',
+          hasLinks: Array.isArray(payload.links),
+          hasBooks: Array.isArray(payload.books),
+        });
+        throw new Error(`Failed to prepare data for save: ${stringifyError.message}`);
+      }
 
       const response = await fetch(url, {
         method,
@@ -221,9 +466,15 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
       // CREATE: keep existing behavior
       if (onSuccess) onSuccess();
       else router.push('/admin/girls');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving girl:', error);
-      setErrors({ submit: 'An error occurred while saving' });
+      const errorMessage = error?.message || String(error) || 'An error occurred while saving';
+      console.error('Error details:', {
+        message: errorMessage,
+        stack: error?.stack,
+        name: error?.name,
+      });
+      setErrors({ submit: `Failed to update girl: ${errorMessage}` });
       setIsSubmitting(false);
     }
   };
@@ -368,18 +619,19 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
       key: 'general',
       label: 'General Info',
       children: (
-        <div className="space-y-4">
-          {/* Headshot Upload */}
+        <div className="space-y-3" style={{ paddingTop: '8px' }}>
+          {/* Headshot Upload - Horizontal Layout */}
           <div>
-            <Title level={4} style={{ marginBottom: '12px' }}>Headshot (Portrait Photo)</Title>
-            <div className="flex items-center gap-4">
+            <Title level={4} style={{ marginBottom: '8px', fontSize: '14px' }}>Headshot (Portrait Photo)</Title>
+            <div className="flex items-start gap-3">
               {initialData?.headshotUrl && (
-                <div className="relative mb-4">
-                  <div className="relative w-32 h-40 bg-gray-100 border border-gray-300 rounded overflow-hidden" style={{ aspectRatio: '190/245' }}>
+                <div className="relative flex-shrink-0">
+                  <div className="relative bg-gray-100 border border-gray-300 rounded overflow-hidden" style={{ width: 'auto', height: '150px', aspectRatio: '190/245' }}>
                     <img 
                       src={initialData.headshotUrl} 
                       alt="Headshot" 
-                      className="w-full h-full object-cover"
+                      className="h-full w-auto object-cover"
+                      style={{ height: '150px', width: 'auto' }}
                       loading="lazy"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
@@ -388,7 +640,7 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                   </div>
                 </div>
               )}
-              <div>
+              <div className="flex flex-col gap-2 flex-1">
                 <Upload
                   accept="image/*"
                   customRequest={handleHeadshotUpload}
@@ -408,78 +660,107 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                     showRemoveIcon: false,
                   }}
                 >
-                  <Button icon={<UploadOutlined />}>
+                  <Button icon={<UploadOutlined />} size="small">
                     {initialData?.headshotUrl ? 'Replace Headshot' : 'Upload Headshot'}
                   </Button>
                 </Upload>
-                <p className="text-xs text-gray-500 mt-2" style={{ fontSize: '12px' }}>
-                  Image will be automatically cropped and resized to 190px × 245px.
+                <p className="text-xs text-gray-500" style={{ fontSize: '11px', lineHeight: '1.4', margin: 0 }}>
+                  Image will be automatically cropped<br />
+                  and resized to 190px × 245px.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Basic Information */}
+          {/* Basic Information - Compact 2 Column Layout */}
           <div>
-            <Title level={4} style={{ marginBottom: '12px' }}>Basic Information</Title>
-            <Row gutter={[16, 16]}>
-              <Col xs={24} md={12}>
+            <Title level={4} style={{ marginBottom: '8px', fontSize: '14px' }}>Basic Information</Title>
+            <Row gutter={[12, 12]}>
+              <Col xs={24} sm={12}>
+                <div style={{ marginBottom: '4px' }}>
+                  <Text strong style={{ fontSize: '12px' }}>Name *</Text>
+                </div>
                 <Form.Item
-                  label={<Text strong>Name *</Text>}
                   validateStatus={errors.name ? 'error' : ''}
                   help={errors.name}
+                  style={{ marginBottom: '12px' }}
                 >
                   <Input
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
                     required
+                    size="small"
+                    style={{ maxWidth: '100%' }}
                   />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={12}>
+              <Col xs={24} sm={12}>
+                <div style={{ marginBottom: '4px' }}>
+                  <Text strong style={{ fontSize: '12px' }}>Slug *</Text>
+                </div>
                 <Form.Item
-                  label={<Text strong>Slug *</Text>}
                   validateStatus={errors.slug ? 'error' : ''}
                   help={errors.slug}
+                  style={{ marginBottom: '12px' }}
                 >
                   <Input
                     value={formData.slug}
                     onChange={(e) => handleChange('slug', e.target.value)}
                     required
+                    size="small"
+                    style={{ maxWidth: '100%' }}
                   />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={12}>
-                <Form.Item label={<Text>First Name</Text>}>
+              <Col xs={24} sm={12}>
+                <div style={{ marginBottom: '4px' }}>
+                  <Text style={{ fontSize: '12px' }}>First Name</Text>
+                </div>
+                <Form.Item style={{ marginBottom: '12px' }}>
                   <Input
                     value={formData.firstName}
                     onChange={(e) => handleChange('firstName', e.target.value)}
+                    size="small"
+                    style={{ maxWidth: '100%' }}
                   />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={12}>
-                <Form.Item label={<Text>Last Name</Text>}>
+              <Col xs={24} sm={12}>
+                <div style={{ marginBottom: '4px' }}>
+                  <Text style={{ fontSize: '12px' }}>Last Name</Text>
+                </div>
+                <Form.Item style={{ marginBottom: '12px' }}>
                   <Input
                     value={formData.lastName}
                     onChange={(e) => handleChange('lastName', e.target.value)}
+                    size="small"
+                    style={{ maxWidth: '100%' }}
                   />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={12}>
-                <Form.Item label={<Text>Middle Names</Text>}>
+              <Col xs={24} sm={12}>
+                <div style={{ marginBottom: '4px' }}>
+                  <Text style={{ fontSize: '12px' }}>Middle Names</Text>
+                </div>
+                <Form.Item style={{ marginBottom: '12px' }}>
                   <Input
                     value={formData.middleNames}
                     onChange={(e) => handleChange('middleNames', e.target.value)}
+                    size="small"
+                    style={{ maxWidth: '100%' }}
                   />
                 </Form.Item>
               </Col>
 
-              <Col xs={24} md={12}>
-                <Form.Item label={<Text strong>Era/Decade *</Text>}>
+              <Col xs={24} sm={12}>
+                <div style={{ marginBottom: '4px' }}>
+                  <Text strong style={{ fontSize: '12px' }}>Era/Decade *</Text>
+                </div>
+                <Form.Item style={{ marginBottom: '12px' }}>
                   <Select
                     value={formData.theirMan ? 'men' : formData.era}
                     onChange={(value) => {
@@ -489,6 +770,7 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                         setFormData(prev => ({ ...prev, theirMan: false, era: parseInt(value) }));
                       }
                     }}
+                    size="small"
                     style={{ width: '100%' }}
                   >
                     <Option value={1}>1920s-1930s</Option>
@@ -501,14 +783,15 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
               </Col>
             </Row>
 
-            {/* Status Checkboxes */}
-            <Row gutter={[16, 16]} style={{ marginTop: '16px' }}>
+            {/* Status Checkboxes - Compact */}
+            <Row gutter={[12, 8]} style={{ marginTop: '12px' }}>
               <Col>
                 <Checkbox
                   checked={formData.isNew}
                   onChange={(e) => handleChange('isNew', e.target.checked)}
+                  style={{ fontSize: '12px' }}
                 >
-                  <Text>Is New</Text>
+                  <Text style={{ fontSize: '12px' }}>Is New</Text>
                 </Checkbox>
               </Col>
 
@@ -516,8 +799,9 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                 <Checkbox
                   checked={formData.hasNewPhotos}
                   onChange={(e) => handleChange('hasNewPhotos', e.target.checked)}
+                  style={{ fontSize: '12px' }}
                 >
-                  <Text>Has New Photos</Text>
+                  <Text style={{ fontSize: '12px' }}>Has New Photos</Text>
                 </Checkbox>
               </Col>
 
@@ -525,8 +809,9 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                 <Checkbox
                   checked={formData.published}
                   onChange={(e) => handleChange('published', e.target.checked)}
+                  style={{ fontSize: '12px' }}
                 >
-                  <Text>Published</Text>
+                  <Text style={{ fontSize: '12px' }}>Published</Text>
                 </Checkbox>
               </Col>
             </Row>
@@ -539,70 +824,263 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
       label: 'Timeline Events',
       children: (
         <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
-          {formData.timeline.map((event: any, index: number) => (
-            <Card key={index} size="small">
-              <Row gutter={[16, 16]} align="middle">
-                <Col span={2}>
-                  <Text type="secondary">#{event.ord || index + 1}</Text>
-                </Col>
-                <Col span={6}>
-                  <Form.Item label={<Text>Date:</Text>} style={{ marginBottom: 0 }}>
-                    <Input
-                      value={event.date || ''}
-                      onChange={(e) => {
-                        const newTimeline = [...formData.timeline];
-                        newTimeline[index] = { ...event, date: e.target.value };
-                        handleChange('timeline', newTimeline);
-                      }}
-                      placeholder="e.g., 15 May 36"
-                      size="small"
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={14}>
-                  <Form.Item label={<Text>Event:</Text>} style={{ marginBottom: 0 }}>
-                    <SimpleEditor
-                      value={event.event || ''}
-                      onChange={(value) => {
-                        const newTimeline = [...formData.timeline];
-                        newTimeline[index] = { ...event, event: value };
-                        handleChange('timeline', newTimeline);
-                      }}
-                      placeholder="Event description"
-                      rows={2}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={2}>
-                  <Button
-                    type="default"
-                    danger
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={() => {
-                      modal.confirm({
-                        title: 'Delete Timeline Event',
-                        content: 'Are you sure you want to delete this timeline event?',
-                        okText: 'Delete',
-                        okType: 'danger',
-                        onOk: () => {
-                          const newTimeline = formData.timeline.filter((_: any, i: number) => i !== index);
-                          handleChange('timeline', newTimeline);
-                        },
-                      });
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </Col>
-              </Row>
-            </Card>
-          ))}
+          {(() => {
+            // Debug: Log current timeline state
+            console.log(`[GirlForm Render] formData.timeline.length: ${formData.timeline.length}`);
+            
+            // Ensure all events have ord values, then sort by ord for display
+            const timelineWithOrd = formData.timeline.map((event, idx) => ({
+              ...event,
+              ord: event.ord || (idx + 1),
+            }));
+            
+            // Sort timeline by ord for display
+            const sortedTimeline = [...timelineWithOrd].sort((a, b) => {
+              const ordA = a.ord || 0;
+              const ordB = b.ord || 0;
+              return ordA - ordB;
+            });
+            
+            console.log(`[GirlForm Render] sortedTimeline.length: ${sortedTimeline.length}`);
+            
+            // Use unique key: database id if available, otherwise _originalIndex, otherwise fallback
+            return sortedTimeline.map((event: any, displayIndex: number) => {
+              // Use _originalIndex if available, otherwise find by matching
+              let eventIndex = event._originalIndex;
+              
+              if (eventIndex === undefined || eventIndex < 0) {
+                // Fallback: try to find by matching content
+                eventIndex = formData.timeline.findIndex((e: any, idx: number) => {
+                  // Try exact match first
+                  if (e === event) return true;
+                  // Then try matching by content
+                  return String(e.date || '') === String(event.date || '') && 
+                         String(e.event || '') === String(event.event || '');
+                });
+                
+                // Last resort: use displayIndex
+                if (eventIndex < 0) {
+                  console.warn(`Could not find original index for event at display position ${displayIndex}, using displayIndex`);
+                  eventIndex = displayIndex;
+                }
+              }
+              
+              // Generate unique key: prefer database id, fallback to _originalIndex, then eventIndex
+              // This ensures React keys are always unique
+              const uniqueKey = event.id 
+                ? `timeline-${event.id}` 
+                : event._originalIndex !== undefined 
+                  ? `timeline-unsaved-${event._originalIndex}` 
+                  : `timeline-fallback-${eventIndex}`;
+              
+              const totalEvents = formData.timeline.length;
+              
+              return (
+                <Card key={uniqueKey} size="small">
+                  <Row gutter={[16, 12]}>
+                    {/* Column 1: Order number, Date, Order dropdown */}
+                    <Col xs={24} sm={8} md={6}>
+                      <div className="space-y-2">
+                        <div>
+                          <Text type="secondary" style={{ fontSize: '12px' }}>#{event.ord || eventIndex + 1}</Text>
+                        </div>
+                        <Form.Item label={<Text style={{ fontSize: '12px' }}>Date:</Text>} style={{ marginBottom: 0 }}>
+                          <Input
+                            value={event.date || ''}
+                            onChange={(e) => {
+                              const newTimeline = [...formData.timeline];
+                              if (newTimeline[eventIndex]) {
+                                newTimeline[eventIndex] = { 
+                                  ...newTimeline[eventIndex], 
+                                  date: e.target.value,
+                                  _originalIndex: newTimeline[eventIndex]._originalIndex !== undefined 
+                                    ? newTimeline[eventIndex]._originalIndex 
+                                    : eventIndex,
+                                };
+                                handleChange('timeline', newTimeline);
+                              }
+                            }}
+                            placeholder="e.g., 15 May 36"
+                            size="small"
+                          />
+                        </Form.Item>
+                        <Form.Item label={<Text style={{ fontSize: '12px' }}>Order:</Text>} style={{ marginBottom: 0, marginTop: '8px' }}>
+                          <Select
+                            value={event.ord || displayIndex + 1}
+                            onChange={(value) => handleTimelineOrderChange(displayIndex, value)}
+                            size="small"
+                            style={{ width: '100%' }}
+                          >
+                            {Array.from({ length: totalEvents }, (_, i) => i + 1).map((orderNum) => (
+                              <Option key={orderNum} value={orderNum}>
+                                {orderNum}
+                              </Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+                      </div>
+                    </Col>
+                    {/* Column 2: Event label, text area, delete button */}
+                    <Col xs={24} sm={16} md={18}>
+                      <div className="flex flex-col gap-2">
+                        <div>
+                          <Text style={{ fontSize: '12px', fontWeight: 500 }}>Event:</Text>
+                        </div>
+                        <Form.Item style={{ marginBottom: 0 }}>
+                          <SimpleEditor
+                            value={event.event || ''}
+                            onChange={(value) => {
+                              const newTimeline = [...formData.timeline];
+                              if (newTimeline[eventIndex]) {
+                                newTimeline[eventIndex] = { 
+                                  ...newTimeline[eventIndex], 
+                                  event: value,
+                                  _originalIndex: newTimeline[eventIndex]._originalIndex !== undefined 
+                                    ? newTimeline[eventIndex]._originalIndex 
+                                    : eventIndex,
+                                };
+                                handleChange('timeline', newTimeline);
+                              }
+                            }}
+                            placeholder="Event description"
+                            rows={3}
+                          />
+                        </Form.Item>
+                        <div className="flex justify-end" style={{ marginTop: '4px' }}>
+                          <Button
+                            type="default"
+                            danger
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() => {
+                              modal.confirm({
+                                title: 'Delete Timeline Event',
+                                content: 'Are you sure you want to delete this timeline event?',
+                                okText: 'Delete',
+                                okType: 'danger',
+                                onOk: async () => {
+                                  // CRITICAL: Delete by database ID only
+                                  // Find the event to get its ID
+                                  const eventToDelete = formData.timeline.find((e: any) => {
+                                    // Match by id (primary key)
+                                    if (event.id && e.id && Number(e.id) === Number(event.id)) {
+                                      return true;
+                                    }
+                                    // Match by _originalIndex as fallback (for new unsaved events)
+                                    if (event._originalIndex !== undefined && e._originalIndex === event._originalIndex) {
+                                      return true;
+                                    }
+                                    return false;
+                                  });
+                                  
+                                  if (!eventToDelete) {
+                                    console.error('[Delete] Could not find event to delete:', event);
+                                    message.error('Could not find event to delete');
+                                    return;
+                                  }
+                                  
+                                  // If event has no ID, it's a new unsaved event - just remove from state
+                                  if (!eventToDelete.id || eventToDelete.id === null || eventToDelete.id === undefined) {
+                                    console.log('[Delete] Deleting unsaved event (no ID)');
+                                    const newTimeline = formData.timeline.filter((e: any) => {
+                                      if (e._originalIndex !== undefined && eventToDelete._originalIndex !== undefined) {
+                                        return e._originalIndex !== eventToDelete._originalIndex;
+                                      }
+                                      return e !== eventToDelete;
+                                    });
+                                    const normalized = normalizeTimelineOrders(newTimeline);
+                                    const normalizedWithIds = normalized.map((e: any, idx: number) => ({
+                                      ...e,
+                                      _originalIndex: e._originalIndex !== undefined ? e._originalIndex : idx,
+                                    }));
+                                    handleChange('timeline', normalizedWithIds);
+                                    message.success('Event deleted');
+                                    return;
+                                  }
+                                  
+                                  // Delete via API endpoint using database ID
+                                  const eventId = Number(eventToDelete.id);
+                                  const girlId = initialData?.id;
+                                  
+                                  if (!girlId) {
+                                    message.error('Cannot delete: Girl ID not found');
+                                    return;
+                                  }
+                                  
+                                  try {
+                                    console.log(`[Delete] Calling DELETE endpoint for event ID ${eventId} of girl ${girlId}`);
+                                    
+                                    const response = await fetch(
+                                      `/api/admin/girls/${girlId}/timeline/${eventId}`,
+                                      {
+                                        method: 'DELETE',
+                                        headers: { 'Content-Type': 'application/json' },
+                                      }
+                                    );
+                                    
+                                    const data = await response.json();
+                                    
+                                    if (!response.ok) {
+                                      console.error('[Delete] API error:', data);
+                                      message.error(data.error || 'Failed to delete timeline event');
+                                      return;
+                                    }
+                                    
+                                    // Remove from state after successful deletion
+                                    const newTimeline = formData.timeline.filter((e: any) => {
+                                      if (e.id && Number(e.id) === eventId) {
+                                        return false; // Exclude deleted event
+                                      }
+                                      return true;
+                                    });
+                                    
+                                    // Re-normalize orders after deletion
+                                    const normalized = normalizeTimelineOrders(newTimeline);
+                                    const normalizedWithIds = normalized.map((e: any, idx: number) => ({
+                                      ...e,
+                                      _originalIndex: e._originalIndex !== undefined ? e._originalIndex : idx,
+                                    }));
+                                    
+                                    handleChange('timeline', normalizedWithIds);
+                                    message.success('Timeline event deleted successfully');
+                                    
+                                    console.log(`[Delete] Successfully deleted event ID ${eventId}, timeline count: ${formData.timeline.length} -> ${newTimeline.length}`);
+                                    
+                                  } catch (error: any) {
+                                    console.error('[Delete] Error:', error);
+                                    message.error('Failed to delete timeline event: ' + (error.message || 'Unknown error'));
+                                  }
+                                },
+                              });
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </Col>
+                  </Row>
+                </Card>
+              );
+            });
+          })()}
           <Button
             type="default"
             icon={<PlusOutlined />}
             onClick={() => {
-              handleChange('timeline', [...formData.timeline, { date: '', event: '', ord: formData.timeline.length + 1 }]);
+              const maxOrd = formData.timeline.length > 0
+                ? Math.max(...formData.timeline.map((e: any) => e.ord || 0))
+                : 0;
+              const newIndex = formData.timeline.length;
+              handleChange('timeline', [
+                ...formData.timeline, 
+                { 
+                  date: '', 
+                  event: '', 
+                  ord: maxOrd + 1,
+                  _originalIndex: newIndex,
+                }
+              ]);
             }}
             style={{ marginTop: '8px' }}
           >
@@ -964,6 +1442,14 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
         onChange={setActiveTab}
         items={tabItems}
         type="card"
+        size="small"
+        style={{
+          fontSize: '13px',
+        }}
+        className="compact-tabs responsive-tabs"
+        tabBarStyle={{
+          marginBottom: 0,
+        }}
       />
 
       {/* Error Message */}

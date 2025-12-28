@@ -27,25 +27,35 @@ export const useSidebar = () => {
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  // Initialize mobile state immediately to prevent layout shift
+  // Use a safe default that works for SSR (assume desktop initially)
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false; // SSR default: assume desktop
+  });
+  
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    // Only run on client side
-    if (typeof window === 'undefined') return;
-
+    // Mark as hydrated after first render to prevent hydration mismatch
+    setIsHydrated(true);
+    
     const handleResize = () => {
-      const mobile = window.innerWidth < 700;
+      const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       if (!mobile) {
         setIsMobileOpen(false);
       }
     };
 
+    // Double-check on mount to ensure correct initial state
     handleResize();
     window.addEventListener("resize", handleResize);
 
@@ -66,10 +76,14 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
     setOpenSubmenu((prev) => (prev === item ? null : item));
   };
 
+  // During SSR or before hydration, use safe defaults to prevent layout shift
+  // After hydration, use actual mobile state
+  const effectiveIsExpanded = isHydrated ? (isMobile ? false : isExpanded) : isExpanded;
+
   return (
     <SidebarContext.Provider
       value={{
-        isExpanded: isMobile ? false : isExpanded,
+        isExpanded: effectiveIsExpanded,
         isMobileOpen,
         isHovered,
         activeItem,

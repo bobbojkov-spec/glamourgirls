@@ -34,14 +34,45 @@ export async function GET(
 
     const row = girlRows[0];
 
-    // Fetch timeline
-    const [timelineRows] = await pool.execute(
-      `SELECT shrttext as date, lngtext as event, ord 
-       FROM girlinfos 
-       WHERE girlid = ? 
-       ORDER BY ord ASC`,
+    // STEP 1: PROVE DATABASE TRUTH - Log counts before fetch
+    const [countTotal] = await pool.execute(
+      `SELECT COUNT(*) as total FROM girlinfos WHERE girlid = ?`,
       [girlId]
     ) as any[];
+    const totalCount = parseInt(countTotal[0]?.total || '0');
+    
+    const [countWithOrd] = await pool.execute(
+      `SELECT COUNT(*) as total FROM girlinfos WHERE girlid = ? AND ord IS NOT NULL`,
+      [girlId]
+    ) as any[];
+    const withOrdCount = parseInt(countWithOrd[0]?.total || '0');
+    
+    console.log(`[Admin API GET] STEP 1 - Database truth for girl ${girlId}:`);
+    console.log(`  Total rows in DB: ${totalCount}`);
+    console.log(`  Rows with ord: ${withOrdCount}`);
+    console.log(`  Rows without ord: ${totalCount - withOrdCount}`);
+    
+    // STEP 2: FETCH ALL ROWS - No filtering, no dropping
+    // CRITICAL: Use COALESCE to handle NULL ord, never filter by ord existence
+    const [timelineRows] = await pool.execute(
+      `SELECT id, shrttext as date, lngtext as event, ord 
+       FROM girlinfos 
+       WHERE girlid = ? 
+       ORDER BY COALESCE(ord, 999999) ASC, id ASC`,
+      [girlId]
+    ) as any[];
+    
+    // STEP 2 VERIFICATION: Raw rows length MUST equal DB count
+    const fetchedCount = Array.isArray(timelineRows) ? timelineRows.length : 0;
+    console.log(`[Admin API GET] STEP 2 - Fetch verification:`);
+    console.log(`  Fetched rows: ${fetchedCount}`);
+    console.log(`  DB count: ${totalCount}`);
+    
+    if (fetchedCount !== totalCount) {
+      console.error(`[Admin API GET] CRITICAL: Fetch mismatch! DB has ${totalCount} rows but query returned ${fetchedCount}`);
+    } else {
+      console.log(`  ✅ Fetch matches DB count`);
+    }
 
     // Fetch links and books from girllinks table
     // tp = 0 means regular link, tp = 1 means recommended book
@@ -177,6 +208,7 @@ export async function GET(
       sources: row.sources || '',
       slug: row.slug || '',
       timeline: timelineRows.map((t: any) => ({
+        id: t.id ? Number(t.id) : null, // Include DB id for updates
         date: t.date || '',
         event: t.event || '',
         ord: t.ord || 0,
@@ -221,6 +253,16 @@ export async function PUT(
     const { id } = await params;
     const girlId = parseInt(id);
     const data = await request.json();
+    
+    // Validate timeline data structure
+    if (data.timeline !== undefined && !Array.isArray(data.timeline)) {
+      console.error(`[Admin API] Invalid timeline data for girl ${girlId}:`, typeof data.timeline, data.timeline);
+      return NextResponse.json(
+        { error: 'Timeline data must be an array' },
+        { status: 400 }
+      );
+    }
+    
     // Validate and normalize links/books: no partially filled rows.
     const trim = (v: any) => String(v ?? '').trim();
     const linksIn = Array.isArray(data.links) ? data.links : [];
@@ -351,32 +393,113 @@ export async function PUT(
         ]
       );
 
-      // Delete existing timeline events
-      await client.query(`DELETE FROM girlinfos WHERE girlid = $1`, [girlId]);
-
-      // Insert updated timeline events
+      // TIMELINE SAVE: Use UPDATE/INSERT logic instead of DELETE/INSERT
+      // This preserves existing rows and only updates ord field when reordering
       if (data.timeline && Array.isArray(data.timeline)) {
-        for (let i = 0; i < data.timeline.length; i++) {
-          const event = data.timeline[i];
-          if (event.date || event.event) {
-            await client.query(
-              `
-              INSERT INTO girlinfos (girlid, shrttext, lngtext, ord)
-              VALUES ($1, $2, $3, $4)
-              ON CONFLICT ON CONSTRAINT girlinfos_pkey
-              DO UPDATE SET
-                shrttext = EXCLUDED.shrttext,
-                lngtext = EXCLUDED.lngtext,
-                ord = EXCLUDED.ord
-              `,
-              [
-                girlId,
-                sanitizeLimitedHtml(event.date || ''),
-                sanitizeLimitedHtml(event.event || ''),
-                Number(event.ord) > 0 ? Number(event.ord) : i + 1,
-              ]
-            );
+        console.log(`[Timeline Save] Girl ${girlId}: Received ${data.timeline.length} timeline events`);
+        
+        // Log incoming payload IDs
+        const receivedIds = data.timeline
+          .map((e: any) => e.id)
+          .filter((id: any) => id !== null && id !== undefined);
+        console.log(`[Timeline Save] Received IDs: ${receivedIds.length > 0 ? receivedIds.join(', ') : 'none (all new)'}`);
+        
+        // Filter out invalid events, but allow ALL events (including new empty ones)
+        // This allows users to add a new row and fill it in later
+        const validEvents = data.timeline.filter((event: any) => {
+          if (!event || typeof event !== 'object') {
+            console.warn(`[Admin API] Invalid event in timeline for girl ${girlId}:`, event);
+            return false;
           }
+          // Include all valid event objects (even if empty)
+          // Empty events are allowed - user can fill them in later
+          return true;
+        });
+        
+        if (validEvents.length === 0) {
+          console.warn(`[Timeline Save] No valid timeline events for girl ${girlId}`);
+        } else {
+          // Normalize ord values: assign sequential 1...N
+          const normalizedEvents = validEvents.map((event: any, index: number) => {
+            if (!event || typeof event !== 'object') {
+              console.error(`[Admin API] Invalid event at index ${index} for girl ${girlId}:`, event);
+              throw new Error(`Invalid event at index ${index}`);
+            }
+            return {
+              id: event.id ? Number(event.id) : null, // Preserve id for UPDATE
+              date: event.date || '',
+              event: event.event || '',
+              ord: index + 1, // Always sequential, no gaps, no duplicates
+            };
+          });
+          
+          let updatedCount = 0;
+          let insertedCount = 0;
+          const payloadIds = new Set<number>(); // Track all IDs that should exist (from payload)
+          
+          for (let i = 0; i < normalizedEvents.length; i++) {
+            const event = normalizedEvents[i];
+            try {
+              const orderValue = i + 1;
+              
+              if (event.id !== null && event.id !== undefined && event.id > 0) {
+                // UPDATE existing row by id
+                const eventId = Number(event.id);
+                await client.query(
+                  `UPDATE girlinfos 
+                   SET shrttext = $1, lngtext = $2, ord = $3 
+                   WHERE id = $4 AND girlid = $5`,
+                  [
+                    sanitizeLimitedHtml(event.date || ''),
+                    sanitizeLimitedHtml(event.event || ''),
+                    orderValue,
+                    eventId,
+                    girlId,
+                  ]
+                );
+                updatedCount++;
+                payloadIds.add(eventId); // Track this ID as should-exist
+              } else {
+                // INSERT new row (no id provided or id is null/0)
+                // Allow empty date/event for new rows (user can fill in later)
+                const insertResult = await client.query(
+                  `INSERT INTO girlinfos (girlid, shrttext, lngtext, ord)
+                   VALUES ($1, $2, $3, $4)
+                   RETURNING id`,
+                  [
+                    girlId,
+                    sanitizeLimitedHtml(event.date || ''),
+                    sanitizeLimitedHtml(event.event || ''),
+                    orderValue,
+                  ]
+                );
+                const newId = insertResult.rows[0]?.id;
+                if (newId) {
+                  payloadIds.add(Number(newId)); // Track new ID as should-exist
+                }
+                insertedCount++;
+                console.log(`[Timeline Save] Inserted new event with id=${newId}, ord=${orderValue}`);
+              }
+            } catch (timelineError: any) {
+              console.error(`Error saving timeline event ${i + 1} for girl ${girlId}:`, timelineError);
+              throw new Error(`Failed to save timeline event: ${timelineError.message}`);
+            }
+          }
+          
+          console.log(`[Timeline Save] Girl ${girlId}: Updated ${updatedCount} events, Inserted ${insertedCount} new events`);
+          console.log(`[Timeline Save] Payload IDs: ${Array.from(payloadIds).sort((a, b) => a - b).join(', ') || 'none'}`);
+          
+          // CRITICAL: NO DELETE LOGIC IN SAVE ENDPOINT
+          // Deletes must ONLY happen via DELETE endpoint with specific ID
+          // Reordering = UPDATE ord only, never triggers deletes
+        }
+      } else if (data.timeline !== undefined) {
+        // If timeline is explicitly set to null/empty array, log but don't delete
+        console.warn(`[Timeline Save] Warning: Timeline data is missing or empty for girl ${girlId}. Existing timeline events will be preserved.`);
+        if (data.timeline === null || data.timeline === undefined) {
+          console.warn(`Timeline is null/undefined - this might indicate a frontend issue`);
+        } else if (Array.isArray(data.timeline) && data.timeline.length === 0) {
+          console.warn(`Timeline is an empty array - user may have deleted all events intentionally`);
         }
       }
 
@@ -397,9 +520,44 @@ export async function PUT(
       }
       
       // Delete existing links and books for this girl
+      // Use a more explicit approach to ensure deletion completes before insertion
       try {
+        // First, verify the lock is still held
+        const lockCheck = await client.query(`SELECT pg_try_advisory_xact_lock($1) as locked`, [lockKey]);
+        if (!lockCheck.rows[0]?.locked) {
+          await client.query('ROLLBACK');
+          client.release();
+          return NextResponse.json(
+            { error: 'Lock was released. Please refresh the page and try again.' },
+            { status: 409 }
+          );
+        }
+        
         const deleteResult = await client.query(`DELETE FROM girllinks WHERE girlid = $1`, [girlId]);
         console.log(`Deleted ${deleteResult.rowCount} existing links/books for girl ${girlId}`);
+        
+        // Verify deletion completed
+        const verifyDelete = await client.query(`SELECT COUNT(*) as count FROM girllinks WHERE girlid = $1`, [girlId]);
+        if (parseInt(verifyDelete.rows[0]?.count || '0') > 0) {
+          console.warn(`Warning: Some links/books were not deleted for girl ${girlId}. Count: ${verifyDelete.rows[0]?.count}`);
+          // Force delete any remaining entries
+          await client.query(`DELETE FROM girllinks WHERE girlid = $1`, [girlId]);
+        }
+        
+        // Ensure sequence is set to a safe value (max existing ID + 1)
+        // This prevents conflicts when inserting new records
+        try {
+          const maxIdResult = await client.query(`SELECT COALESCE(MAX(id), 0) as max_id FROM girllinks`);
+          const maxId = parseInt(maxIdResult.rows[0]?.max_id || '0');
+          if (maxId > 0) {
+            // Set sequence to max_id + 1 to ensure next inserts don't conflict
+            await client.query(`SELECT setval('girllinks_id_seq', $1, true)`, [maxId]);
+            console.log(`Reset girllinks_id_seq to ${maxId} for girl ${girlId}`);
+          }
+        } catch (seqError: any) {
+          // If sequence doesn't exist or can't be reset, log but continue
+          console.warn(`Could not reset sequence: ${seqError.message}`);
+        }
       } catch (deleteError: any) {
         // Table might not exist, but continue anyway
         if (!deleteError.message?.includes('does not exist') && !deleteError.message?.includes('relation') && !deleteError.message?.includes('table')) {
@@ -408,21 +566,27 @@ export async function PUT(
       }
 
       // Insert updated links (tp = 0)
+      // Sequence should now be properly set, so we can safely let PostgreSQL auto-generate IDs
       for (let i = 0; i < normLinks.length; i++) {
         const link = normLinks[i];
         if (!link.text || !link.url) continue;
+        
         await client.query(
-          `INSERT INTO girllinks (girlid, caption, lnk, ord, tp) VALUES ($1, $2, $3, $4, 0)`,
+          `INSERT INTO girllinks (girlid, caption, lnk, ord, tp) 
+           VALUES ($1, $2, $3, $4, 0)`,
           [girlId, sanitizePlainText(link.text), trim(link.url), i + 1]
         );
       }
 
       // Insert updated books (tp = 1)
+      // Sequence should now be properly set, so we can safely let PostgreSQL auto-generate IDs
       for (let i = 0; i < normBooks.length; i++) {
         const book = normBooks[i];
         if (!book.title || !book.url) continue;
+        
         await client.query(
-          `INSERT INTO girllinks (girlid, caption, lnk, ord, tp) VALUES ($1, $2, $3, $4, 1)`,
+          `INSERT INTO girllinks (girlid, caption, lnk, ord, tp) 
+           VALUES ($1, $2, $3, $4, 1)`,
           [girlId, sanitizePlainText(book.title), trim(book.url), i + 1]
         );
       }
@@ -437,8 +601,18 @@ export async function PUT(
       }
       // If it's a duplicate key error, provide a more helpful message
       if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
-        console.error(`Duplicate key error for girl ${girlId}:`, error);
-        throw new Error('A conflict occurred while saving links. Please refresh the page and try again.');
+        console.error(`Duplicate key error for girl ${girlId}:`, {
+          code: error.code,
+          message: error.message,
+          detail: error.detail,
+          hint: error.hint,
+          constraint: error.constraint,
+        });
+        const isDev = process.env.NODE_ENV !== 'production';
+        const errorMsg = isDev 
+          ? `A conflict occurred while saving links: ${error.message || error.detail || 'Unknown error'}. Please refresh the page and try again.`
+          : 'A conflict occurred while saving links. Please refresh the page and try again.';
+        throw new Error(errorMsg);
       }
       throw error;
     } finally {

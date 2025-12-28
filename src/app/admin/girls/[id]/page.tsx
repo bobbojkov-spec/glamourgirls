@@ -23,11 +23,20 @@ export default async function EditGirlPage({
     ) as any[];
     
     // Fetch photo counts separately to avoid complex JOIN
+    // HQ count only includes HQ images that have a matching gallery image
+    // This ensures HQ count never exceeds gallery count
     const [photoCountRows] = await pool.execute(
       `SELECT 
-        COUNT(*) FILTER (WHERE mytp = 4) as "photoCount",
-        COUNT(*) FILTER (WHERE mytp = 5) as "hqPhotoCount"
-       FROM images WHERE girlid = ?`,
+        COUNT(*) FILTER (WHERE i.mytp = 4) as "photoCount",
+        COUNT(*) FILTER (
+          WHERE i.mytp = 5 AND EXISTS (
+            SELECT 1 FROM images i2 
+            WHERE i2.girlid = i.girlid 
+              AND i2.mytp = 4 
+              AND (i2.id = i.id - 1 OR i2.id = i.id + 1)
+          )
+        ) as "hqPhotoCount"
+       FROM images i WHERE i.girlid = ?`,
       [girlId]
     ) as any[];
     
@@ -45,14 +54,55 @@ export default async function EditGirlPage({
       row.hqPhotoCount = 0;
     }
 
-    // Fetch timeline events
-    const [timelineRows] = await pool.execute(
-      `SELECT shrttext as date, lngtext as event, ord 
-       FROM girlinfos 
-       WHERE girlid = ? 
-       ORDER BY ord ASC`,
+    // STEP 1: PROVE DATABASE TRUTH - Log counts before fetch
+    const [countTotal] = await pool.execute(
+      `SELECT COUNT(*) as total FROM girlinfos WHERE girlid = ?`,
       [girlId]
     ) as any[];
+    const totalCount = parseInt(countTotal[0]?.total || '0');
+    
+    const [countWithOrd] = await pool.execute(
+      `SELECT COUNT(*) as total FROM girlinfos WHERE girlid = ? AND ord IS NOT NULL`,
+      [girlId]
+    ) as any[];
+    const withOrdCount = parseInt(countWithOrd[0]?.total || '0');
+    
+    console.log(`[Admin Edit Page] STEP 1 - Database truth for girl ${girlId}:`);
+    console.log(`  Total rows in DB: ${totalCount}`);
+    console.log(`  Rows with ord: ${withOrdCount}`);
+    console.log(`  Rows without ord: ${totalCount - withOrdCount}`);
+    
+    // STEP 2: FETCH ALL ROWS - No filtering, no dropping
+    // CRITICAL: Use COALESCE to handle NULL ord, never filter by ord existence
+    const [timelineRows] = await pool.execute(
+      `SELECT id, shrttext as date, lngtext as event, ord 
+       FROM girlinfos 
+       WHERE girlid = ? 
+       ORDER BY COALESCE(ord, 999999) ASC, id ASC`,
+      [girlId]
+    ) as any[];
+    
+    // STEP 2 VERIFICATION: Raw rows length MUST equal DB count
+    const fetchedCount = Array.isArray(timelineRows) ? timelineRows.length : 0;
+    console.log(`[Admin Edit Page] STEP 2 - Fetch verification:`);
+    console.log(`  Fetched rows: ${fetchedCount}`);
+    console.log(`  DB count: ${totalCount}`);
+    
+    if (fetchedCount !== totalCount) {
+      console.error(`[Admin Edit Page] CRITICAL: Fetch mismatch! DB has ${totalCount} rows but query returned ${fetchedCount}`);
+    } else {
+      console.log(`  ✅ Fetch matches DB count`);
+    }
+    
+    if (Array.isArray(timelineRows) && timelineRows.length > 0) {
+      console.log(`[Admin Edit Page] First 5 rows:`, timelineRows.slice(0, 5).map((r: any) => ({
+        id: r.id,
+        ord: r.ord,
+        date: (r.date || '').substring(0, 30),
+      })));
+    } else {
+      console.warn(`[Admin Edit Page] No timeline events found for girl ${girlId}`);
+    }
 
     // Fetch images - match frontend filtering exactly: mytp IN (3, 4, 5) with valid paths and dimensions
     const [imageRows] = await pool.execute(
@@ -205,11 +255,48 @@ export default async function EditGirlPage({
       theirMan: Boolean(row.theirman === 1),
       published: Boolean(row.published === 2),
       sources: String(row.sources || ''),
-      timeline: Array.isArray(timelineRows) ? timelineRows.map((t: any) => ({
-        date: String(t.date || ''),
-        event: String(t.event || ''),
-        ord: Number(t.ord) || 0,
-      })) : [],
+      timeline: (() => {
+        if (!Array.isArray(timelineRows)) {
+          console.warn(`[Admin Edit Page] timelineRows is not an array:`, typeof timelineRows, timelineRows);
+          return [];
+        }
+        console.log(`[Admin Edit Page] Raw timelineRows.length: ${timelineRows.length}`);
+        console.log(`[Admin Edit Page] First 3 raw rows:`, JSON.stringify(timelineRows.slice(0, 3), null, 2));
+        
+        // Log warning if any rows have NULL ord (should be fixed by migration)
+        const nullOrdCount = timelineRows.filter((t: any) => t.ord === null || t.ord === undefined).length;
+        if (nullOrdCount > 0) {
+          console.warn(`[Admin Edit Page] WARNING: ${nullOrdCount} timeline events have NULL ord values for girl ${girlId}. Run migration script to fix.`);
+        }
+        
+        // Ensure we process ALL rows - no filtering
+        const mapped = timelineRows.map((t: any, index: number) => {
+          // If ord is NULL, use index + 1 as fallback (will be normalized on save)
+          const ord = t.ord !== null && t.ord !== undefined ? Number(t.ord) : (index + 1);
+          const event = {
+            id: t.id ? Number(t.id) : null, // Include DB id for updates
+            date: String(t.date || ''),
+            event: String(t.event || ''),
+            ord: ord > 0 ? ord : (index + 1),
+          };
+          return event;
+        });
+        
+        console.log(`[Admin Edit Page] Mapped ${mapped.length} timeline events for girl ${girlId} (raw rows: ${timelineRows.length})`);
+        console.log(`[Admin Edit Page] First 3 mapped events:`, JSON.stringify(mapped.slice(0, 3), null, 2));
+        
+        if (mapped.length !== timelineRows.length) {
+          console.error(`[Admin Edit Page] WARNING: Lost ${timelineRows.length - mapped.length} events during mapping!`);
+        }
+        
+        // Verify all events have valid data
+        const invalidEvents = mapped.filter((e, idx) => !e.date && !e.event);
+        if (invalidEvents.length > 0) {
+          console.warn(`[Admin Edit Page] Found ${invalidEvents.length} events with no date or event text`);
+        }
+        
+        return mapped;
+      })(),
       images: validImages.map((img: any) => {
         const imgPath = String(img.path || '');
         return {
@@ -260,8 +347,27 @@ export default async function EditGirlPage({
       },
     };
     
-    // The girl object is already properly serialized above
-    // No need for additional serialization
+    // Final verification before passing to component
+    const finalTimelineCount = Array.isArray(girl.timeline) ? girl.timeline.length : 0;
+    console.log(`[Admin Edit Page] Final timeline count before passing to component: ${finalTimelineCount}`);
+    console.log(`[Admin Edit Page] Final timeline data (first 5):`, JSON.stringify(girl.timeline.slice(0, 5), null, 2));
+    
+    if (finalTimelineCount === 0 && Array.isArray(timelineRows) && timelineRows.length > 0) {
+      console.error(`[Admin Edit Page] CRITICAL: Timeline data lost! Had ${timelineRows.length} rows but girl.timeline has ${finalTimelineCount} items`);
+    }
+    if (finalTimelineCount > 0 && finalTimelineCount !== timelineRows.length) {
+      console.warn(`[Admin Edit Page] WARNING: Timeline count mismatch! Raw rows: ${timelineRows.length}, Final: ${finalTimelineCount}`);
+    }
+    
+    // Verify serialization - try to stringify the entire girl object
+    try {
+      const serialized = JSON.stringify(girl);
+      console.log(`[Admin Edit Page] Successfully serialized girl object, size: ${serialized.length} bytes`);
+      const parsed = JSON.parse(serialized);
+      console.log(`[Admin Edit Page] After parse, timeline count: ${Array.isArray(parsed.timeline) ? parsed.timeline.length : 'NOT ARRAY'}`);
+    } catch (serializeError: any) {
+      console.error(`[Admin Edit Page] ERROR serializing girl object:`, serializeError.message);
+    }
 
     return (
       <div className="space-y-6">

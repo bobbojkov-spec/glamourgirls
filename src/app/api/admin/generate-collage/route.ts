@@ -29,22 +29,28 @@ async function generateHeroCollage(era: string, version: number = 1, generationI
 
   console.log(`\n🎨 Generating hero collage for ${era} (version ${version})...`);
 
-  // Get random gallery images for this era - get more to ensure good coverage
+  // Get random gallery images for this era - one photo per girl to ensure variety
+  // Using a subquery with ROW_NUMBER to get one random image per girl
   const [images] = await pool.execute(
-    `SELECT 
-       i.path as imagePath,
-       i.width,
-       i.height
-     FROM images i
-     INNER JOIN girls g ON i.girlid = g.id
-     WHERE g.published = 2 
-       AND g.godini = ?
-       AND (g.theirman = false OR g.theirman IS NULL)
-       AND i.mytp = 4
-       AND i.path IS NOT NULL 
-       AND i.path != ''
-       AND i.width > 0
-       AND i.height > 0
+    `SELECT imagePath, width, height
+     FROM (
+       SELECT 
+         i.path as imagePath,
+         i.width,
+         i.height,
+         ROW_NUMBER() OVER (PARTITION BY i.girlid ORDER BY RANDOM()) as rn
+       FROM images i
+       INNER JOIN girls g ON i.girlid = g.id
+       WHERE g.published = 2 
+         AND g.godini = ?
+         AND (g.theirman = false OR g.theirman IS NULL)
+         AND i.mytp = 4
+         AND i.path IS NOT NULL 
+         AND i.path != ''
+         AND i.width > 0
+         AND i.height > 0
+     ) ranked
+     WHERE rn = 1
      ORDER BY RANDOM()
      LIMIT 40`,
     [eraValue]
@@ -66,20 +72,14 @@ async function generateHeroCollage(era: string, version: number = 1, generationI
     }
   }
 
-  // Hero dimensions: 16:9 aspect ratio, long side 1500px
-  // 16:9 = 1.777... so 1500 / 1.777 = 844px height
-  const HERO_WIDTH = 1500;
-  const HERO_HEIGHT = Math.round(1500 / (16/9)); // Exactly 844px for 16:9
+  // Hero dimensions: 1400x650px
+  const HERO_WIDTH = 1400;
+  const HERO_HEIGHT = 650;
   const CANVAS_WIDTH = HERO_WIDTH;
   const CANVAS_HEIGHT = HERO_HEIGHT;
 
-  // Create base canvas with a subtle vintage background color
-  const backgroundColors = [
-    { r: 45, g: 40, b: 35 },   // Dark brown
-    { r: 60, g: 55, b: 50 },   // Medium brown
-    { r: 35, g: 30, b: 25 },   // Very dark brown
-  ];
-  const bgColor = backgroundColors[(version - 1) % backgroundColors.length];
+  // Create base canvas with background color #c3b489 (rgb(195, 180, 137))
+  const bgColor = { r: 195, g: 180, b: 137 };
 
   // Create base image
   const baseImage = sharp({
@@ -94,9 +94,63 @@ async function generateHeroCollage(era: string, version: number = 1, generationI
   // Prepare images for collage
   const publicDir = path.join(process.cwd(), 'public');
   const imageBuffers: Array<{ buffer: Buffer; width: number; height: number; x: number; y: number; rotation: number; scale: number }> = [];
+  
+  // Track placed images for overlap detection
+  interface PlacedImage {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    centerX: number;
+    centerY: number;
+  }
+  const placedImages: PlacedImage[] = [];
+  
+  // Helper function to calculate overlap percentage between two rectangles
+  const calculateOverlap = (img1: PlacedImage, img2: PlacedImage): number => {
+    // Calculate intersection rectangle
+    const left = Math.max(img1.x, img2.x);
+    const right = Math.min(img1.x + img1.width, img2.x + img2.width);
+    const top = Math.max(img1.y, img2.y);
+    const bottom = Math.min(img1.y + img1.height, img2.y + img2.height);
+    
+    if (left >= right || top >= bottom) return 0; // No overlap
+    
+    const overlapArea = (right - left) * (bottom - top);
+    const smallerArea = Math.min(img1.width * img1.height, img2.width * img2.height);
+    
+    return overlapArea / smallerArea; // Return as percentage of smaller image
+  };
+  
+  // Helper function to check if position is valid (allow more overlap to fill canvas)
+  const isValidPosition = (newImg: PlacedImage, maxOverlap: number = 0.35, isSmallImage: boolean = false): boolean => {
+    for (const placed of placedImages) {
+      const overlap = calculateOverlap(newImg, placed);
+      if (overlap > maxOverlap) {
+        return false;
+      }
+      // Also check center distance - allow much more overlap to fill canvas
+      const centerDistance = Math.sqrt(
+        Math.pow(newImg.centerX - placed.centerX, 2) + 
+        Math.pow(newImg.centerY - placed.centerY, 2)
+      );
+      // For smaller images (filling gaps), allow even closer placement
+      const minCenterDistance = isSmallImage
+        ? Math.min(newImg.width, newImg.height, placed.width, placed.height) * 0.35 // Small images can be closer
+        : Math.min(newImg.width, newImg.height, placed.width, placed.height) * 0.40; // Larger images: 40%
+      if (centerDistance < minCenterDistance) {
+        return false;
+      }
+    }
+    return true;
+  };
 
-  // Load and prepare images - use more images for better coverage
-  for (let i = 0; i < Math.min(images.length, 35); i++) {
+  // Load and prepare images - use layered approach: big -> medium -> small
+  // Process images in size tiers to fill canvas better
+  const maxToProcess = Math.min(images.length, 30);
+  
+  // Separate images into processing order: we'll process all, but in size tiers
+  for (let i = 0; i < maxToProcess; i++) {
     const img = images[i];
     
     // Get imagePath - handle both camelCase and lowercase field names (PostgreSQL case sensitivity)
@@ -141,8 +195,21 @@ async function generateHeroCollage(era: string, version: number = 1, generationI
         return x - Math.floor(x);
       };
       
-      // Make images bigger: 250-450px base size for better coverage
-      const baseSize = 250 + seededRandom(1) * 200; // Base size varies 250-450
+      // Layered size approach: bigger images first, then smaller ones fill gaps
+      // Tier 1 (first 5-6): Large images 250-350px
+      // Tier 2 (next 8-10): Medium images 150-220px  
+      // Tier 3 (rest): Small images 100-150px
+      let baseSize: number;
+      if (i < 6) {
+        // First 6 images: Large
+        baseSize = 250 + seededRandom(1) * 100; // 250-350px
+      } else if (i < 16) {
+        // Next 10 images: Medium
+        baseSize = 150 + seededRandom(1) * 70; // 150-220px
+      } else {
+        // Rest: Small to fill gaps
+        baseSize = 100 + seededRandom(1) * 50; // 100-150px
+      }
       const aspectRatio = metadata.width / metadata.height;
       
       let collageWidth: number;
@@ -157,67 +224,112 @@ async function generateHeroCollage(era: string, version: number = 1, generationI
         collageWidth = baseSize * aspectRatio;
         collageHeight = baseSize;
       }
-
-      // Random position with MORE overlap - allow images to go well outside bounds
-      // This creates a more filled background
-      const x = -collageWidth * 0.5 + seededRandom(2) * (CANVAS_WIDTH + collageWidth * 0.5);
-      const y = -collageHeight * 0.5 + seededRandom(3) * (CANVAS_HEIGHT + collageHeight * 0.5);
       
-      // Random rotation (-20 to +20 degrees for more "thrown" effect)
-      const rotation = -20 + seededRandom(4) * 40;
+      // Random rotation (-60 to +60 degrees for more natural "thrown on floor" effect)
+      const rotation = -60 + seededRandom(4) * 120;
       
-      // Random scale variation (0.9 to 1.3 - bigger scale range)
-      const scale = 0.9 + seededRandom(5) * 0.4;
-
-      // Add white vintage frame around the image (like old photo frames)
-      const frameWidth = 10; // 10px white frame for vintage look
-      const frameColor = { r: 255, g: 255, b: 255, alpha: 1 };
+      // Random scale variation (0.85 to 1.15)
+      const scale = 0.85 + seededRandom(5) * 0.3;
       
-      // First resize the image
+      // Resize, convert to PNG with transparency, rotate, then add rounded corners
+      // Step 1: Resize first
       const resizedImage = await sharp(imageBuffer)
         .resize(Math.round(collageWidth * scale), Math.round(collageHeight * scale), {
           fit: 'cover',
           position: 'center',
         })
-        .rotate(rotation, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
-        .jpeg({ quality: 90 })
         .toBuffer();
 
-      const imageMeta = await sharp(resizedImage).metadata();
+      // Step 2: Convert to PNG with alpha channel BEFORE rotation to ensure transparency
+      const imageWithAlpha = await sharp(resizedImage)
+        .ensureAlpha()
+        .png()
+        .toBuffer();
+
+      // Step 3: Rotate with fully transparent background (now that we have alpha channel)
+      const rotatedImage = await sharp(imageWithAlpha)
+        .rotate(rotation, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .png()
+        .toBuffer();
+
+      // Step 4: Get dimensions AFTER rotation (bounding box changes)
+      const imageMeta = await sharp(rotatedImage).metadata();
       const imgWidth = imageMeta.width || collageWidth;
       const imgHeight = imageMeta.height || collageHeight;
 
-      // Create frame by extending the canvas with white border
-      const framedBuffer = await sharp(resizedImage)
-        .extend({
-          top: frameWidth,
-          bottom: frameWidth,
-          left: frameWidth,
-          right: frameWidth,
-          background: frameColor,
-        })
-        .jpeg({ quality: 90 })
+      // Step 5: Add 6px rounded corners using SVG mask (NO black background)
+      // Create rounded rectangle mask
+      const maskSvg = Buffer.from(`
+        <svg width="${imgWidth}" height="${imgHeight}" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="${imgWidth}" height="${imgHeight}" rx="6" ry="6" fill="white"/>
+        </svg>
+      `);
+      
+      // Apply mask to create rounded corners - dest-in keeps only where mask is white
+      const finalBuffer = await sharp(rotatedImage)
+        .composite([{
+          input: maskSvg,
+          blend: 'dest-in'
+        }])
+        .png()
         .toBuffer();
 
-      const finalMetadata = await sharp(framedBuffer).metadata();
-      const finalWidth = finalMetadata.width || (imgWidth + frameWidth * 2);
-      const finalHeight = finalMetadata.height || (imgHeight + frameWidth * 2);
+      // Try to find a valid position with max 10-15% overlap
+      let x: number, y: number;
+      let attempts = 0;
+      const maxAttempts = 50;
+      let positionFound = false;
       
-      // Adjust position to account for frame (center the frame, not the image)
-      const adjustedX = Math.round(x - frameWidth);
-      const adjustedY = Math.round(y - frameWidth);
+      while (attempts < maxAttempts && !positionFound) {
+        // Random position - evenly distributed across entire canvas (no center bias)
+        // Allow images to go slightly outside bounds for "thrown" effect
+        const padding = Math.min(imgWidth, imgHeight) * 0.2; // Allow 20% to go outside
+        // Even distribution across entire canvas - no center bias
+        x = -padding + seededRandom(2 + attempts) * (CANVAS_WIDTH + padding * 2);
+        y = -padding + seededRandom(3 + attempts) * (CANVAS_HEIGHT + padding * 2);
+        
+        const centerX = x + imgWidth / 2;
+        const centerY = y + imgHeight / 2;
+        
+        const newImg: PlacedImage = {
+          x: Math.round(x),
+          y: Math.round(y),
+          width: imgWidth,
+          height: imgHeight,
+          centerX,
+          centerY,
+        };
+        
+        // Check if position is valid - allow much more overlap to fill canvas (25-35%)
+        // For smaller images (i >= 16), allow even more overlap to fill gaps
+        const isSmallImage = i >= 16;
+        const maxOverlap = isSmallImage 
+          ? (attempts < 30 ? 0.30 : (attempts < 50 ? 0.35 : 0.40)) // Small images: 30-40% overlap
+          : (attempts < 30 ? 0.25 : (attempts < 50 ? 0.30 : 0.35)); // Larger images: 25-35% overlap
+        if (isValidPosition(newImg, maxOverlap, isSmallImage)) {
+          positionFound = true;
+          placedImages.push(newImg);
+          
+          imageBuffers.push({
+            buffer: finalBuffer,
+            width: imgWidth,
+            height: imgHeight,
+            x: Math.round(x),
+            y: Math.round(y),
+            rotation: rotation,
+            scale: scale,
+          });
+        }
+        
+        attempts++;
+      }
       
-      imageBuffers.push({
-        buffer: framedBuffer,
-        width: finalWidth,
-        height: finalHeight,
-        x: adjustedX,
-        y: adjustedY,
-        rotation: rotation,
-        scale: scale,
-      });
+      if (!positionFound) {
+        console.warn(`  ⚠️  Could not find valid position for image ${i + 1} after ${maxAttempts} attempts, skipping`);
+        continue;
+      }
 
-      console.log(`  ✓ Processed image ${i + 1}/${Math.min(images.length, 30)}`);
+      console.log(`  ✓ Processed image ${i + 1}/${maxToProcess} (size tier: ${i < 6 ? 'large' : (i < 16 ? 'medium' : 'small')})`);
     } catch (error: any) {
       console.warn(`  ⚠️  Skipped image ${i + 1}: ${error.message}`);
       continue;
@@ -225,8 +337,13 @@ async function generateHeroCollage(era: string, version: number = 1, generationI
   }
 
   if (imageBuffers.length < 15) {
-    throw new Error(`Not enough valid images processed. Got ${imageBuffers.length}, need at least 15`);
+    throw new Error(`Not enough valid images processed. Got ${imageBuffers.length} visible, need at least 15`);
   }
+  
+  console.log(`📊 Final count: ${imageBuffers.length} images visible in canvas`);
+  console.log(`   - Large (250-350px): ${imageBuffers.filter((_, idx) => idx < 6).length}`);
+  console.log(`   - Medium (150-220px): ${imageBuffers.filter((_, idx) => idx >= 6 && idx < 16).length}`);
+  console.log(`   - Small (100-150px): ${imageBuffers.filter((_, idx) => idx >= 16).length}`);
 
   console.log(`🎨 Composing collage with ${imageBuffers.length} images...`);
 
@@ -286,9 +403,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const versionNum = version || 1;
-    // Use generationId (timestamp or counter) to ensure unique collages
-    const genId = generationId || Date.now();
+    // Auto-assign version number: find max version for this era and increment
+    const existingCollages = await collageStorage.getCollagesByEra(era);
+    const maxVersion = existingCollages.length > 0 
+      ? Math.max(...existingCollages.map(c => c.version))
+      : 0;
+    const versionNum = version !== undefined ? version : (maxVersion + 1);
+    
+    // Use generationId (must be provided and unique) to ensure different collages
+    // If not provided, use timestamp with random component
+    const genId = generationId || (Date.now() + Math.floor(Math.random() * 1000000));
     
     console.log(`Generating collage for ${era}, version ${versionNum}, generation ${genId}...`);
     
@@ -300,12 +424,15 @@ export async function POST(request: NextRequest) {
     // Handle null case: use storagePath as fallback if publicUrl is null
     const filepath = result.publicUrl || result.storagePath;
     
+    // Save with active: false by default - user will select which ones to use
+    const active = body.active !== undefined ? body.active : false;
+    
     const metadata = await collageStorage.addCollage({
       era,
       version: versionNum,
       filepath, // Store public URL or fallback to storagePath
       filename,
-      active: true,
+      active: active,
       fileSize: result.fileSize,
     });
 

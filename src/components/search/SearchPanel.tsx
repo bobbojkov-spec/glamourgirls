@@ -50,10 +50,53 @@ export default function SearchPanel({
     initialFilters ?? FULL_DEFAULT_FILTERS
   );
   
+  // Track previous filters to detect changes (excluding initial mount)
+  const prevFiltersRef = useRef<SearchFilters | null>(null);
+  
   // Update filters when initialFilters prop changes (from URL params)
   useEffect(() => {
     if (initialFilters) {
       setFilters(initialFilters);
+      prevFiltersRef.current = initialFilters;
+    }
+  }, [initialFilters]);
+  
+  // Call onSearch when filters change (but not on initial mount or when initialFilters changes)
+  // Use a ref to track if we should skip the next effect (when initialFilters prop changes)
+  const skipNextEffectRef = useRef(false);
+  
+  useEffect(() => {
+    // Skip if this is the initial mount
+    if (prevFiltersRef.current === null) {
+      prevFiltersRef.current = filters;
+      return;
+    }
+    
+    // Skip if initialFilters prop just changed (we set this flag in the other useEffect)
+    if (skipNextEffectRef.current) {
+      skipNextEffectRef.current = false;
+      prevFiltersRef.current = filters;
+      return;
+    }
+    
+    // Only call onSearch if filters actually changed
+    const filtersChanged = JSON.stringify(prevFiltersRef.current) !== JSON.stringify(filters);
+    if (filtersChanged) {
+      prevFiltersRef.current = filters;
+      // Defer the onSearch call to avoid updating router during render
+      const timeoutId = setTimeout(() => {
+        onSearch?.(filters);
+      }, 0);
+      return () => clearTimeout(timeoutId);
+    } else {
+      prevFiltersRef.current = filters;
+    }
+  }, [filters, onSearch]);
+  
+  // Update skip flag when initialFilters changes
+  useEffect(() => {
+    if (initialFilters) {
+      skipNextEffectRef.current = true;
     }
   }, [initialFilters]);
   const [hasResults, setHasResults] = useState<boolean | null>(null);
@@ -117,8 +160,7 @@ export default function SearchPanel({
     // Use functional update to prevent type widening and ensure stability
     setFilters(prev => {
       const newFilters: SearchFilters = { ...prev, years: [year] };
-      // Immediately refine search with new year filter
-      onSearch?.(newFilters);
+      // onSearch will be called via useEffect when filters change
       return newFilters;
     });
   };
@@ -150,11 +192,7 @@ export default function SearchPanel({
         [type === 'name' ? 'nameStartsWith' : 'surnameStartsWith']: newValue
       };
       
-      // Only search if we have at least 3 letters or clearing the search
-      if (newValue.length >= 3 || newValue.length === 0) {
-        onSearch?.(newFilters);
-      }
-      
+      // onSearch will be called via useEffect when filters change
       return newFilters;
     });
   };
@@ -200,8 +238,7 @@ export default function SearchPanel({
                 setFilters(prev => {
                   const newValue: ToggleFilterValue = e.target.checked ? 'yes' : 'no';
                   const newFilters: SearchFilters = { ...prev, newEntry: newValue };
-                  // Hero search: Auto-search immediately to narrow results
-                  onSearch?.(newFilters);
+                  // onSearch will be called via useEffect when filters change
                   return newFilters;
                 });
               }}
@@ -242,8 +279,7 @@ export default function SearchPanel({
                 setFilters(prev => {
                   const newValue: ToggleFilterValue = e.target.checked ? 'yes' : 'no';
                   const newFilters: SearchFilters = { ...prev, newPhotos: newValue };
-                  // Hero search: Auto-search immediately to narrow results
-                  onSearch?.(newFilters);
+                  // onSearch will be called via useEffect when filters change
                   return newFilters;
                 });
               }}
@@ -389,29 +425,40 @@ export default function SearchPanel({
             />
           </div>
 
-          {/* Search Button - Darker Glamour Girls Colors */}
-          <button
-            type="submit"
-            className="interactive-button px-5 font-medium border-t sm:border-t-0 sm:border-l border-gray-300 flex items-center justify-center w-full sm:w-auto"
-            style={{
-              backgroundColor: '#8b6f2a',
-              color: '#ffffff',
-              fontSize: '14px',
-              height: '44px',
-              paddingTop: '0',
-              paddingBottom: '0',
-            }}
-            onMouseEnter={(e) => {
-              if (window.innerWidth >= 768) {
-                e.currentTarget.style.backgroundColor = '#6f5718';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#8b6f2a';
-            }}
-          >
-            Search
-          </button>
+          {/* Search Button - Lighter until 3 letters typed, matching modal behavior */}
+          {(() => {
+            const hasValidSearch = 
+              (filters.nameStartsWith.length >= 3) ||
+              (filters.surnameStartsWith.length >= 3) ||
+              (filters.keyword.length >= 3) ||
+              (filters.years.length > 0 && !filters.years.includes('all'));
+            const buttonColor = hasValidSearch ? '#8b6f2a' : '#6f5718';
+            
+            return (
+              <button
+                type="submit"
+                className="interactive-button px-5 font-medium border-t sm:border-t-0 sm:border-l border-gray-300 flex items-center justify-center w-full sm:w-auto"
+                style={{
+                  backgroundColor: buttonColor,
+                  color: '#ffffff',
+                  fontSize: '14px',
+                  height: '44px',
+                  paddingTop: '0',
+                  paddingBottom: '0',
+                }}
+                onMouseEnter={(e) => {
+                  if (hasValidSearch && window.innerWidth >= 768) {
+                    e.currentTarget.style.backgroundColor = '#6f5718';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = buttonColor;
+                }}
+              >
+                Search
+              </button>
+            );
+          })()}
         </div>
       </div>
     </form>

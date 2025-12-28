@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSidebar } from '@/context-admin/SidebarContext';
+import { Menu, MenuProps } from 'antd';
 import { 
   DashboardOutlined, 
   UserOutlined, 
@@ -10,38 +10,44 @@ import {
   EyeOutlined,
   TeamOutlined,
   StarOutlined,
+  ArrowLeftOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
 } from '@ant-design/icons';
+import Link from 'next/link';
 
-const menuItems = [
+type MenuItem = Required<MenuProps>['items'][number];
+
+const menuItems: MenuItem[] = [
   {
+    key: '/admin',
     icon: <DashboardOutlined />,
-    name: 'Dashboard',
-    path: '/admin',
+    label: 'Dashboard',
   },
   {
+    key: '/admin/girls',
     icon: <UserOutlined />,
-    name: 'Girls Database',
-    path: '/admin/girls',
+    label: 'Girls Database',
   },
   {
+    key: '/admin/featured-actresses',
     icon: <StarOutlined />,
-    name: 'Featured Actresses',
-    path: '/admin/featured-actresses',
+    label: 'Featured Actresses',
   },
   {
+    key: '/admin/users/admins',
     icon: <TeamOutlined />,
-    name: 'Users',
-    path: '/admin/users/admins',
+    label: 'Users',
   },
   {
+    key: '/admin/sales',
     icon: <DollarOutlined />,
-    name: 'Sales Stats',
-    path: '/admin/sales',
+    label: 'Sales Stats',
   },
   {
+    key: '/admin/girls-stats',
     icon: <EyeOutlined />,
-    name: 'Girls Stats',
-    path: '/admin/girls-stats',
+    label: 'Girls Stats',
   },
 ];
 
@@ -130,84 +136,95 @@ const menuItems = [
 // ];
 
 export default function AdminSidebar() {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded, isMobileOpen, isHovered, setIsHovered, toggleSidebar } = useSidebar();
   const pathname = usePathname();
+  const router = useRouter();
 
-  const isActive = (path: string) => {
-    if (path === '/admin') {
+  // Determine selected key
+  const selectedKey = menuItems.find(item => {
+    const key = item?.key as string;
+    if (key === '/admin') {
       return pathname === '/admin';
     }
-    return pathname?.startsWith(path);
+    return pathname?.startsWith(key);
+  })?.key as string || '/admin';
+
+  // Handle menu click - use router for navigation
+  const handleMenuClick: MenuProps['onClick'] = (e) => {
+    router.push(e.key as string);
   };
 
+  // Collapsed state: when not expanded and not hovered (on desktop)
+  const isCollapsed = !isExpanded && !isHovered && !isMobileOpen;
+
+  // Sidebar width: 200px expanded, 64px collapsed (Ant Design standard)
+  const sidebarWidth = isCollapsed ? 64 : 200;
+
   return (
-    <>
-      <aside
-        className={`fixed left-0 top-0 z-50 flex h-screen w-[232px] flex-col overflow-y-hidden bg-white border-r border-gray-200 transition-all duration-300 ease-in-out ${
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full min-[700px]:translate-x-0'
-        } ${
-          !isExpanded && !isHovered ? 'min-[700px]:w-[72px]' : 'min-[700px]:w-[232px]'
-        }`}
-        onMouseEnter={() => !isExpanded && setIsHovered(true)}
-        onMouseLeave={() => !isExpanded && setIsHovered(false)}
-      >
-        {/* Logo */}
-        <div className="flex h-20 items-center justify-between px-6 border-b border-gray-200">
-          <Link href="/admin" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500">
-              <span className="text-white font-bold text-xl">GG</span>
-            </div>
-            {(isExpanded || isHovered || isMobileOpen) && (
-              <span className="font-semibold text-gray-900" style={{ fontSize: '18px' }}>Admin Panel</span>
-            )}
-          </Link>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-4 py-6">
-          <ul className="flex flex-col gap-2">
-            {menuItems.map((item) => (
-              <li key={item.path}>
-                <Link
-                  href={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive(item.path)
-                      ? 'bg-brand-50 text-brand-600 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  } ${
-                    !isExpanded && !isHovered && !isMobileOpen
-                      ? 'justify-center'
-                      : 'justify-start'
-                  }`}
-                >
-                  <span className="flex-shrink-0">{item.icon}</span>
-                  {(isExpanded || isHovered || isMobileOpen) && (
-                    <span style={{ fontSize: '14px' }}>{item.name}</span>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        {/* Footer */}
-        <div className="border-t border-gray-200 p-4">
-          <Link
-            href="/"
-            className={`flex items-center gap-3 px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors ${
-              !isExpanded && !isHovered && !isMobileOpen
-                ? 'justify-center'
-                : 'justify-start'
-            }`}
+    <aside
+      className={`fixed left-0 top-0 z-50 flex h-screen flex-col bg-white border-r border-gray-200 transition-all duration-300 ease-in-out ${
+        isMobileOpen ? 'translate-x-0' : '-translate-x-full min-[768px]:translate-x-0'
+      }`}
+      style={{ width: `${sidebarWidth}px` }}
+      onMouseEnter={() => !isExpanded && !isMobileOpen && setIsHovered(true)}
+      onMouseLeave={() => !isExpanded && !isMobileOpen && setIsHovered(false)}
+    >
+      {/* Logo and Toggle */}
+      <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
+        <Link href="/admin" className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 flex-shrink-0">
+            <span className="text-white font-bold text-sm">GG</span>
+          </div>
+          {!isCollapsed && (
+            <span className="font-semibold text-gray-900 text-sm truncate">Admin</span>
+          )}
+        </Link>
+        {!isMobileOpen && (
+          <button
+            onClick={toggleSidebar}
+            className="ml-2 flex h-8 w-8 items-center justify-center rounded hover:bg-gray-100 transition-colors flex-shrink-0 min-[768px]:flex hidden"
+            aria-label="Toggle sidebar"
           >
-            <span>←</span>
-            {(isExpanded || isHovered || isMobileOpen) && (
-              <span style={{ fontSize: '14px' }}>Back to Site</span>
+            {isExpanded ? (
+              <MenuFoldOutlined className="text-gray-600" />
+            ) : (
+              <MenuUnfoldOutlined className="text-gray-600" />
             )}
-          </Link>
-        </div>
-      </aside>
-    </>
+          </button>
+        )}
+      </div>
+
+      {/* Navigation Menu */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden">
+        <Menu
+          mode="inline"
+          selectedKeys={[selectedKey]}
+          items={menuItems}
+          onClick={handleMenuClick}
+          inlineCollapsed={isCollapsed}
+          style={{
+            borderRight: 0,
+            height: '100%',
+          }}
+          className="border-r-0"
+        />
+      </nav>
+
+      {/* Footer */}
+      <div className="border-t border-gray-200 p-2">
+        <Link
+          href="/"
+          className={`flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded transition-colors ${
+            isCollapsed ? 'justify-center' : 'justify-start'
+          }`}
+        >
+          <ArrowLeftOutlined className="text-sm" />
+          {!isCollapsed && (
+            <span className="text-sm">Back to Site</span>
+          )}
+        </Link>
+      </div>
+    </aside>
   );
 }
 

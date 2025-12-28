@@ -13,7 +13,8 @@
     "db:verify-migration": "tsx scripts/verify-migration.ts",
     "rebuild-gallery": "tsx scripts/rebuild-gallery-images.ts",
     "find-related": "tsx scripts/find-related-actresses.ts",
-    "check-missing-images": "tsx scripts/check-and-reupload-missing-images.ts"
+    "check-missing-images": "tsx scripts/check-and-reupload-missing-images.ts",
+    "repair-orphaned-hq": "tsx scripts/repair-orphaned-hq-images.ts"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",

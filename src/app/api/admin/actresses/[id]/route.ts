@@ -28,9 +28,9 @@ export async function GET(
 
     const actress = actresses[0] as any;
 
-    // Fetch timeline
+    // Fetch timeline - CRITICAL: Use COALESCE to never drop rows with NULL ord
     const [timelineRows] = await pool.execute(
-      `SELECT id, shrttext, lngtext, ord FROM girlinfos WHERE girlid = ? ORDER BY ord ASC`,
+      `SELECT id, shrttext, lngtext, ord FROM girlinfos WHERE girlid = ? ORDER BY COALESCE(ord, 999999) ASC, id ASC`,
       [actressId]
     );
     const timeline = Array.isArray(timelineRows) ? timelineRows : [];

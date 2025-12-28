@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/newdesign';
-import SearchPanel, { SearchFilters, YearFilterValue } from '@/components/search/SearchPanel';
+import SearchPanel, { SearchFilters } from '@/components/search/SearchPanel';
 import type { SearchActressResult } from '@/types/search';
 import './newdesign/design-tokens.css';
 
@@ -15,21 +15,10 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
   const [displayedItems, setDisplayedItems] = useState<SearchActressResult[]>([]);
   const [columnCount, setColumnCount] = useState(2);
 
-  // Filter out actresses with no gallery images (placeholders) - memoized to prevent infinite loops
-  const actressesWithImages = useMemo(() => {
-    return actresses.filter((actress) => {
-      if (!actress.previewImageUrl) return false;
-      const imageUrl = actress.previewImageUrl.toLowerCase();
-      return !imageUrl.includes('placeholder') && 
-             !imageUrl.includes('placeholder-portrait') &&
-             !imageUrl.includes('placeholder-man');
-    });
-  }, [actresses]);
-
   useEffect(() => {
     const calculateDisplayedItems = () => {
       const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
-      const totalItems = actressesWithImages.length;
+      const totalItems = actresses.length;
       let cols: number;
       let maxItems: number;
 
@@ -63,7 +52,7 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
       const completeRows = Math.floor(itemsToShow / cols);
       const finalCount = completeRows * cols;
       
-      setDisplayedItems(actressesWithImages.slice(0, finalCount));
+      setDisplayedItems(actresses.slice(0, finalCount));
     };
 
     calculateDisplayedItems();
@@ -71,7 +60,7 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
       window.addEventListener('resize', calculateDisplayedItems);
       return () => window.removeEventListener('resize', calculateDisplayedItems);
     }
-  }, [actressesWithImages]);
+  }, [actresses]);
 
   return (
     <div 
@@ -100,9 +89,7 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
                 width: '100%',
                 aspectRatio: '3/4',
                 maxWidth: '100%',
-                // NO maxHeight - aspect ratio controls dimensions at all breakpoints
-                // Portrait orientation is enforced by aspectRatio: 3/4 (height > width)
-                minHeight: 0,
+                maxHeight: 'clamp(160px, 20vw, 220px)', // Desktop: ~200-220px, Mobile: ~160-180px - SIGNIFICANTLY smaller than Featured
                 borderRadius: '7px',
                 boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
                 cursor: 'pointer',
@@ -199,7 +186,7 @@ const logWarn = (message: string) => {
 const defaultFilters: SearchFilters = {
   newEntry: 'all',
   newPhotos: 'all',
-  years: ['all'] as [YearFilterValue],
+  years: ['all'],
   nameStartsWith: '',
   surnameStartsWith: '',
   keyword: '',
@@ -260,7 +247,7 @@ export default function HomePage() {
   useEffect(() => {
     setLoading(true);
     // Fetch only featured actresses
-    fetchActresses({ years: ['all'] as [YearFilterValue], newEntry: 'all', newPhotos: 'all', nameStartsWith: '', surnameStartsWith: '', keyword: '' })
+    fetchActresses({ years: ['all'], newEntry: 'all', newPhotos: 'all', nameStartsWith: '', surnameStartsWith: '', keyword: '' })
       .then((data) => {
         // Filter to only featured actresses with gallery images, ordered by featured_order
         const featured = data
@@ -340,40 +327,37 @@ export default function HomePage() {
     }
   }, [featuredActresses]);
 
-  // Fetch latest additions from cached server-side API
-  // STRICT RULES: Only show section if we have 4-6 items with valid images
+  // Fetch latest additions (actresses marked as new OR with new photos)
+  // Order by created_at DESC (API will use id DESC as fallback if created_at not available)
   useEffect(() => {
     setLoadingLatest(true);
+    // Fetch actresses that are new OR have new photos (need to merge results from two calls)
+    // Request ordering by created_at DESC for Latest Additions
     const fetchLatest = async () => {
       try {
-        // Use cached API endpoint (server-side cached for 1 hour)
-        const response = await fetch('/api/latest-additions?minItems=4&maxItems=6', {
-          // Use Next.js fetch cache (if available) or rely on API route caching
-          cache: 'force-cache',
-          next: { revalidate: 3600 }, // Revalidate every hour
-        });
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+        const params1 = new URLSearchParams({ isNew: 'yes', orderBy: 'created_at' });
+        const params2 = new URLSearchParams({ hasNewPhotos: 'yes', orderBy: 'created_at' });
         
-        if (!response.ok) {
-          // On error, don't render section (reliability > completeness)
-          setLatestActresses([]);
-          return;
-        }
+        const [newEntries, newPhotos] = await Promise.all([
+          fetch(`${baseUrl}/api/actresses?${params1.toString()}`).then(r => r.json()),
+          fetch(`${baseUrl}/api/actresses?${params2.toString()}`).then(r => r.json())
+        ]);
         
-        const data = await response.json();
-        
-        // Ensure we have an array
-        const actresses: SearchActressResult[] = Array.isArray(data) ? data : [];
-        
-        // STRICT RULE: Only set if we have at least 4 items (API already filters placeholders)
-        if (actresses.length >= 4) {
-          setLatestActresses(actresses.slice(0, 6)); // Max 6 items
-        } else {
-          // Not enough items - don't render section
-          setLatestActresses([]);
-        }
+        // Merge and deduplicate by ID
+        const merged = [...newEntries, ...newPhotos];
+        const unique = merged.filter((actress, index, self) => 
+          index === self.findIndex(a => a.id === actress.id)
+        );
+        // All actresses have previewImageUrl (always populated)
+        const withPreviewImages = unique;
+        // Sort by ID descending (newer IDs are typically higher, works as fallback if created_at not available)
+        // API should have already ordered by created_at DESC or id DESC
+        const sorted = withPreviewImages.sort((a, b) => b.id - a.id);
+        // Limit to 6 for processing (we'll show max 4 based on even-count logic)
+        setLatestActresses(sorted.slice(0, 6));
       } catch (error) {
-        // On error, don't render section (silence is better than wrong data)
-        logError('Error fetching latest additions:', error);
+        logError('Error fetching latest actresses:', error);
         setLatestActresses([]);
       } finally {
         setLoadingLatest(false);
@@ -424,89 +408,118 @@ export default function HomePage() {
       <Header />
 
       <main className="flex-1" style={{ minWidth: 0, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-        {/* Hero Section - Key Visual Only */}
-        <section 
-          className="w-full flex justify-center px-3 sm:px-4 md:px-6 lg:px-8" 
-          style={{ 
-            backgroundColor: '#c3b489', 
-            minWidth: 0, 
-            maxWidth: '100%',
-            paddingTop: '2rem',
-            paddingBottom: '2rem',
-          }}
-        >
-          <div
-            style={{
-              width: '1400px',
-              height: '500px',
-              maxWidth: '100%',
-              backgroundColor: '#c3b489',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-            }}
-          >
-            <img
-              src={
-                heroImagePath 
-                  ? (heroImagePath.startsWith('http') ? heroImagePath : (heroImagePath.startsWith('/') ? heroImagePath : `/${heroImagePath}`))
-                  : '/GG_KEY_ VISUAL.jpg'
-              }
-              alt="Glamour Girls"
-              style={{
-                height: '100%',
-                maxHeight: '100%',
-                width: 'auto',
-                maxWidth: '100%',
-                objectFit: 'contain',
-                display: 'block',
-                position: 'relative',
-                zIndex: 10,
-              }}
-              loading="eager"
-              onError={(e) => {
-                const img = e.currentTarget;
-                if (!img.src.includes('GG_KEY') && !img.src.includes('placeholder')) {
-                  img.src = '/GG_KEY_ VISUAL.jpg';
-                }
-              }}
-            />
-          </div>
-        </section>
-
-        {/* Search Section */}
-        <section className="w-full py-8 sm:py-10 md:py-14 lg:py-16 px-3 sm:px-4 md:px-6 lg:px-8 bg-[var(--bg-page)]" style={{ minWidth: 0, maxWidth: '100%' }}>
+        {/* Hero Section - Clean Editorial Layout */}
+        <section className="w-full py-8 sm:py-10 md:py-14 lg:py-20 px-3 sm:px-4 md:px-6 lg:px-8" style={{ backgroundColor: '#f6e5c0', minWidth: 0, maxWidth: '100%' }}>
           <div className="max-w-7xl mx-auto" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
-            <div className="w-full flex justify-center">
+            {/* Hero Text and Image Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12 xl:gap-16 items-start">
+              {/* Left Column: Text Content */}
+              <div className="order-1 lg:order-1">
+                {/* Headline - Editorial scale, fluid typography - At least twice as big */}
+                <h1 
+                  className="mb-2 md:mb-3"
+                  style={{ 
+                    fontFamily: 'var(--font-logo-primary)',
+                    color: 'var(--text-primary)',
+                    fontSize: 'clamp(4rem, 7vw + 1rem, 7rem)', // Fluid: 64px mobile → 112px desktop (at least 2x bigger)
+                    lineHeight: '1.2',
+                    fontWeight: 400,
+                    textTransform: 'none',
+                    letterSpacing: '0.01em',
+                    wordBreak: 'normal',
+                    hyphens: 'auto',
+                    maxWidth: '100%', // Prevent overflow
+                    textAlign: 'center',
+                  }}
+                >
+                  Glamour Girls
+                </h1>
+                
+                {/* Subheadline - DM Sans, all caps, 12-14px */}
+                <p 
+                  className="mb-6 md:mb-8 lg:mb-10"
+                  style={{ 
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 'clamp(12px, 0.5vw + 12px, 14px)', // Fluid: 12px mobile → 14px desktop
+                    lineHeight: '1.4',
+                    fontWeight: 400,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    textAlign: 'center',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  OF THE SILVER SCREEN
+                </p>
+              </div>
+
+              {/* Right Column: Hero Image - Editorial Portrait Frame (only if selected) */}
+              {heroImagePath && (
+                <div className="order-2 lg:order-2 flex justify-center lg:justify-end mt-6 md:mt-8 lg:mt-0">
+                  <div 
+                    className="w-full max-w-xs aspect-[3/4] bg-[var(--bg-surface-alt)] overflow-hidden"
+                    style={{ 
+                      borderRadius: '7px', // Match thumbnail styling
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)', // Match thumbnail shadow
+                      border: '1px solid rgba(0, 0, 0, 0.06)',
+                    }}
+                  >
+                    <img
+                      src={heroImagePath.startsWith('http') ? heroImagePath : (heroImagePath.startsWith('/') ? heroImagePath : `/${heroImagePath}`)}
+                      alt="Classic Hollywood archive portrait"
+                      className="w-full h-full object-cover"
+                      loading="eager"
+                      width={300}
+                      height={450}
+                      style={{
+                        borderRadius: '7px', // Match container radius
+                      }}
+                      onError={(e) => {
+                        // Fallback to placeholder if image fails to load
+                        const img = e.currentTarget;
+                        if (!img.src.includes('placeholder')) {
+                          img.src = '/images/placeholder-portrait.png';
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Search Block - OUTSIDE GRID, Independently Centered */}
+            <div className="w-full mt-8 flex justify-center">
               <div 
-                className="bg-[#E6D9B3] rounded-lg w-full max-w-[700px]"
+                className="bg-[#E6D9B3] rounded-lg p-3 sm:p-4 md:p-5 lg:p-6 w-full max-w-[750px] lg:max-w-[700px]"
                 style={{
-                  padding: '20px',
                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
                   border: '1px solid rgba(0, 0, 0, 0.08)',
-                  minWidth: '280px',
+                  minWidth: 0,
+                  display: 'flex',
+                  justifyContent: 'center',
                 }}
               >
-                <SearchPanel 
-                  compact 
-                  initialFilters={{ 
-                    years: ['all'] as [YearFilterValue],
-                    newEntry: 'all',
-                    newPhotos: 'all',
-                    nameStartsWith: '',
-                    surnameStartsWith: '',
-                    keyword: ''
-                  }} 
-                  onSearch={handleSearch} 
-                />
+                <div style={{ width: '100%', minWidth: '280px' }}>
+                  <SearchPanel 
+                    compact 
+                    initialFilters={{ 
+                      years: ['all'],
+                      newEntry: 'all',
+                      newPhotos: 'all',
+                      nameStartsWith: '',
+                      surnameStartsWith: '',
+                      keyword: ''
+                    }} 
+                    onSearch={handleSearch} 
+                  />
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* Section 1: Featured Actresses */}
-        <section className="w-full pb-8 sm:pb-10 md:pb-14 lg:pb-16 pt-0 px-3 sm:px-4 md:px-6 lg:px-8 bg-[var(--bg-page)]" style={{ minWidth: 0, maxWidth: '100%', paddingTop: 0 }}>
+        <section className="w-full py-8 sm:py-10 md:py-14 lg:py-16 px-3 sm:px-4 md:px-6 lg:px-8 bg-[var(--bg-page)]" style={{ minWidth: 0, maxWidth: '100%' }}>
           <div className="max-w-7xl mx-auto" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
             {/* Section Title */}
             <div 
@@ -573,8 +586,7 @@ export default function HomePage() {
                           width: '100%',
                           aspectRatio: '3/4',
                           maxWidth: '100%',
-                          // NO maxHeight - aspect ratio controls dimensions at all breakpoints
-                          // Portrait orientation is enforced by aspectRatio: 3/4 (height > width)
+                          maxHeight: 'clamp(220px, 35vw, 360px)', // Desktop: ~320-360px, Mobile: ~220-260px
                           borderRadius: '7px', // Subtle rounded corners (6-8px range)
                           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)', // Very soft shadow for grounding
                           cursor: 'pointer',
@@ -749,40 +761,60 @@ export default function HomePage() {
         </section>
 
         {/* Section 3: Latest Additions */}
-        {/* STRICT RULE: Only render entire section if we have 4-6 items with valid images */}
-        {/* No loading state, no empty state, no placeholders - section disappears if data unavailable */}
-        {!loadingLatest && latestActresses.length >= 4 && latestActresses.length <= 6 && (
-          <section className="w-full py-8 sm:py-10 md:py-14 lg:py-16 px-3 sm:px-4 md:px-6 lg:px-8 bg-[var(--bg-page)]" style={{ minWidth: 0, maxWidth: '100%' }}>
-            <div className="max-w-7xl mx-auto" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
-              {/* Section Title */}
-              <div 
-                className="mb-8 md:mb-10 lg:mb-10"
+        <section className="w-full py-8 sm:py-10 md:py-14 lg:py-16 px-3 sm:px-4 md:px-6 lg:px-8 bg-[var(--bg-page)]" style={{ minWidth: 0, maxWidth: '100%' }}>
+          <div className="max-w-7xl mx-auto" style={{ minWidth: 0, width: '100%', maxWidth: '100%' }}>
+            {/* Section Title */}
+            <div 
+              className="mb-8 md:mb-10 lg:mb-10"
+              style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <h2 
+                className="text-[var(--text-primary)]"
                 style={{ 
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 'clamp(1.75rem, 2.5vw + 0.5rem, 2.5rem)', // Fluid: 28px mobile → 40px desktop
+                  fontWeight: 500,
+                  textAlign: 'center',
+                  letterSpacing: '0.1em',
+                  margin: 0,
+                  textTransform: 'uppercase',
                 }}
               >
-                <h2 
-                  className="text-[var(--text-primary)]"
-                  style={{ 
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 'clamp(1.75rem, 2.5vw + 0.5rem, 2.5rem)', // Fluid: 28px mobile → 40px desktop
-                    fontWeight: 500,
-                    textAlign: 'center',
-                    letterSpacing: '0.1em',
-                    margin: 0,
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  Latest Additions
-                </h2>
-              </div>
-
-              <LatestAdditionsGrid actresses={latestActresses} />
+                Latest Additions
+              </h2>
             </div>
-          </section>
-        )}
+
+            {loadingLatest ? (
+              <div 
+                className="text-center text-[var(--text-secondary)] py-8"
+                style={{ 
+                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontSize: 'clamp(0.8125rem, 0.3vw + 0.75rem, 0.9375rem)', // Fluid: 13px mobile → 15px desktop, smooth scaling
+                  letterSpacing: '0.01em',
+                }}
+              >
+                Loading...
+              </div>
+            ) : latestActresses.length > 0 ? (
+              <LatestAdditionsGrid actresses={latestActresses} />
+            ) : (
+              <div 
+                className="text-center text-[var(--text-secondary)] py-8"
+                style={{ 
+                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontSize: 'clamp(0.8125rem, 0.3vw + 0.75rem, 0.9375rem)', // Fluid: 13px mobile → 15px desktop, smooth scaling
+                  letterSpacing: '0.01em',
+                }}
+              >
+                No recent additions
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* Section 4: Archive Entry CTA */}
         <section className="w-full py-8 sm:py-10 md:py-14 lg:py-16 px-3 sm:px-4 md:px-6 lg:px-8 bg-[var(--bg-page)]" style={{ minWidth: 0, maxWidth: '100%' }}>
@@ -816,7 +848,7 @@ export default function HomePage() {
         {/* Section 5: Homepage Content Text - Preserved from original homepage */}
         <section className="bg-[var(--bg-page)] px-4 md:px-6 lg:px-8 py-12 md:py-16">
           <div className="max-w-4xl mx-auto text-[var(--text-secondary)] leading-relaxed" style={{ fontFamily: 'Montserrat, var(--font-ui)' }}>
-            <p className="mb-4 font-semibold text-[var(--text-primary)] uppercase tracking-[0.2em]">Dedicated to Cheryl Messina</p>
+            <p className="uppercase tracking-[0.25em] text-xs mb-4 text-[var(--text-muted)]">Dedicated to Cheryl Messina</p>
             <p className="mb-4">
               Welcome to our website dedicated to the private lives of some of the most glamorous actresses of the Thirties, Forties, Fifties, and Sixties.
             </p>
@@ -838,3 +870,4 @@ export default function HomePage() {
     </div>
   );
 }
+

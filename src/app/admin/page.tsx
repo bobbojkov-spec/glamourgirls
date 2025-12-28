@@ -33,14 +33,23 @@ export default async function AdminDashboard() {
     }
 
     // Get images counts by type
+    // HQ count only includes HQ images that have a matching gallery image
     const [imagesCountResult] = await pool.execute(
       `SELECT 
         COUNT(*)::int as "total",
-        SUM(CASE WHEN mytp = 4 THEN 1 ELSE 0 END)::int as "gallery",
-        SUM(CASE WHEN mytp = 5 THEN 1 ELSE 0 END)::int as "hq",
-        SUM(CASE WHEN mytp = 3 THEN 1 ELSE 0 END)::int as "thumbnails"
-       FROM images
-       WHERE mytp IN (3, 4, 5)`
+        SUM(CASE WHEN i.mytp = 4 THEN 1 ELSE 0 END)::int as "gallery",
+        SUM(CASE 
+          WHEN i.mytp = 5 AND EXISTS (
+            SELECT 1 FROM images i2 
+            WHERE i2.girlid = i.girlid 
+              AND i2.mytp = 4 
+              AND (i2.id = i.id - 1 OR i2.id = i.id + 1)
+          ) 
+          THEN 1 ELSE 0 
+        END)::int as "hq",
+        SUM(CASE WHEN i.mytp = 3 THEN 1 ELSE 0 END)::int as "thumbnails"
+       FROM images i
+       WHERE i.mytp IN (3, 4, 5)`
     ) as any[];
 
     if (imagesCountResult && imagesCountResult.length > 0) {
@@ -146,18 +155,18 @@ export default async function AdminDashboard() {
         </Row>
 
         {/* Quick Actions */}
-        <Card title={<Title level={4} style={{ margin: 0, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"' }}>Quick Actions</Title>}>
+        <Card title={<Title level={4} style={{ margin: 0, fontSize: '20px', textTransform: 'uppercase' }}>Quick Actions</Title>}>
           <Row gutter={[16, 16]}>
             {quickActions.map((action) => (
               <Col xs={24} sm={12} lg={8} key={action.title}>
                 <Link href={action.href} style={{ textDecoration: 'none' }}>
-                  <Card hoverable>
+                  <Card hoverable style={{ height: '100%' }}>
                     <Space>
                       <div style={{ fontSize: '24px', color: '#1890ff' }}>
                         {action.icon}
                       </div>
                       <div>
-                        <Text strong style={{ display: 'block', fontSize: '28px', lineHeight: '1.2' }}>
+                        <Text strong style={{ display: 'block', fontSize: '18px', lineHeight: '1.2', textTransform: 'uppercase' }}>
                           {action.title}
                         </Text>
                         <Text type="secondary" style={{ fontSize: '13px' }}>

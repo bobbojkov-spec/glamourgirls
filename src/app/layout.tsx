@@ -57,11 +57,12 @@ export default async function RootLayout({
   // Admin pages use their own layout and CSS (no website header/sidebar)
   if (isAdmin) {
     return (
-      <html lang="en" className={montserrat.variable}>
+      <html lang="en" className={montserrat.variable} style={{ fontFamily: 'var(--font-montserrat), system-ui, sans-serif' }}>
         <head>
           {/* Montserrat font loaded via next/font - no <link> tags needed */}
+          {/* CSS is loaded synchronously via admin/layout.tsx */}
         </head>
-        <body className="antialiased bg-gray-50">
+        <body className="antialiased bg-gray-50" suppressHydrationWarning>
           {children}
         </body>
       </html>

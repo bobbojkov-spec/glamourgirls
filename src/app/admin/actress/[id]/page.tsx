@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { Spin } from 'antd';
 import AdminActressForm from '@/components/admin/AdminActressForm';
 
 export default function AdminActressPage() {
@@ -51,7 +52,14 @@ export default function AdminActressPage() {
   }
 
   if (loading) {
-    return <div className="min-h-screen bg-[#d4c5a9] p-6">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-[#d4c5a9] flex items-center justify-center">
+        <div style={{ textAlign: 'center' }}>
+          <Spin size="large" />
+          <div style={{ marginTop: '16px', color: '#666' }}>Loading actress data...</div>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -1,12 +1,22 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useFavorites } from '@/context/FavoritesContext';
 import ActressListRow from '@/components/ui/ActressListRow';
 import ModalHeader from '@/components/ui/ModalHeader';
 
 export default function FavoritesModal() {
   const { favorites, isOpen, closeFavorites, removeFavorite } = useFavorites();
+  const pathname = usePathname();
+
+  // Close favorites panel automatically when route changes (navigation happened)
+  // This ensures the panel closes as a side effect of navigation, not blocking it
+  useEffect(() => {
+    if (isOpen) {
+      closeFavorites();
+    }
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isOpen) return null;
 
@@ -65,9 +75,8 @@ export default function FavoritesModal() {
                       name={actress.name}
                       slug={actress.slug}
                       thumbnailUrl={actress.thumbnailUrl}
-                      onClick={() => {
-                        closeFavorites();
-                      }}
+                      // No onClick prop - uses default Link navigation for instant routing
+                      // Panel closes automatically via useEffect when pathname changes
                       actionButton={
                         <button
                           onClick={(e) => {

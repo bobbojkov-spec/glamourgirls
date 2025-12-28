@@ -74,8 +74,8 @@ export async function fetchActressFromDb(actressId: number): Promise<Actress | n
       [timeline] = await pool.execute(
         `SELECT shrttext, lngtext, ord
          FROM girlinfos 
-         WHERE girlid = ? 
-         ORDER BY ord ASC`,
+         WHERE girlid = ?
+         ORDER BY COALESCE(ord, 999999) ASC, id ASC`,
         [actressId]
       ) as any[];
     } catch (error: any) {
