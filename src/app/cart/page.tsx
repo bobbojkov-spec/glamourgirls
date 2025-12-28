@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
@@ -11,22 +11,51 @@ import '../newdesign/design-tokens.css';
 export default function CartPage() {
   const router = useRouter();
   const { items, totalPrice, subtotal, discountRate, discountAmount, clearCart } = useCart();
+  const [isNavigatingToPayment, setIsNavigatingToPayment] = useState(false);
+
+  // Prefetch payment page to avoid a slow transition
+  useEffect(() => {
+    if (items.length > 0) {
+      router.prefetch('/checkout/payment');
+    }
+  }, [items.length, router]);
 
   const handleCheckout = useCallback(() => {
     if (items.length === 0) {
       return;
     }
+
+    if (isNavigatingToPayment) {
+      return;
+    }
+    setIsNavigatingToPayment(true);
     
     // Save cart to localStorage before navigation
     try {
       const itemsJson = JSON.stringify(items);
       localStorage.setItem('hq_cart_items', itemsJson);
+
+      // Save the exact payload the payment page expects so we can navigate directly.
+      const paymentCart = items.map((it) => ({
+        imageId: String(it.id),
+        actressId: String(it.actressId),
+        actressName: String(it.actressName),
+        imageUrl: String(it.thumbnailUrl || ''),
+        thumbnailUrl: String(it.thumbnailUrl || ''),
+        price: Number(it.price) || 0,
+        width: Number(it.width) || 0,
+        height: Number(it.height) || 0,
+        fileSizeMB: it.fileSizeMB,
+      }));
+      localStorage.setItem('hq_cart', JSON.stringify(paymentCart));
     } catch (error) {
       console.error('Failed to save cart to localStorage:', error);
     }
     
-    router.push('/checkout');
-  }, [items, router]);
+    router.push('/checkout/payment');
+    // Safety: if navigation gets interrupted, allow retry
+    setTimeout(() => setIsNavigatingToPayment(false), 6000);
+  }, [items, router, isNavigatingToPayment]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-page)]">
@@ -189,6 +218,7 @@ export default function CartPage() {
                   <div className="space-y-3">
                     <button
                       onClick={handleCheckout}
+                      disabled={isNavigatingToPayment}
                       className="interactive-button w-full py-3.5 px-4 rounded-lg font-medium tracking-wide uppercase relative overflow-hidden group"
                       style={{
                         backgroundColor: '#f6e5c0',
@@ -198,6 +228,8 @@ export default function CartPage() {
                         fontSize: 'var(--meta-size)',
                         lineHeight: 'var(--meta-line-height)',
                         color: 'var(--text-primary)',
+                        opacity: isNavigatingToPayment ? 0.8 : 1,
+                        cursor: isNavigatingToPayment ? 'not-allowed' : 'pointer',
                       }}
                       onMouseEnter={(e) => {
                         if (window.innerWidth >= 768) {
@@ -210,7 +242,7 @@ export default function CartPage() {
                         e.currentTarget.style.borderColor = '#6f5718';
                       }}
                     >
-                      Proceed to Checkout
+                      {isNavigatingToPayment ? 'Opening Payment…' : 'Proceed to Checkout'}
                     </button>
                     <button
                       onClick={clearCart}

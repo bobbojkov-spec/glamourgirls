@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import CartItem from './CartItem';
@@ -9,6 +9,7 @@ import ModalHeader from '@/components/ui/ModalHeader';
 export default function CartDrawer() {
   const router = useRouter();
   const { items, isOpen, closeCart, totalPrice, subtotal, discountRate, discountAmount, clearCart } = useCart();
+  const [isNavigatingToPayment, setIsNavigatingToPayment] = useState(false);
 
   // Redirect to /cart page on mobile when modal tries to open, keep modal on desktop
   useEffect(() => {
@@ -21,6 +22,9 @@ export default function CartDrawer() {
       router.push('/cart');
       return;
     }
+
+    // Prefetch the payment route while the cart is open to avoid a slow transition after closing the drawer.
+    router.prefetch('/checkout/payment');
   }, [isOpen, closeCart, router]);
 
   // Handle ESC key to close (desktop only)
@@ -43,19 +47,43 @@ export default function CartDrawer() {
     if (items.length === 0) {
       return;
     }
+
+    if (isNavigatingToPayment) {
+      return;
+    }
+    setIsNavigatingToPayment(true);
     
     // Save cart to localStorage before navigation (non-blocking)
     try {
       const itemsJson = JSON.stringify(items);
       localStorage.setItem('hq_cart_items', itemsJson);
+
+      // Save the exact payload the payment page expects so we can skip the /checkout hop.
+      const paymentCart = items.map((it) => ({
+        imageId: String(it.id),
+        actressId: String(it.actressId),
+        actressName: String(it.actressName),
+        imageUrl: String(it.thumbnailUrl || ''),
+        thumbnailUrl: String(it.thumbnailUrl || ''),
+        price: Number(it.price) || 0,
+        width: Number(it.width) || 0,
+        height: Number(it.height) || 0,
+        fileSizeMB: it.fileSizeMB,
+      }));
+      localStorage.setItem('hq_cart', JSON.stringify(paymentCart));
     } catch (error) {
       console.error('Failed to save cart to localStorage:', error);
     }
     
-    // Close cart and navigate immediately (no delay needed)
-    closeCart();
-    router.push('/checkout');
-  }, [items, closeCart, router]);
+    // Navigate first, then close the cart shortly after to avoid an empty "gap" during a slow route transition.
+    router.push('/checkout/payment');
+    setTimeout(() => {
+      closeCart();
+    }, 150);
+
+    // Safety: if navigation gets interrupted, allow retry.
+    setTimeout(() => setIsNavigatingToPayment(false), 6000);
+  }, [items, closeCart, router, isNavigatingToPayment]);
 
   // Don't render modal on mobile (redirects to /cart page instead)
   if (!isOpen || (typeof window !== 'undefined' && window.innerWidth <= 768)) return null;
@@ -193,6 +221,7 @@ export default function CartDrawer() {
                 <div className="space-y-3">
                   <button
                     onClick={handleCheckout}
+                    disabled={isNavigatingToPayment}
                     className="interactive-button w-full py-3.5 px-4 rounded-lg font-medium tracking-wide uppercase relative overflow-hidden group"
                     style={{
                       backgroundColor: '#f6e5c0',
@@ -202,6 +231,8 @@ export default function CartDrawer() {
                       fontSize: 'var(--meta-size)',
                       lineHeight: 'var(--meta-line-height)',
                       color: 'var(--text-primary)',
+                      opacity: isNavigatingToPayment ? 0.8 : 1,
+                      cursor: isNavigatingToPayment ? 'not-allowed' : 'pointer',
                     }}
                     onMouseEnter={(e) => {
                       if (window.innerWidth >= 768) {
@@ -214,7 +245,7 @@ export default function CartDrawer() {
                       e.currentTarget.style.borderColor = '#6f5718';
                     }}
                   >
-                    Proceed to Checkout
+                    {isNavigatingToPayment ? 'Opening Payment…' : 'Proceed to Checkout'}
                   </button>
                   <button
                     onClick={clearCart}
