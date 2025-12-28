@@ -896,16 +896,16 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
           <div>
             <Title level={4} style={{ marginBottom: '8px', fontSize: '14px' }}>Headshot (Portrait Photo)</Title>
             {/* Mobile: stack (thumb on top, button underneath). Tablet/Desktop: side-by-side. */}
-            <div className="flex flex-col sm:flex-row sm:items-start items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch gap-3">
               {initialData?.headshotUrl && (
                 <div className="relative flex-shrink-0">
-                  <div className="relative bg-gray-100 border border-gray-300 rounded overflow-hidden" style={{ width: 'auto', height: '200px', aspectRatio: '190/245' }}>
+                  <div className="headshot-wrapper bg-gray-100 border border-gray-300 rounded overflow-hidden">
                     <img 
                       src={initialData.headshotUrl} 
                       alt="Headshot" 
-                      className="h-full w-auto object-cover"
-                      style={{ height: '200px', width: 'auto' }}
-                      loading="lazy"
+                      className="headshot-img"
+                      loading="eager"
+                      decoding="sync"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}

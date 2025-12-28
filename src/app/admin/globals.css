@@ -864,6 +864,25 @@ aside {
   line-height: 1.4 !important;
 }
 
+/* ============================================================
+   iOS Safari headshot fix (Admin -> Edit Girl)
+   Force explicit dimensions on wrapper + img, avoid flex collapse,
+   and do not lazy-load admin headshots.
+   ============================================================ */
+.headshot-wrapper {
+  width: 190px;
+  height: 245px;
+  flex-shrink: 0;
+}
+
+.headshot-wrapper img,
+.headshot-img {
+  width: 190px;
+  height: 245px;
+  object-fit: cover;
+  display: block;
+}
+
 .compact-tabs .ant-tabs-tab-btn {
   font-size: 13px !important;
 }
