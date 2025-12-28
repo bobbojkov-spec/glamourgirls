@@ -209,8 +209,14 @@ export default function AdminActressForm({ actress: initialActress, isNew }: Adm
     formData.append('type', type);
 
     try {
+      // iOS Safari can be flaky if we submit immediately on the same tick as the file input change.
+      // A tiny defer makes the FileList stable before the request is sent.
+      await new Promise((r) => setTimeout(r, 0));
+
       const res = await fetch('/api/admin/images/upload', {
         method: 'POST',
+        // IMPORTANT: Do NOT set Content-Type manually when sending FormData (iOS Safari can fail silently).
+        cache: 'no-store',
         body: formData,
       });
 
@@ -234,8 +240,17 @@ export default function AdminActressForm({ actress: initialActress, isNew }: Adm
         // Reset file input
         e.target.value = '';
       } else {
-        const error = await res.json();
-        alert(`Failed to upload: ${error.error || 'Unknown error'}`);
+        let errorBody: any = null;
+        try {
+          errorBody = await res.json();
+        } catch {
+          errorBody = await res.text().catch(() => '');
+        }
+        console.error('[AdminActressForm] Image upload failed:', { status: res.status, statusText: res.statusText, errorBody });
+        const msg = (errorBody && typeof errorBody === 'object' && (errorBody.error || errorBody.details))
+          ? (errorBody.error || errorBody.details)
+          : `Upload failed (HTTP ${res.status})`;
+        alert(msg);
       }
     } catch (error) {
       console.error('Error uploading images:', error);
@@ -257,8 +272,13 @@ export default function AdminActressForm({ actress: initialActress, isNew }: Adm
     formData.append('actressId', actress.id.toString());
 
     try {
+      // iOS Safari: tiny defer avoids occasional silent multipart failures on immediate submit.
+      await new Promise((r) => setTimeout(r, 0));
+
       const res = await fetch('/api/admin/headshot/upload', {
         method: 'POST',
+        // IMPORTANT: Do NOT set Content-Type manually when sending FormData.
+        cache: 'no-store',
         body: formData,
       });
 
@@ -268,8 +288,17 @@ export default function AdminActressForm({ actress: initialActress, isNew }: Adm
         // Reset file input
         e.target.value = '';
       } else {
-        const error = await res.json();
-        alert(`Failed to upload headshot: ${error.error || 'Unknown error'}`);
+        let errorBody: any = null;
+        try {
+          errorBody = await res.json();
+        } catch {
+          errorBody = await res.text().catch(() => '');
+        }
+        console.error('[AdminActressForm] Headshot upload failed:', { status: res.status, statusText: res.statusText, errorBody });
+        const msg = (errorBody && typeof errorBody === 'object' && (errorBody.error || errorBody.details))
+          ? (errorBody.error || errorBody.details)
+          : `Headshot upload failed (HTTP ${res.status})`;
+        alert(msg);
       }
     } catch (error) {
       console.error('Error uploading headshot:', error);
