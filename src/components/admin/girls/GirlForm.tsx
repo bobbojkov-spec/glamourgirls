@@ -895,7 +895,8 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
           {/* Headshot Upload - Horizontal Layout */}
           <div>
             <Title level={4} style={{ marginBottom: '8px', fontSize: '14px' }}>Headshot (Portrait Photo)</Title>
-            <div className="flex items-start gap-3">
+            {/* Mobile: stack (thumb on top, button underneath). Tablet/Desktop: side-by-side. */}
+            <div className="flex flex-col sm:flex-row sm:items-start items-center gap-3">
               {initialData?.headshotUrl && (
                 <div className="relative flex-shrink-0">
                   <div className="relative bg-gray-100 border border-gray-300 rounded overflow-hidden" style={{ width: 'auto', height: '200px', aspectRatio: '190/245' }}>
@@ -912,7 +913,7 @@ export default function GirlForm({ onSuccess, isSubmitting, setIsSubmitting, ini
                   </div>
                 </div>
               )}
-              <div className="flex flex-col gap-2 flex-1">
+              <div className="flex flex-col gap-2 flex-1 w-full sm:w-auto items-center sm:items-start">
                 <Upload
                   accept="image/*"
                   customRequest={handleHeadshotUpload}
