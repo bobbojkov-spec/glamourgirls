@@ -105,7 +105,7 @@ export default function BackfillOrderNumAction() {
       }
       style={{ height: '100%' }}
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="middle">
+      <Space orientation="vertical" style={{ width: '100%' }} size="middle">
         {loading && !stats && (
           <div style={{ textAlign: 'center', padding: '20px' }}>
             <Spin />
@@ -210,7 +210,7 @@ export default function BackfillOrderNumAction() {
           </>
         )}
 
-        <Space direction="vertical" style={{ width: '100%' }} size="small">
+        <Space orientation="vertical" style={{ width: '100%' }} size="small">
           <Button
             type="primary"
             icon={backfilling ? <LoadingOutlined /> : <ReloadOutlined />}
