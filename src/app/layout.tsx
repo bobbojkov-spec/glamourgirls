@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { CartDrawer } from "@/components/cart";
 import { CartProvider } from "@/context/CartContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
@@ -63,6 +64,19 @@ export default async function RootLayout({
           {/* CSS is loaded synchronously via admin/layout.tsx */}
         </head>
         <body className="antialiased bg-gray-50" suppressHydrationWarning>
+          {/* Google Analytics */}
+          <Script
+            src="https://www.googletagmanager.com/gtag/js?id=G-002SCLRCQD"
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-002SCLRCQD');
+            `}
+          </Script>
           {children}
         </body>
       </html>
@@ -124,6 +138,19 @@ export default async function RootLayout({
           {/* UI fonts (Inter, Source Sans 3) loaded via next/font - no <link> tags needed */}
         </head>
         <body className="antialiased min-h-screen" style={{ backgroundColor: 'var(--bg-page)' }}>
+          {/* Google Analytics */}
+          <Script
+            src="https://www.googletagmanager.com/gtag/js?id=G-002SCLRCQD"
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-002SCLRCQD');
+            `}
+          </Script>
           <CartProvider>
             <FavoritesProvider>
               <ContactModalProvider>
@@ -154,6 +181,19 @@ export default async function RootLayout({
         />
       </head>
       <body className="antialiased min-h-screen flex flex-col">
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-002SCLRCQD"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-002SCLRCQD');
+          `}
+        </Script>
         <CartProvider>
           <FavoritesProvider>
             <ContactModalProvider>
