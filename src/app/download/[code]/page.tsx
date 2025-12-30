@@ -259,17 +259,18 @@ export default function DownloadPage() {
           <div className="max-w-md mx-auto">
             <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-8">
               <h1
-                className="text-[var(--text-primary)] text-center mb-2"
+                className="text-[var(--text-primary)] text-center mb-2 uppercase"
                 style={{
-                  fontFamily: 'var(--font-headline)',
-                  fontSize: 'var(--h1-size)',
-                  lineHeight: 'var(--h1-line-height)',
-                  letterSpacing: 'var(--h1-letter-spacing)',
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontWeight: 500,
+                  fontSize: 'clamp(15px, calc(15px + 0.268vw), 18px)',
+                  letterSpacing: '0.14em',
+                  lineHeight: 1.25,
                 }}
               >
                 Download Your Images
               </h1>
-              <p className="text-sm text-[var(--text-secondary)] text-center mb-6" style={{ fontFamily: 'var(--font-ui)' }}>
+              <p className="text-[var(--text-secondary)] text-center mb-6" style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', lineHeight: '1.4' }}>
                 Enter your download code to access your purchased HQ images
               </p>
 
@@ -353,17 +354,18 @@ export default function DownloadPage() {
           {/* Header */}
           <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-6 md:p-8 mb-6">
             <h1
-              className="text-[var(--text-primary)] mb-2"
+              className="text-[var(--text-primary)] mb-2 uppercase"
               style={{
-                fontFamily: 'var(--font-headline)',
-                fontSize: 'var(--h1-size)',
-                lineHeight: 'var(--h1-line-height)',
-                letterSpacing: 'var(--h1-letter-spacing)',
+                fontFamily: 'DM Sans, sans-serif',
+                fontWeight: 500,
+                fontSize: 'clamp(15px, calc(15px + 0.268vw), 18px)',
+                letterSpacing: '0.14em',
+                lineHeight: 1.25,
               }}
             >
               Your HQ Images
             </h1>
-            <p className="text-sm text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-ui)' }}>
+            <p className="text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', lineHeight: '1.4' }}>
               Order: {downloadData.orderId} • {downloadData.items.length} {downloadData.items.length === 1 ? 'image' : 'images'}
             </p>
             {downloadData.used && (
@@ -440,7 +442,7 @@ export default function DownloadPage() {
                       {item.actressName}
                     </p>
                     {(item.width || item.height || item.fileSizeMB) && (
-                      <p className="text-xs text-[var(--text-muted)] mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                      <p className="text-[var(--text-muted)] mb-2" style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', lineHeight: '1.4' }}>
                         {item.width && item.height && `${item.width} × ${item.height} px`}
                         {item.width && item.height && item.fileSizeMB && (
                           <span className="text-[var(--text-muted)]/80"> / {item.fileSizeMB} MB</span>

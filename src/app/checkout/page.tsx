@@ -251,7 +251,7 @@ export default function CheckoutPage() {
                     <p
                       className="text-[var(--text-primary)] truncate"
                       style={{ 
-                        fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                        fontFamily: '"Cormorant Garamond", Georgia, serif',
                         fontSize: 'clamp(16px, 0.4vw + 16px, 18px)',
                         fontWeight: 500,
                         letterSpacing: '0.01em',
@@ -261,7 +261,7 @@ export default function CheckoutPage() {
                       {item.actressName}
                     </p>
                     {(item.width || item.height || item.fileSizeMB) && (
-                      <p className="text-xs text-[var(--text-muted)] mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                      <p className="text-[var(--text-muted)] mb-2" style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', lineHeight: '1.4' }}>
                         {item.width && item.height && `${item.width} × ${item.height} px`}
                         {item.width && item.height && item.fileSizeMB && (
                           <span className="text-[var(--text-muted)]/80"> / {item.fileSizeMB} MB</span>
@@ -270,7 +270,7 @@ export default function CheckoutPage() {
                     )}
                   </div>
                   <div className="text-right">
-                    <p className={`${item.fileSizeMB !== undefined && item.fileSizeMB !== null ? 'text-base font-bold text-[var(--text-primary)]' : 'text-sm font-semibold text-[var(--text-primary)]'}`} style={{ fontFamily: 'DM Sans, sans-serif' }}>${item.price.toFixed(2)}</p>
+                    <p className="text-[var(--text-primary)]" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: item.fileSizeMB !== undefined && item.fileSizeMB !== null ? '16px' : '13px', fontWeight: item.fileSizeMB !== undefined && item.fileSizeMB !== null ? 'bold' : 'semibold' }}>${item.price.toFixed(2)}</p>
                   </div>
                 </div>
               ))}

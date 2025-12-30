@@ -254,10 +254,10 @@ export default function ConfirmationClient() {
 
           {/* Order Summary */}
           <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-[var(--shadow-subtle)] p-6 md:p-8 mb-6">
-            <div className="space-y-2 text-sm pt-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+            <div className="space-y-2 pt-2" style={{ fontFamily: 'var(--font-ui)' }}>
               <div className="flex justify-between items-center pt-2 border-t border-[var(--border-subtle)]">
-                <span className="text-lg font-semibold text-[var(--text-primary)]">Total</span>
-                <span className="text-2xl font-bold text-[var(--text-primary)]">${orderData.total.toFixed(2)}</span>
+                <span className="text-[var(--text-primary)]" style={{ fontSize: '16px', lineHeight: '1.7', fontWeight: 'semibold' }}>Total</span>
+                <span className="text-[var(--text-primary)]" style={{ fontSize: '24px', lineHeight: '1.3', fontWeight: 'bold' }}>${orderData.total.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -265,12 +265,13 @@ export default function ConfirmationClient() {
           {/* Download Instructions */}
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-200 shadow-[var(--shadow-subtle)] p-6 md:p-8 mb-6">
             <h2
-              className="text-[var(--text-primary)] mb-4 flex items-center gap-2"
+              className="text-[var(--text-primary)] mb-4 flex items-center gap-2 uppercase"
               style={{
-                fontFamily: 'var(--font-headline)',
-                fontSize: 'var(--h2-size)',
-                lineHeight: 'var(--h2-line-height)',
-                letterSpacing: 'var(--h2-letter-spacing)',
+                fontFamily: 'DM Sans, sans-serif',
+                fontWeight: 500,
+                fontSize: 'clamp(15px, calc(15px + 0.268vw), 18px)',
+                letterSpacing: '0.14em',
+                lineHeight: 1.25,
               }}
             >
               <span>📥</span>

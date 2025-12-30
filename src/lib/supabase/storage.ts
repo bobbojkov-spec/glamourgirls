@@ -149,3 +149,53 @@ export async function uploadToStorage(
   }
 }
 
+/**
+ * Create a signed URL for a file in Supabase Storage (for private buckets)
+ * @param dbPath - Database path from images.path column
+ * @param bucket - Storage bucket name (default: 'images_raw' for HQ images)
+ * @param expiresIn - Expiration time in seconds (default: 300 = 5 minutes)
+ * @returns Signed URL or null if creation fails
+ */
+export async function createSignedUrl(
+  dbPath: string | null | undefined,
+  bucket: string = 'images_raw',
+  expiresIn: number = 300
+): Promise<string | null> {
+  if (!dbPath) return null;
+
+  try {
+    const supabase = getSupabaseClient();
+    
+    // Remove leading slash and normalize path
+    const cleanPath = dbPath.startsWith('/') ? dbPath.slice(1) : dbPath;
+    
+    // Handle full URLs - extract path if needed
+    let storagePath = cleanPath;
+    if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+      // Extract path from full Supabase Storage URL
+      const urlMatch = cleanPath.match(/\/storage\/v1\/object\/[^\/]+\/([^\/]+)\/(.+)$/);
+      if (urlMatch && urlMatch[2]) {
+        storagePath = urlMatch[2];
+      } else {
+        // If we can't parse it, try to use the path as-is
+        console.warn(`Could not parse storage path from URL: ${cleanPath}`);
+        return null;
+      }
+    }
+    
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(storagePath, expiresIn);
+
+    if (error) {
+      console.error(`Failed to create signed URL (bucket: ${bucket}, path: ${storagePath}): ${error.message}`);
+      return null;
+    }
+
+    return data?.signedUrl || null;
+  } catch (error: any) {
+    console.error(`Error creating signed URL for storage path: ${dbPath}`, error);
+    return null;
+  }
+}
+

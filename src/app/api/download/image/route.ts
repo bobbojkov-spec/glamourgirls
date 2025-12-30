@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import { getOrderByCode, logDownload } from '@/lib/orderStore';
-import { fetchFromStorage } from '@/lib/supabase/storage';
+import { fetchFromStorage, fetchFromStorageWithClient, createSignedUrl } from '@/lib/supabase/storage';
 
 export const runtime = 'nodejs';
 
@@ -117,18 +117,45 @@ export async function GET(request: NextRequest) {
     let fileBuffer: Buffer | null = null;
     
     if (/^https?:\/\//i.test(imagePath)) {
-      // Already a full URL (Supabase Storage URL)
+      // Already a full URL (Supabase Storage URL) - could be public or signed URL
       try {
         const response = await fetch(imagePath);
         if (!response.ok) {
+          // If direct fetch fails (403/404), it might be a private bucket - try to create signed URL
+          console.log('Direct URL fetch failed, trying signed URL approach for private bucket');
+          // Extract path from URL to create signed URL
+          const urlMatch = imagePath.match(/\/storage\/v1\/object\/(?:public|sign)\/([^\/]+)\/(.+)$/);
+          if (urlMatch && urlMatch[2]) {
+            const bucket = urlMatch[1]; // Usually 'images_raw' for HQ images
+            const filePath = decodeURIComponent(urlMatch[2]);
+            
+            // Create signed URL for private bucket (5 minute expiration)
+            const signedUrl = await createSignedUrl(filePath, bucket, 300);
+            if (signedUrl) {
+              const signedResponse = await fetch(signedUrl);
+              if (signedResponse.ok) {
+                const arrayBuffer = await signedResponse.arrayBuffer();
+                fileBuffer = Buffer.from(arrayBuffer);
+                console.log('File fetched from signed URL successfully, size:', fileBuffer.length, 'bytes');
+              } else {
+                console.error(`Signed URL fetch failed: ${signedResponse.status}`);
+              }
+            }
+          }
+          
+          // If still no buffer, return error
+          if (!fileBuffer) {
           return NextResponse.json(
             { error: 'Image not found in storage' },
             { status: 404 }
           );
         }
+        } else {
+          // Public URL worked
         const arrayBuffer = await response.arrayBuffer();
         fileBuffer = Buffer.from(arrayBuffer);
-        console.log('File fetched from URL successfully, size:', fileBuffer.length, 'bytes');
+          console.log('File fetched from public URL successfully, size:', fileBuffer.length, 'bytes');
+        }
       } catch (fetchError: any) {
         console.error('Error fetching image from URL:', fetchError);
         return NextResponse.json(
@@ -137,8 +164,8 @@ export async function GET(request: NextRequest) {
         );
       }
     } else {
-      // Database path - try images_raw bucket first (HQ images), then public bucket as fallback
-      fileBuffer = await fetchFromStorage(imagePath, 'images_raw');
+      // Database path - try private bucket first (HQ images) using client, then public bucket as fallback
+      fileBuffer = await fetchFromStorageWithClient(imagePath, 'images_raw');
       
       if (!fileBuffer) {
         // Try the public bucket as fallback

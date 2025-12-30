@@ -165,7 +165,7 @@ export default function PaymentPage() {
             >
               Payment
             </h1>
-            <p className="text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-ui)' }}>Enter your email and select a payment method</p>
+            <p className="text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', lineHeight: '1.4' }}>Enter your email and select a payment method</p>
           </div>
 
           {/* Order Summary */}
@@ -184,7 +184,7 @@ export default function PaymentPage() {
                       <p
                         className="truncate block text-[var(--text-primary)]"
                         style={{ 
-                          fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                          fontFamily: '"Cormorant Garamond", Georgia, serif',
                           fontSize: 'clamp(16px, 0.4vw + 16px, 18px)',
                           fontWeight: 500,
                           letterSpacing: '0.01em',
@@ -194,7 +194,7 @@ export default function PaymentPage() {
                         {item.actressName}
                       </p>
                       {(item.width || item.height || item.fileSizeMB) && (
-                        <p className="text-xs text-[var(--text-muted)] mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                        <p className="text-[var(--text-muted)]" style={{ fontFamily: 'var(--font-ui)', fontSize: '13px', lineHeight: '1.4' }}>
                           {item.width && item.height && `${item.width} × ${item.height} px`}
                           {item.width && item.height && item.fileSizeMB && (
                             <span className="text-[var(--text-muted)]/80"> / {item.fileSizeMB} MB</span>
@@ -203,27 +203,27 @@ export default function PaymentPage() {
                       )}
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className={`${item.fileSizeMB !== undefined && item.fileSizeMB !== null ? 'text-base font-bold text-[var(--text-primary)]' : 'text-sm font-semibold text-[var(--text-primary)]'}`} style={{ fontFamily: 'DM Sans, sans-serif' }}>${item.price.toFixed(2)}</p>
+                      <p className="text-[var(--text-primary)]" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: item.fileSizeMB !== undefined && item.fileSizeMB !== null ? '16px' : '13px', fontWeight: item.fileSizeMB !== undefined && item.fileSizeMB !== null ? 'bold' : 'semibold' }}>${item.price.toFixed(2)}</p>
                     </div>
                   </div>
                 ))}
               </div>
             )}
             
-            <div className="space-y-2 text-sm pt-2 border-t border-[var(--border-subtle)]" style={{ fontFamily: 'var(--font-ui)' }}>
-              <div className="flex justify-between text-[var(--text-secondary)]">
+            <div className="space-y-2 pt-2 border-t border-[var(--border-subtle)]" style={{ fontFamily: 'var(--font-ui)' }}>
+              <div className="flex justify-between text-[var(--text-secondary)]" style={{ fontSize: '13px', lineHeight: '1.4' }}>
                 <span>Subtotal ({cart.length} {cart.length === 1 ? 'item' : 'items'})</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span style={{ fontWeight: 'medium' }}>${subtotal.toFixed(2)}</span>
               </div>
               {discountRate > 0 && (
-                <div className="flex justify-between text-green-700">
-                  <span>Discount ({Math.round(discountRate * 100)}% off)</span>
-                  <span>-${discountAmount.toFixed(2)}</span>
+                <div className="flex justify-between text-green-700" style={{ fontSize: '13px', lineHeight: '1.4' }}>
+                  <span style={{ fontWeight: 'medium' }}>Discount ({Math.round(discountRate * 100)}% off)</span>
+                  <span style={{ fontWeight: 'semibold' }}>-${discountAmount.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between font-semibold text-lg pt-2 border-t border-[var(--border-subtle)]">
-                <span className="text-[var(--text-primary)]">Total</span>
-                <span className="text-[var(--text-primary)]">${total.toFixed(2)}</span>
+              <div className="flex justify-between pt-2 border-t border-[var(--border-subtle)]">
+                <span className="text-[var(--text-primary)]" style={{ fontSize: '16px', lineHeight: '1.7', fontWeight: 'semibold' }}>Total</span>
+                <span className="text-[var(--text-primary)]" style={{ fontSize: '24px', lineHeight: '1.3', fontWeight: 'bold' }}>${total.toFixed(2)}</span>
               </div>
             </div>
           </div>
