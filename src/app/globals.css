@@ -38,10 +38,10 @@
   --font-body: var(--font-base);
   
   /* Heading Fonts - Vintage/Retro Style */
-  --font-vintage-display: 'Cinzel Decorative', 'Playfair Display', Georgia, serif;  /* Big hero titles */
-  --font-vintage-headline: 'Playfair Display SC', 'Playfair Display', Georgia, serif;  /* Section headers */
-  --font-vintage-subtitle: 'Playfair Display', Georgia, serif;  /* Subtitles, elegant headings */
-  --font-vintage-condensed: 'Bebas Neue', 'Arial Narrow', sans-serif;  /* Bold condensed titles */
+  --font-vintage-display: "Cormorant Garamond", Georgia, serif;  /* Big hero titles */
+  --font-vintage-headline: "Cormorant Garamond", Georgia, serif;  /* Section headers */
+  --font-vintage-subtitle: "Cormorant Garamond", Georgia, serif;  /* Subtitles, elegant headings */
+  --font-vintage-condensed: 'DM Sans', sans-serif;  /* Bold condensed titles */
   --font-protest-strike: 'Protest Strike', 'Bebas Neue', 'Arial Black', sans-serif;  /* Bold display font */
   
   /* Accent & Body Fonts */
@@ -148,7 +148,7 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-dark-text);
 }
 
-/* H1 - Hero/Page Titles - Cinzel Decorative */
+/* H1 - Hero/Page Titles */
 h1 {
   font-family: var(--font-vintage-display);
   font-size: var(--text-5xl);
@@ -158,7 +158,7 @@ h1 {
   text-shadow: var(--shadow-vintage-title);
 }
 
-/* H2 - Section Titles - Playfair Display SC */
+/* H2 - Section Titles - Cormorant Garamond */
 h2 {
   font-family: var(--font-vintage-headline);
   font-size: var(--text-4xl);
@@ -170,7 +170,7 @@ h2 {
     2px 2px 4px rgba(0, 0, 0, 0.06);
 }
 
-/* H3 - Subsection Titles - Playfair Display SC */
+/* H3 - Subsection Titles - Cormorant Garamond */
 h3 {
   font-family: var(--font-vintage-headline);
   font-size: var(--text-3xl);
@@ -254,7 +254,7 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
    VINTAGE TYPOGRAPHY SYSTEM
    ======================================== */
 
-/* Main Display Title - Cinema Poster Style (Cinzel Decorative) */
+/* Main Display Title - Cinema Poster Style */
 .vintage-title {
   font-family: var(--font-vintage-display);
   font-weight: 700;
@@ -264,7 +264,7 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
   line-height: 0.95;
 }
 
-/* Headline style - Playfair Display SC */
+/* Headline style - Cormorant Garamond */
 .vintage-headline {
   font-family: var(--font-vintage-headline);
   font-weight: 700;
@@ -306,7 +306,7 @@ h1.text-vintage-brown, h2.text-vintage-brown, h3.text-vintage-brown { color: #8b
 }
 
 /* Alternative elegant serif */
-/* Elegant Serif - Playfair Display (for subtitles, elegant headings) */
+/* Elegant Serif - Cormorant Garamond (for subtitles, elegant headings) */
 .vintage-alt,
 .vintage-subtitle {
   font-family: var(--font-vintage-subtitle);
