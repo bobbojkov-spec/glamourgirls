@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
-import { fetchFromStorage } from '@/lib/supabase/storage';
+import { fetchFromStorage, fetchFromStorageWithClient, createSignedUrl } from '@/lib/supabase/storage';
 
 export const runtime = 'nodejs';
 
@@ -15,24 +15,54 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Image path required' }, { status: 400 });
     }
 
-    // If already a full URL (Supabase Storage URL), fetch directly
+    // Fetch image from Supabase Storage (try private bucket first with signed URLs, then public)
     let imageBuffer: Buffer | null = null;
     
     if (/^https?:\/\//i.test(imagePath)) {
+      // Already a full URL - try to fetch directly first
       try {
         const response = await fetch(imagePath);
         if (!response.ok) {
-          return NextResponse.json({ error: 'Image not found' }, { status: 404 });
+          // If direct fetch fails (403/404), it might be a private bucket - create signed URL
+          console.log('Direct URL fetch failed, trying signed URL approach for private bucket');
+          const urlMatch = imagePath.match(/\/storage\/v1\/object\/(?:public|sign)\/([^\/]+)\/(.+?)(\?|$)/);
+          if (urlMatch && urlMatch[2]) {
+            const bucket = urlMatch[1]; // Usually 'glamourgirls_images' for thumbnails
+            const filePath = decodeURIComponent(urlMatch[2]);
+            
+            // Create signed URL for private bucket
+            const signedUrl = await createSignedUrl(filePath, bucket, 60);
+            if (signedUrl) {
+              const signedResponse = await fetch(signedUrl);
+              if (signedResponse.ok) {
+                const arrayBuffer = await signedResponse.arrayBuffer();
+                imageBuffer = Buffer.from(arrayBuffer);
+              } else {
+                console.error(`Signed URL fetch failed: ${signedResponse.status}`);
+              }
+            }
+          }
+          
+          if (!imageBuffer) {
+            return NextResponse.json({ error: 'Image not found' }, { status: 404 });
+          }
+        } else {
+          // Public URL worked
+          const arrayBuffer = await response.arrayBuffer();
+          imageBuffer = Buffer.from(arrayBuffer);
         }
-        const arrayBuffer = await response.arrayBuffer();
-        imageBuffer = Buffer.from(arrayBuffer);
       } catch (err) {
         console.error('Error fetching image from URL:', err);
         return NextResponse.json({ error: 'Failed to fetch image' }, { status: 500 });
       }
     } else {
-      // Database path - fetch from Supabase Storage
-      imageBuffer = await fetchFromStorage(imagePath);
+      // Database path - try private bucket first using client with service role
+      imageBuffer = await fetchFromStorageWithClient(imagePath, 'glamourgirls_images');
+      
+      // If that fails, try public bucket as fallback
+      if (!imageBuffer) {
+        imageBuffer = await fetchFromStorage(imagePath, 'glamourgirls_images');
+      }
       
       if (!imageBuffer) {
         return NextResponse.json({ error: 'Image not found in storage' }, { status: 404 });

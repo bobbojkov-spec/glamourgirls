@@ -8,16 +8,24 @@
  * 3. Updates the sz column in the database
  * 4. Updates the description column with formatted dimensions and file size
  * 
- * Usage: tsx scripts/calculate-hq-file-sizes.ts
+ * Usage: 
+ *   Normal mode: tsx scripts/calculate-hq-file-sizes.ts
+ *   Test mode (specific images): TEST_IMAGE_IDS="123,456" tsx scripts/calculate-hq-file-sizes.ts
  * 
  * To interrupt and cleanup: Press Ctrl+C, then run scripts/cleanup-hq-file-sizes.ts
  */
 
 import { getPool } from '../src/lib/db';
-import { fetchFromStorage } from '../src/lib/supabase/storage';
+import { fetchFromStorageWithClient } from '../src/lib/supabase/storage';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
+
+// Test mode: specify image IDs to test with (comma-separated)
+// Usage: TEST_IMAGE_IDS="123,456" tsx scripts/calculate-hq-file-sizes.ts
+const TEST_IMAGE_IDS = process.env.TEST_IMAGE_IDS 
+  ? process.env.TEST_IMAGE_IDS.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
+  : null;
 
 // Helper function to format image description
 function formatImageDescription(width: number, height: number, fileSizeBytes: number): string {
@@ -30,20 +38,37 @@ async function calculateFileSizes() {
   const client = await pgPool.connect();
 
   try {
-    console.log('🔍 Finding HQ images (mytp = 5) where long side > 1200px...\n');
+    if (TEST_IMAGE_IDS && TEST_IMAGE_IDS.length > 0) {
+      console.log(`🧪 TEST MODE: Processing ${TEST_IMAGE_IDS.length} specific image(s): ${TEST_IMAGE_IDS.join(', ')}\n`);
+    } else {
+      console.log('🔍 Finding HQ images (mytp = 5) where long side > 1200px...\n');
+    }
     
-    // Get all HQ images where long side > 1200px
-    const hqImages = await client.query(`
+    // Get HQ images - either test mode or all matching criteria
+    let query = `
       SELECT id, girlid, path, width, height, sz, description, mytp
       FROM images
       WHERE mytp = 5
-        AND (width > 1200 OR height > 1200)
         AND width IS NOT NULL 
         AND height IS NOT NULL
-      ORDER BY id
-    `);
+    `;
+    
+    const queryParams: any[] = [];
+    
+    if (TEST_IMAGE_IDS && TEST_IMAGE_IDS.length > 0) {
+      // Test mode: only get specific image IDs
+      query += ` AND id = ANY($1::int[])`;
+      queryParams.push(TEST_IMAGE_IDS);
+    } else {
+      // Normal mode: only images where long side > 1200px
+      query += ` AND (width > 1200 OR height > 1200)`;
+    }
+    
+    query += ` ORDER BY id`;
+    
+    const hqImages = await client.query(query, queryParams);
 
-    console.log(`Found ${hqImages.rows.length} HQ images with long side > 1200px\n`);
+    console.log(`Found ${hqImages.rows.length} HQ image(s) to process\n`);
 
     let processed = 0;
     let updated = 0;
@@ -78,24 +103,36 @@ async function calculateFileSizes() {
           }
 
           console.log(`[${processed}/${hqImages.rows.length}] Processing Image ID ${row.id} (Girl ${row.girlid}): ${row.width} × ${row.height} px`);
+          console.log(`  📁 Path: ${row.path}`);
+          
+          if (!row.path) {
+            console.error(`  ❌ No path found for image ID ${row.id}`);
+            errors++;
+            return;
+          }
           
           // Try to fetch from Supabase storage
-          // HQ images are typically in 'images_raw' bucket, but may also be in 'glamourgirls_images'
+          // HQ images are typically in 'images_raw' bucket (private), but may also be in 'glamourgirls_images' (public)
           let fileBuffer: Buffer | null = null;
           
-          // Try images_raw bucket first (HQ images)
-          fileBuffer = await fetchFromStorage(row.path, 'images_raw');
+          // Try images_raw bucket first (HQ images - private bucket, use client method)
+          console.log(`  🔍 Trying images_raw bucket...`);
+          fileBuffer = await fetchFromStorageWithClient(row.path, 'images_raw');
           
-          // If not found, try glamourgirls_images bucket
+          // If not found, try glamourgirls_images bucket (public bucket)
           if (!fileBuffer) {
-            fileBuffer = await fetchFromStorage(row.path, 'glamourgirls_images');
+            console.log(`  🔍 Trying glamourgirls_images bucket...`);
+            fileBuffer = await fetchFromStorageWithClient(row.path, 'glamourgirls_images');
           }
 
           if (!fileBuffer) {
             console.error(`  ❌ Could not fetch image from storage: ${row.path}`);
+            console.error(`     Tried buckets: images_raw, glamourgirls_images`);
             errors++;
             return;
           }
+          
+          console.log(`  ✅ Successfully fetched image (${fileBuffer.length} bytes)`);
 
           const fileSizeBytes = fileBuffer.length;
           const fileSizeMB = (fileSizeBytes / (1024 * 1024)).toFixed(2);

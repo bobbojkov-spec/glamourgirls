@@ -85,7 +85,7 @@ export default function HeroGalleryButton({ galleryImages, actressId, actressNam
             <circle cx="8.5" cy="8.5" r="1.5" />
             <polyline points="21 15 16 10 5 21" />
           </svg>
-          <span className="hidden sm:inline">View Photo Archive</span>
+          <span className="hidden sm:inline">Photo Gallery</span>
           <span className="sm:hidden">PHOTOS</span>
         </span>
         <div 

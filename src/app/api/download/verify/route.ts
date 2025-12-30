@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrderByCode, getAllOrders } from '@/lib/orderStore';
+import { createSignedUrl } from '@/lib/supabase/storage';
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,22 +44,59 @@ export async function GET(request: NextRequest) {
     
     console.log('Order found for code:', code, 'OrderId:', order.orderId, 'Items:', order.items.length);
 
-    return NextResponse.json({
-      success: true,
-      download: {
-        orderId: order.orderId,
-        email: order.email,
-        items: order.items.map((item: any) => ({
+    // Generate signed URLs for thumbnails (60 second expiration for previews)
+    const itemsWithSignedUrls = await Promise.all(
+      order.items.map(async (item: any) => {
+        let thumbnailSignedUrl = '';
+        const thumbnailPath = item.thumbnailUrl || item.imageUrl || '';
+        
+        if (thumbnailPath) {
+          // Check if it's already a full URL (public bucket)
+          if (thumbnailPath.startsWith('http://') || thumbnailPath.startsWith('https://')) {
+            // If it's a public URL, check if it's actually accessible
+            // If not, we'll need to extract the path and create a signed URL
+            // For now, try to extract bucket and path if it's a Supabase URL
+            const urlMatch = thumbnailPath.match(/\/storage\/v1\/object\/public\/([^\/]+)\/(.+)$/);
+            if (urlMatch) {
+              // It's a public URL, use it directly
+              thumbnailSignedUrl = thumbnailPath;
+            } else {
+              // Might be a signed URL already, or we need to extract path
+              const signedUrlMatch = thumbnailPath.match(/\/storage\/v1\/object\/sign\/([^\/]+)\/(.+?)(\?|$)/);
+              if (signedUrlMatch) {
+                // Already a signed URL
+                thumbnailSignedUrl = thumbnailPath;
+              } else {
+                // Try to create signed URL from the full URL
+                thumbnailSignedUrl = await createSignedUrl(thumbnailPath, 'glamourgirls_images', 60) || thumbnailPath;
+              }
+            }
+          } else {
+            // Database path - create signed URL for private bucket
+            thumbnailSignedUrl = await createSignedUrl(thumbnailPath, 'glamourgirls_images', 60) || '';
+          }
+        }
+
+        return {
           imageId: item.imageId,
           actressId: item.actressId,
           actressName: item.actressName,
           hqUrl: item.hqUrl,
           imageUrl: item.imageUrl,
-          thumbnailUrl: item.thumbnailUrl || item.imageUrl || '',
+          thumbnailUrl: thumbnailSignedUrl || item.thumbnailUrl || item.imageUrl || '',
           width: item.width,
           height: item.height,
           fileSizeMB: item.fileSizeMB,
-        })),
+        };
+      })
+    );
+
+    return NextResponse.json({
+      success: true,
+      download: {
+        orderId: order.orderId,
+        email: order.email,
+        items: itemsWithSignedUrls,
         code: order.downloadCode,
         used: order.used,
       },

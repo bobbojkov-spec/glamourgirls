@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
 import { getOrderByCode, logDownload } from '@/lib/orderStore';
-import { fetchFromStorage, fetchFromStorageWithClient, createSignedUrl } from '@/lib/supabase/storage';
+import { createSignedUrl } from '@/lib/supabase/storage';
 
 export const runtime = 'nodejs';
 
@@ -112,95 +111,41 @@ export async function GET(request: NextRequest) {
 
     console.log('Download attempt - imagePath:', imagePath);
 
-    // Fetch image from Supabase Storage
-    // HQ images are in the private 'images_raw' bucket, but may also be in public bucket
-    let fileBuffer: Buffer | null = null;
+    // Generate signed URL for private bucket (300 seconds = 5 minutes expiration)
+    let signedUrl: string | null = null;
     
     if (/^https?:\/\//i.test(imagePath)) {
-      // Already a full URL (Supabase Storage URL) - could be public or signed URL
-      try {
-        const response = await fetch(imagePath);
-        if (!response.ok) {
-          // If direct fetch fails (403/404), it might be a private bucket - try to create signed URL
-          console.log('Direct URL fetch failed, trying signed URL approach for private bucket');
-          // Extract path from URL to create signed URL
-          const urlMatch = imagePath.match(/\/storage\/v1\/object\/(?:public|sign)\/([^\/]+)\/(.+)$/);
-          if (urlMatch && urlMatch[2]) {
-            const bucket = urlMatch[1]; // Usually 'images_raw' for HQ images
-            const filePath = decodeURIComponent(urlMatch[2]);
-            
-            // Create signed URL for private bucket (5 minute expiration)
-            const signedUrl = await createSignedUrl(filePath, bucket, 300);
-            if (signedUrl) {
-              const signedResponse = await fetch(signedUrl);
-              if (signedResponse.ok) {
-                const arrayBuffer = await signedResponse.arrayBuffer();
-                fileBuffer = Buffer.from(arrayBuffer);
-                console.log('File fetched from signed URL successfully, size:', fileBuffer.length, 'bytes');
-              } else {
-                console.error(`Signed URL fetch failed: ${signedResponse.status}`);
-              }
-            }
-          }
-          
-          // If still no buffer, return error
-          if (!fileBuffer) {
-          return NextResponse.json(
-            { error: 'Image not found in storage' },
-            { status: 404 }
-          );
-        }
-        } else {
-          // Public URL worked
-        const arrayBuffer = await response.arrayBuffer();
-        fileBuffer = Buffer.from(arrayBuffer);
-          console.log('File fetched from public URL successfully, size:', fileBuffer.length, 'bytes');
-        }
-      } catch (fetchError: any) {
-        console.error('Error fetching image from URL:', fetchError);
-        return NextResponse.json(
-          { error: 'Failed to fetch image from storage' },
-          { status: 500 }
-        );
+      // Already a full URL - extract bucket and path to create signed URL
+      const urlMatch = imagePath.match(/\/storage\/v1\/object\/(?:public|sign)\/([^\/]+)\/(.+?)(\?|$)/);
+      if (urlMatch && urlMatch[2]) {
+        const bucket = urlMatch[1]; // Usually 'images_raw' for HQ images
+        const filePath = decodeURIComponent(urlMatch[2]);
+        
+        // Create signed URL for private bucket
+        signedUrl = await createSignedUrl(filePath, bucket, 300);
+      } else {
+        // If we can't parse it, try to create signed URL from the path directly
+        // This handles cases where the URL format is different
+        signedUrl = await createSignedUrl(imagePath, 'images_raw', 300);
       }
     } else {
-      // Database path - try private bucket first (HQ images) using client, then public bucket as fallback
-      fileBuffer = await fetchFromStorageWithClient(imagePath, 'images_raw');
-      
-      if (!fileBuffer) {
-        // Try the public bucket as fallback
-        fileBuffer = await fetchFromStorage(imagePath, 'glamourgirls_images');
-        
-        if (!fileBuffer) {
-          return NextResponse.json(
-            { error: 'Image not found in storage' },
-            { status: 404 }
-          );
-        }
-      }
-      console.log('File fetched from storage successfully, size:', fileBuffer.length, 'bytes');
+      // Database path - create signed URL for private bucket
+      signedUrl = await createSignedUrl(imagePath, 'images_raw', 300);
     }
     
-    const fileExt = path.extname(imagePath).toLowerCase();
-    
-    // Determine content type
-    const contentType = 
-      fileExt === '.jpg' || fileExt === '.jpeg' ? 'image/jpeg' :
-      fileExt === '.png' ? 'image/png' :
-      fileExt === '.gif' ? 'image/gif' :
-      'application/octet-stream';
+    if (!signedUrl) {
+      console.error('Failed to create signed URL for image path:', imagePath);
+      return NextResponse.json(
+        { error: 'Failed to generate download URL' },
+        { status: 500 }
+      );
+    }
 
-    // Generate filename - get actress name from order item if available, or use generic
-    const actressName = imageItem?.actressName || 'Image';
-    const filename = `${actressName.replace(/\s+/g, '_')}_HQ_${imageId}${fileExt}`;
+    console.log('Signed URL generated successfully');
 
-    // Return the file with proper headers
-    return new NextResponse(new Uint8Array(fileBuffer), {
-      headers: {
-        'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Content-Length': fileBuffer.length.toString(),
-      },
+    // Return signed URL instead of streaming the file
+    return NextResponse.json({
+      url: signedUrl
     });
   } catch (error: any) {
     console.error('Download error:', error);

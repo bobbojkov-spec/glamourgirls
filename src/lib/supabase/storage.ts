@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 
 /**
  * Get Supabase client for server-side operations
+ * Uses SERVICE ROLE KEY for admin access to private buckets
  */
 function getSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -15,7 +16,11 @@ function getSupabaseClient() {
     throw new Error('Supabase URL and Service Role Key must be set');
   }
 
-  return createClient(supabaseUrl, supabaseKey);
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      persistSession: false
+    }
+  });
 }
 
 /**

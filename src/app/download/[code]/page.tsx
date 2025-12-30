@@ -129,7 +129,7 @@ export default function DownloadPage() {
       const downloadCode = (code && code !== 'code' ? code : enteredCode)?.trim().toUpperCase();
       console.log('Downloading image:', item.imageId, 'with code:', downloadCode, 'hqUrl:', item.hqUrl);
 
-      // Try download API endpoint with code first
+      // Call download API endpoint to get signed URL
       let downloadUrl = `/api/download/image?imageId=${encodeURIComponent(item.imageId)}`;
       
       if (downloadCode) {
@@ -167,43 +167,33 @@ export default function DownloadPage() {
             if (retryErrorData.error && retryErrorData.error.includes('already been used')) {
               throw new Error(retryErrorData.error);
             }
+            throw new Error(retryErrorData.error || 'Failed to download image. Please try again or contact support.');
           }
         } else {
           throw new Error(errorData.error || 'Failed to download image. Please try again or contact support.');
         }
       }
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Download failed' }));
-        throw new Error(errorData.error || 'Failed to download image. Please try again or contact support.');
+
+      // Get the signed URL from the response
+      const data = await response.json();
+      if (!data.url) {
+        throw new Error('No download URL received from server');
       }
 
-      // Get the file as a blob
-      const blob = await response.blob();
-      
-      // Create a temporary link and trigger download
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      
-      // Get filename from Content-Disposition header or generate one
-      const contentDisposition = response.headers.get('Content-Disposition');
+      // Generate filename
       const fileExt = item.hqUrl?.match(/\.(jpg|jpeg|png|gif)$/i)?.[0] || '.jpg';
-      let filename = `${item.actressName.replace(/\s+/g, '_')}_HQ_${item.imageId}${fileExt}`;
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+?)"?$/);
-        if (filenameMatch) {
-          filename = filenameMatch[1];
-        }
-      }
+      const filename = `${item.actressName.replace(/\s+/g, '_')}_HQ_${item.imageId}${fileExt}`;
+      
+      // Redirect to signed URL for download
+      // Use a temporary link to trigger download with proper filename
+      const link = document.createElement('a');
+      link.href = data.url;
       link.download = filename;
+      link.target = '_blank';
       
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Clean up the object URL
-      window.URL.revokeObjectURL(url);
 
       // Mark as downloaded
       setDownloadedItems(prev => new Set([...prev, item.imageId]));
@@ -214,7 +204,7 @@ export default function DownloadPage() {
           const verifyResponse = await fetch(`/api/download/verify?code=${encodeURIComponent(downloadCode)}`);
           const verifyData = await verifyResponse.json();
           if (verifyData.success && verifyData.download) {
-            // Update downloadData with fresh status from API
+            // Update downloadData with fresh status from API (includes new signed URLs for thumbnails)
             setDownloadData(verifyData.download);
             // Update localStorage
             localStorage.setItem(`download_order_${downloadCode}`, JSON.stringify(verifyData.download));
