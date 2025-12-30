@@ -47,7 +47,7 @@
   /* Accent & Body Fonts */
   --font-vintage-script: 'Great Vibes', 'Brush Script MT', cursive;
   --font-vintage-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-  --font-typewriter: 'Courier New', Courier, monospace;
+  --font-typewriter: "Cormorant Garamond", 'Courier New', Courier, monospace;
   
   /* Responsive Typography Scale */
   --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
@@ -1272,6 +1272,8 @@ a,
   padding: 14px 14px !important; /* Reduced from default 16px by 2px */
 }
 
+
 .compact-table .ant-table-tbody > tr > td {
   padding: 14px 14px !important; /* Reduced from default 16px by 2px */
 }
+
