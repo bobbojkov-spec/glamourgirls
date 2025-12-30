@@ -214,7 +214,7 @@ export default function SearchClient() {
               <p 
                 className="mb-0"
                 style={{ 
-                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
                   color: 'var(--text-primary)',
                   fontSize: 'clamp(0.875rem, 0.5vw + 0.75rem, 1.125rem)', // Fluid: 14px mobile → 18px desktop, same as current search
                   lineHeight: '1.7',

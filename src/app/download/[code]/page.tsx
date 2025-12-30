@@ -431,7 +431,7 @@ export default function DownloadPage() {
                     <p
                       className="mb-1 truncate block text-[var(--text-primary)]"
                       style={{ 
-                        fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                        fontFamily: '"Cormorant Garamond", Georgia, serif',
                         fontSize: 'clamp(16px, 0.4vw + 16px, 18px)',
                         fontWeight: 500,
                         letterSpacing: '0.01em',

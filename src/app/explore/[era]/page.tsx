@@ -257,7 +257,7 @@ export default async function ExploreEraPage({ params }: { params: Promise<{ era
               >
                 Explore Other Eras
               </h2>
-              <p className="text-[var(--text-secondary)] mb-8 text-base leading-relaxed text-center">
+              <p className="text-[var(--text-secondary)] mb-8 text-base leading-relaxed text-center" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', paddingTop: '30px' }}>
                 Discover glamour girls from other decades of classic Hollywood.
               </p>
               <div className="flex flex-wrap justify-center gap-6">

@@ -145,7 +145,7 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
                 href={profileUrl}
                 className="text-[var(--text-primary)] text-center leading-tight"
                 style={{ 
-                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
                   fontSize: 'clamp(15px, 0.35vw + 14.5px, 16.5px)', // 1px bigger than before
                   fontWeight: 500,
                   display: '-webkit-box',
@@ -164,7 +164,7 @@ function LatestAdditionsGrid({ actresses }: { actresses: SearchActressResult[] }
                 <span 
                   className="text-center"
                   style={{ 
-                    fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                    fontFamily: '"Cormorant Garamond", Georgia, serif',
                     fontSize: '14px', // 2px bigger (was 12px)
                     color: 'var(--text-secondary)',
                     opacity: 0.7,
@@ -537,7 +537,7 @@ export default function HomePage() {
               <div 
                 className="text-center text-[var(--text-secondary)] py-8"
                 style={{ 
-                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
                   fontSize: 'clamp(0.8125rem, 0.3vw + 0.75rem, 0.9375rem)', // Fluid: 13px mobile → 15px desktop, smooth scaling
                   letterSpacing: '0.01em',
                 }}
@@ -618,7 +618,7 @@ export default function HomePage() {
                           href={profileUrl}
                           className="text-[var(--text-primary)] text-center leading-tight"
                           style={{ 
-                            fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                            fontFamily: '"Cormorant Garamond", Georgia, serif',
                             fontSize: 'clamp(16px, 0.4vw + 16px, 18px)', // 1px bigger (was 15-17px)
                             fontWeight: 500,
                             display: '-webkit-box',
@@ -637,7 +637,7 @@ export default function HomePage() {
                           <span 
                             className="text-center"
                             style={{ 
-                              fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                              fontFamily: '"Cormorant Garamond", Georgia, serif',
                               fontSize: '14px', // 2px bigger (was 12px)
                               color: 'var(--text-secondary)',
                               opacity: 0.7,
@@ -657,7 +657,7 @@ export default function HomePage() {
               <div 
                 className="text-center text-[var(--text-secondary)] py-8"
                 style={{ 
-                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
                   fontSize: 'clamp(0.8125rem, 0.3vw + 0.75rem, 0.9375rem)', // Fluid: 13px mobile → 15px desktop, smooth scaling
                   letterSpacing: '0.01em',
                 }}
@@ -734,7 +734,7 @@ export default function HomePage() {
                   <span 
                     className="text-[var(--text-primary)]"
                     style={{ 
-                      fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                      fontFamily: '"Cormorant Garamond", Georgia, serif',
                       fontSize: 'clamp(1.0625rem, 0.3vw + 0.875rem, 1.125rem)', // Fluid: 17px mobile → 18px desktop (+2px)
                       fontWeight: 500,
                       letterSpacing: '0.02em',
@@ -790,7 +790,7 @@ export default function HomePage() {
             <p 
               className="mb-6 md:mb-8 text-[var(--text-secondary)]"
               style={{ 
-                fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                fontFamily: '"Cormorant Garamond", Georgia, serif',
                 fontSize: 'clamp(0.875rem, 0.4vw + 0.75rem, 1rem)', // Fluid: 14px mobile → 16px desktop, smooth scaling
                 lineHeight: '1.7',
                 letterSpacing: '0.01em',

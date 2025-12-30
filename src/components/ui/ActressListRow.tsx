@@ -112,7 +112,7 @@ export default function ActressListRow({
         <p
           className="text-[var(--text-primary)] leading-tight truncate"
           style={{ 
-            fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+            fontFamily: '"Cormorant Garamond", Georgia, serif',
             fontSize: nameFontSize || 'clamp(16px, 0.4vw + 16px, 18px)',
             fontWeight: 600, // SemiBold
             letterSpacing: '0.01em',

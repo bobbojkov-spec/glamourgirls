@@ -193,7 +193,7 @@ export default function Lightbox({
   // Render using portal to ensure it's at the root level
   const lightboxContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm"
       onClick={onClose}
     >
       {/* Close button - Overlay on image corner for mobile */}
@@ -328,17 +328,19 @@ export default function Lightbox({
         <div className="w-full max-w-4xl mx-auto">
           {/* Mobile: Same layout as desktop (no box) */}
           <div className="md:hidden w-full max-w-4xl mx-auto">
-            {/* Actress name - centered, Playfair Display, 24px, NOT all caps */}
+            {/* Actress name - centered, Cormorant Garamond, 24px, NOT all caps */}
             <div className="flex items-center justify-center mb-3">
               <h2 
-                className="text-white text-center"
+                className="text-center"
                 style={{ 
-                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
                   fontSize: '24px',
                   fontWeight: 600, // SemiBold
                   letterSpacing: '0.01em',
                   textTransform: 'none',
                   lineHeight: '1.2',
+                  color: '#ffffff',
+                  textShadow: '0 2px 8px rgba(0, 0, 0, 0.8)',
                 }}
                 title={actressName}
               >
@@ -475,17 +477,19 @@ export default function Lightbox({
 
           {/* Desktop: Clean layout without background block, centered, matching image width */}
           <div className="hidden md:block w-full max-w-4xl mx-auto">
-            {/* Actress name - centered, Playfair Display, 24px, NOT all caps */}
+            {/* Actress name - centered, Cormorant Garamond, 24px, NOT all caps */}
             <div className="flex items-center justify-center mb-3">
               <h2 
-                className="text-white text-center"
+                className="text-center"
                 style={{ 
-                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
                   fontSize: '24px',
                   fontWeight: 600, // SemiBold
                   letterSpacing: '0.01em',
                   textTransform: 'none',
                   lineHeight: '1.2',
+                  color: '#ffffff',
+                  textShadow: '0 2px 8px rgba(0, 0, 0, 0.8)',
                 }}
                 title={actressName}
               >

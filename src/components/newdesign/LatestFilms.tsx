@@ -109,7 +109,7 @@ export default function TheirMen() {
                     <span
                       className="flex-1 group-hover:text-[var(--accent-gold)] transition-colors"
                       style={{
-                        fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                        fontFamily: '"Cormorant Garamond", Georgia, serif',
                         fontSize: 'clamp(1rem, 1.1vw, 1.125rem)', // 16px mobile, 18px desktop
                         fontWeight: 600, // SemiBold
                         color: 'var(--text-primary)',

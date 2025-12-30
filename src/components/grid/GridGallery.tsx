@@ -234,7 +234,7 @@ export default function GridGallery() {
                   <p 
                     className="text-white text-center px-1 leading-tight" 
                     style={{ 
-                      fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                      fontFamily: '"Cormorant Garamond", Georgia, serif',
                       fontSize: 'clamp(12px, 1.5vw, 16px)',
                       fontWeight: 600, // SemiBold
                       letterSpacing: '0.02em',

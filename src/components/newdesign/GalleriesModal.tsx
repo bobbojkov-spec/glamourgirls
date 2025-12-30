@@ -73,7 +73,7 @@ export default function GalleriesModal({ isOpen, onClose }: GalleriesModalProps)
                   backgroundColor: '#fef9eb',
                   border: '1px solid #6f5718',
                   boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
                 }}
                 onMouseEnter={(e) => {
                   if (window.innerWidth >= 768) {

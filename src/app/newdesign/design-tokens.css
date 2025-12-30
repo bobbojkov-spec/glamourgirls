@@ -25,13 +25,6 @@
   font-display: optional; /* Optional for decorative fonts - prevents blocking */
 }
 
-@font-face {
-  font-family: 'Didot Bold';
-  src: url('/fonts/didot-2/Didot Bold.otf') format('opentype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: optional; /* Optional for decorative fonts - prevents blocking */
-}
 
 @font-face {
   font-family: 'Broadway BT';
@@ -88,7 +81,7 @@
   --font-headline: 'DM Sans', 'sans-serif', "Cormorant Garamond", Georgia, serif;
   /* UI fonts loaded via next/font - use CSS variables */
   --font-ui: var(--font-inter), var(--font-source-sans), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-name: 'Didot Bold', 'Didot', 'Times New Roman', serif;
+  --font-name: "Cormorant Garamond", Georgia, serif;
 
   /* Typography - Logo Sizes */
   --logo-desktop: 86px;

@@ -107,7 +107,7 @@ export default function ActressTable({
                   <span 
                     className="text-[var(--text-primary)] leading-tight truncate" 
                     style={{ 
-                      fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                      fontFamily: '"Cormorant Garamond", Georgia, serif',
                       fontSize: 'clamp(16px, 0.4vw + 16px, 18px)',
                       fontWeight: 600, // SemiBold
                       letterSpacing: '0.01em',
@@ -120,7 +120,7 @@ export default function ActressTable({
               <td 
                 className="py-3 text-[var(--text-secondary)]" 
                 style={{ 
-                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
                   fontSize: 'clamp(14px, 0.3vw + 14px, 16px)',
                   fontWeight: 600, // SemiBold
                   letterSpacing: '0.02em',
@@ -131,7 +131,7 @@ export default function ActressTable({
               <td 
                 className="py-3 text-center text-[var(--text-secondary)]" 
                 style={{ 
-                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
                   fontSize: 'clamp(14px, 0.3vw + 14px, 16px)',
                   fontWeight: 600, // SemiBold
                   letterSpacing: '0.02em',
@@ -142,7 +142,7 @@ export default function ActressTable({
               <td 
                 className="py-3 text-center text-[var(--text-secondary)]" 
                 style={{ 
-                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
                   fontSize: 'clamp(14px, 0.3vw + 14px, 16px)',
                   fontWeight: 600, // SemiBold
                   letterSpacing: '0.02em',
@@ -169,7 +169,7 @@ export default function ActressTable({
               <div 
                 className="text-[var(--text-secondary)]" 
                 style={{ 
-                  fontFamily: "'Playfair Display', 'Didot', 'Times New Roman', serif",
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
                   fontSize: 'clamp(14px, 0.3vw + 14px, 16px)',
                   fontWeight: 600, // SemiBold
                   letterSpacing: '0.02em',

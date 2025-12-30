@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { CartDrawer } from "@/components/cart";
-import { CartProvider } from "@/context/CartContext";
-import { FavoritesProvider } from "@/context/FavoritesContext";
-import { ContactModalProvider } from "@/context/ContactModalContext";
-import ContactModalWrapper from "@/components/common/ContactModalWrapper";
-import SearchIndexPreloaderWrapper from "@/components/common/SearchIndexPreloaderWrapper";
-import SearchMetadataPreloaderWrapper from "@/components/common/SearchMetadataPreloaderWrapper";
+import AppProviders from "@/components/providers/AppProviders";
 import "./globals.css";
 import { headers } from "next/headers";
 import { inter, sourceSans, dmSans, montserrat } from "./fonts";
@@ -115,13 +109,6 @@ export default async function RootLayout({
           />
           <link
             rel="preload"
-            href="/fonts/didot-2/Didot Bold.otf"
-            as="font"
-            type="font/otf"
-            crossOrigin="anonymous"
-          />
-          <link
-            rel="preload"
             href="/fonts/lemonmilk-cufonfonts/LemonMilk.otf"
             as="font"
             type="font/otf"
@@ -151,18 +138,9 @@ export default async function RootLayout({
               gtag('config', 'G-002SCLRCQD');
             `}
           </Script>
-          <CartProvider>
-            <FavoritesProvider>
-              <ContactModalProvider>
-                <SearchIndexPreloaderWrapper />
-                <SearchMetadataPreloaderWrapper />
-                {children}
-                {/* Cart Drawer - always available */}
-                <CartDrawer />
-                <ContactModalWrapper />
-              </ContactModalProvider>
-            </FavoritesProvider>
-          </CartProvider>
+          <AppProviders>
+            {children}
+          </AppProviders>
         </body>
       </html>
     );
@@ -176,7 +154,7 @@ export default async function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Vintage Typography Fonts (decorative only) - UI font (DM Sans) loaded via next/font */}
         <link 
-          href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Playfair+Display+SC:ital,wght@0,400;0,700;0,900;1,400&family=Great+Vibes&family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Protest+Strike&display=optional" 
+          href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Protest+Strike&display=optional" 
           rel="stylesheet" 
         />
       </head>
@@ -194,22 +172,12 @@ export default async function RootLayout({
             gtag('config', 'G-002SCLRCQD');
           `}
         </Script>
-        <CartProvider>
-          <FavoritesProvider>
-            <ContactModalProvider>
-              <SearchIndexPreloaderWrapper />
-              <SearchMetadataPreloaderWrapper />
-              {/* Main content - no old header */}
-              <main className="flex-1 min-w-0">
-                {children}
-              </main>
-
-              {/* Cart Drawer */}
-              <CartDrawer />
-              <ContactModalWrapper />
-            </ContactModalProvider>
-          </FavoritesProvider>
-        </CartProvider>
+        <AppProviders>
+          {/* Main content - no old header */}
+          <main className="flex-1 min-w-0">
+            {children}
+          </main>
+        </AppProviders>
       </body>
     </html>
   );
