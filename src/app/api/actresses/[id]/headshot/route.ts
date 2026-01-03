@@ -163,7 +163,8 @@ export async function GET(
 
           const headers: HeadersInit = {
             'Content-Type': 'image/jpeg',
-            'Cache-Control': 'public, max-age=31536000, immutable',
+            'Content-Disposition': 'inline',
+            'Cache-Control': 'no-store',
             'X-Image-Width': finalWidth.toString(),
             'X-Image-Height': finalHeight.toString(),
           };
@@ -202,7 +203,8 @@ export async function GET(
 
         const headers: HeadersInit = {
           'Content-Type': 'image/png',
-          'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+          'Content-Disposition': 'inline',
+          'Cache-Control': 'no-store',
         };
 
         if (placeholderMetadata.width && placeholderMetadata.height) {
@@ -233,14 +235,15 @@ export async function GET(
       .png()
       .toBuffer();
 
-      return new NextResponse(new Uint8Array(placeholderBuffer), {
-        headers: {
-          'Content-Type': 'image/png',
-          'Cache-Control': 'public, max-age=3600',
-          'X-Image-Width': '200',
-          'X-Image-Height': '250',
-        }
-      });
+    return new NextResponse(new Uint8Array(placeholderBuffer), {
+      headers: {
+        'Content-Type': 'image/png',
+        'Content-Disposition': 'inline',
+        'Cache-Control': 'no-store',
+        'X-Image-Width': '200',
+        'X-Image-Height': '250',
+      }
+    });
     } catch (generateError) {
       console.error('Error generating placeholder:', generateError);
       return NextResponse.json({ error: 'Headshot image not found' }, { status: 404 });

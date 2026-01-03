@@ -23,6 +23,7 @@ export default function PhotoFrame({
   className = '',
   onClick,
 }: PhotoFrameProps) {
+  const isHeadshotApi = src.includes('/api/actresses/') && src.includes('/headshot');
   return (
     <div 
       className={`
@@ -46,6 +47,10 @@ export default function PhotoFrame({
           height: 'auto',
           maxWidth: '100%',
         }}
+        unoptimized={isHeadshotApi}
+        priority={isHeadshotApi}
+        loading={isHeadshotApi ? 'eager' : 'lazy'}
+        referrerPolicy={isHeadshotApi ? 'no-referrer' : undefined}
       />
     </div>
   );
