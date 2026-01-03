@@ -346,6 +346,7 @@ export default async function ActressPage({ params }: PageProps) {
     heroFirstNameRaw;
   const heroImage = `/api/actresses/${id}/headshot`;
   const heroImage2 = `/api/actresses/${id}/headshot2`;
+  const headshotVersion = actressData.headshotVersion;
 
   // Log hero section data for debugging
   console.log(`[Hero] Rendering hero section:`, {
@@ -401,6 +402,7 @@ export default async function ActressPage({ params }: PageProps) {
                       priority={true}
                       width={200}
                       height={267}
+                      version={headshotVersion}
                     />
                     {/* Mobile: PHOTOS button overlaying bottom third of headshot, centered, shifted 25px right */}
                     <div className="absolute bottom-0 left-1/2 sm:hidden w-[80%] max-w-[200px]" style={{ transform: 'translateX(calc(-50% + 25px)) translateY(33%)' }}>

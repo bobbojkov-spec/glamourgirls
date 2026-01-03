@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface HeadshotImageProps {
   src: string;
@@ -12,11 +12,36 @@ interface HeadshotImageProps {
   priority?: boolean;
   width?: number;
   height?: number;
+  version?: string;
 }
 
-export default function HeadshotImage({ src, alt, fallbackSrc, className, theirMan, onLoad, priority = false, width, height }: HeadshotImageProps) {
-  const [imgSrc, setImgSrc] = useState(src);
+const appendHeadshotVersion = (src: string, version?: string) => {
+  if (!version) return src;
+  if (!src.includes('/api/actresses/') || !src.includes('/headshot')) return src;
+  const separator = src.includes('?') ? '&' : '?';
+  return `${src}${separator}v=${encodeURIComponent(version)}`;
+};
+
+export default function HeadshotImage({
+  src,
+  alt,
+  fallbackSrc,
+  className,
+  theirMan,
+  onLoad,
+  priority = false,
+  width,
+  height,
+  version,
+}: HeadshotImageProps) {
+  const versionedSrc = useMemo(() => appendHeadshotVersion(src, version), [src, version]);
+  const [imgSrc, setImgSrc] = useState(versionedSrc);
   const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+    setImgSrc(versionedSrc);
+  }, [versionedSrc]);
 
   const handleError = () => {
     if (!hasError) {

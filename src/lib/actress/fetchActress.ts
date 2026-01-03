@@ -118,6 +118,16 @@ export async function fetchActressFromDb(actressId: number): Promise<Actress | n
     const hqImages = imageList.filter((img: any) => img.mytp === 5 && img.path);
     const thumbnails = imageList.filter((img: any) => img.mytp === 3 && img.path);
 
+    const headshotImage = imageList.find(
+      (img: any) =>
+        img.mytp === 3 &&
+        typeof img.path === 'string' &&
+        img.path.toLowerCase().includes('headshot')
+    );
+    const headshotVersion = headshotImage
+      ? `${headshotImage.sz || '0'}-${headshotImage.width || 0}-${headshotImage.height || 0}`
+      : undefined;
+
     const imageMap = new Map();
     imageList.forEach((img: any) => {
       imageMap.set(img.id, img);
@@ -336,6 +346,7 @@ export async function fetchActressFromDb(actressId: number): Promise<Actress | n
           };
         }),
       },
+      headshotVersion,
     };
 
     return actressResponse;

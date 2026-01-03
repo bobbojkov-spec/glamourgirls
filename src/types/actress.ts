@@ -68,5 +68,6 @@ export interface Actress {
   isNew?: boolean;
   hasNewPhotos?: boolean;
   theirMan?: boolean;
+  headshotVersion?: string;
 }
 
