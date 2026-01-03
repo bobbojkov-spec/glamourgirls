@@ -38,16 +38,16 @@
   --font-body: var(--font-base);
   
   /* Heading Fonts - Vintage/Retro Style */
-  --font-vintage-display: "Cormorant Garamond", Georgia, serif;  /* Big hero titles */
-  --font-vintage-headline: "Cormorant Garamond", Georgia, serif;  /* Section headers */
-  --font-vintage-subtitle: "Cormorant Garamond", Georgia, serif;  /* Subtitles, elegant headings */
-  --font-vintage-condensed: 'DM Sans', sans-serif;  /* Bold condensed titles */
-  --font-protest-strike: 'Protest Strike', 'Bebas Neue', 'Arial Black', sans-serif;  /* Bold display font */
-  
+  --font-vintage-display: var(--font-cormorant-garamond), Georgia, serif;  /* Big hero titles */
+  --font-vintage-headline: var(--font-cormorant-garamond), Georgia, serif;  /* Section headers */
+  --font-vintage-subtitle: var(--font-cormorant-garamond), Georgia, serif;  /* Subtitles, elegant headings */
+  --font-vintage-condensed: var(--font-bebas-neue), 'DM Sans', sans-serif;  /* Bold condensed titles */
+  --font-protest-strike: var(--font-protest-strike), 'Bebas Neue', 'Arial Black', sans-serif;  /* Bold display font */
+ 
   /* Accent & Body Fonts */
-  --font-vintage-script: 'Great Vibes', 'Brush Script MT', cursive;
-  --font-vintage-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-  --font-typewriter: "Cormorant Garamond", 'Courier New', Courier, monospace;
+  --font-vintage-script: var(--font-great-vibes), 'Brush Script MT', cursive;
+  --font-vintage-serif: var(--font-cormorant-garamond), Georgia, 'Times New Roman', serif;
+  --font-typewriter: var(--font-cormorant-garamond), 'Courier New', Courier, monospace;
   
   /* Responsive Typography Scale */
   --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);

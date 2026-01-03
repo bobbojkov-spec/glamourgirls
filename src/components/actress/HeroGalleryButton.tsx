@@ -104,6 +104,7 @@ export default function HeroGalleryButton({ galleryImages, actressId, actressNam
           onNext={handleNext}
           onPrev={handlePrev}
           onClose={handleClose}
+          isActressPageGallery={true}
         />
       )}
     </>

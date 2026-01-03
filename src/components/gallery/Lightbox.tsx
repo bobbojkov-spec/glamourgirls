@@ -17,6 +17,7 @@ interface LightboxProps {
   onNext: () => void;
   onPrev: () => void;
   onClose: () => void;
+  isActressPageGallery?: boolean;
 }
 
 export default function Lightbox({ 
@@ -28,7 +29,8 @@ export default function Lightbox({
   actressSlug,
   onNext, 
   onPrev,
-  onClose 
+  onClose,
+  isActressPageGallery = false,
 }: LightboxProps) {
   const router = useRouter();
   const { addItem, isInCart, openCart } = useCart();
@@ -186,6 +188,7 @@ export default function Lightbox({
 
   const isAlreadyInCart = isInCart(image.id);
   const isHQImage = image.hasHQ && !!image.price;
+  const showActressActions = !isActressPageGallery;
   
   // Use full-size gallery image (not thumbnail)
   const imageSrc = image.fullUrl;
@@ -430,42 +433,44 @@ export default function Lightbox({
             </div>
 
             {/* Actions row - See actress page and favorite - centered, 2px smaller */}
-            <div className="flex items-center justify-center gap-4">
-              <button
-                onClick={handleViewDetails}
-                className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-[11px] font-medium"
-                style={{ 
-                  fontFamily: 'DM Sans, sans-serif',
-                }}
-                title="See actress page"
-              >
-                See actress page →
-              </button>
-              
-              {/* Favorite button */}
-              <button
-                onClick={handleFavoriteClick}
-                className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-opacity duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)]"
-                aria-label={isFavorited ? `Remove ${actressName} from favorites` : `Add ${actressName} to favorites`}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill={isFavorited ? '#8B4513' : 'none'}
-                  stroke={isFavorited ? '#8B4513' : 'currentColor'}
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="transition-opacity duration-200"
+            {showActressActions && (
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={handleViewDetails}
+                  className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-[11px] font-medium"
                   style={{ 
-                    color: isFavorited ? '#8B4513' : 'white',
+                    fontFamily: 'DM Sans, sans-serif',
                   }}
+                  title="See actress page"
                 >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
-              </button>
-            </div>
+                  See actress page →
+                </button>
+                
+                {/* Favorite button */}
+                <button
+                  onClick={handleFavoriteClick}
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-opacity duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)]"
+                  aria-label={isFavorited ? `Remove ${actressName} from favorites` : `Add ${actressName} to favorites`}
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill={isFavorited ? '#8B4513' : 'none'}
+                    stroke={isFavorited ? '#8B4513' : 'currentColor'}
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="transition-opacity duration-200"
+                    style={{ 
+                      color: isFavorited ? '#8B4513' : 'white',
+                    }}
+                  >
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                </button>
+              </div>
+            )}
 
             {/* Image counter */}
             <div className="mt-4">
@@ -579,42 +584,44 @@ export default function Lightbox({
             </div>
 
             {/* Actions row - See actress page and favorite - centered, 2px smaller */}
-            <div className="flex items-center justify-center gap-4">
-              <button
-                onClick={handleViewDetails}
-                className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-[11px] font-medium"
-                style={{ 
-                  fontFamily: 'DM Sans, sans-serif',
-                }}
-                title="See actress page"
-              >
-                See actress page →
-              </button>
-              
-              {/* Favorite button */}
-              <button
-                onClick={handleFavoriteClick}
-                className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-opacity duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)]"
-                aria-label={isFavorited ? `Remove ${actressName} from favorites` : `Add ${actressName} to favorites`}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill={isFavorited ? '#8B4513' : 'none'}
-                  stroke={isFavorited ? '#8B4513' : 'currentColor'}
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="transition-opacity duration-200"
+            {showActressActions && (
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  onClick={handleViewDetails}
+                  className="text-white hover:text-[var(--accent-gold)] transition-colors underline text-[11px] font-medium"
                   style={{ 
-                    color: isFavorited ? '#8B4513' : 'white',
+                    fontFamily: 'DM Sans, sans-serif',
                   }}
+                  title="See actress page"
                 >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
-              </button>
-            </div>
+                  See actress page →
+                </button>
+                
+                {/* Favorite button */}
+                <button
+                  onClick={handleFavoriteClick}
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-opacity duration-200 border-2 border-white/30 hover:border-[var(--accent-gold)]"
+                  aria-label={isFavorited ? `Remove ${actressName} from favorites` : `Add ${actressName} to favorites`}
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill={isFavorited ? '#8B4513' : 'none'}
+                    stroke={isFavorited ? '#8B4513' : 'currentColor'}
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="transition-opacity duration-200"
+                    style={{ 
+                      color: isFavorited ? '#8B4513' : 'white',
+                    }}
+                  >
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                </button>
+              </div>
+            )}
 
             {/* Image counter - Desktop */}
             <div className="mt-4">

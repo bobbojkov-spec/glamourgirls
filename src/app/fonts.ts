@@ -1,4 +1,4 @@
-import { Inter, Source_Sans_3, DM_Sans, Montserrat } from 'next/font/google';
+import { Inter, Source_Sans_3, DM_Sans, Montserrat, Great_Vibes, Alex_Brush, Cormorant_Garamond, Bebas_Neue, Protest_Strike } from 'next/font/google';
 
 /**
  * UI / Body Fonts - Optimized with Next.js Font Optimization
@@ -32,5 +32,45 @@ export const montserrat = Montserrat({
   variable: '--font-montserrat',
   preload: true,
   adjustFontFallback: true, // Better fallback metrics
+});
+
+export const greatVibes = Great_Vibes({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-great-vibes',
+  weight: ['400'],
+  preload: true,
+});
+
+export const alexBrush = Alex_Brush({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-alex-brush',
+  weight: ['400'],
+  preload: true,
+});
+
+export const cormorantGaramond = Cormorant_Garamond({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-cormorant-garamond',
+  weight: ['400', '600', '700'],
+  preload: true,
+});
+
+export const bebasNeue = Bebas_Neue({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-bebas-neue',
+  weight: ['400'],
+  preload: true,
+});
+
+export const protestStrike = Protest_Strike({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-protest-strike',
+  weight: ['400'],
+  preload: true,
 });
 

@@ -75,13 +75,13 @@
   --state-hover-wash: rgba(200, 164, 93, 0.10);
 
   /* Typography - Font Families */
-  --font-logo-primary: 'Great Vibes', cursive;
-  --font-logo-secondary: 'Alex Brush', cursive;
-  --font-logo-hero: 'Dubba Dubba NF', 'Great Vibes', cursive;
-  --font-headline: 'DM Sans', 'sans-serif', "Cormorant Garamond", Georgia, serif;
+  --font-logo-primary: var(--font-great-vibes), cursive;
+  --font-logo-secondary: var(--font-alex-brush), cursive;
+  --font-logo-hero: 'Dubba Dubba NF', var(--font-great-vibes), cursive;
+  --font-headline: var(--font-dm-sans), 'sans-serif', var(--font-cormorant-garamond), Georgia, serif;
   /* UI fonts loaded via next/font - use CSS variables */
   --font-ui: var(--font-inter), var(--font-source-sans), system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  --font-name: "Cormorant Garamond", Georgia, serif;
+  --font-name: var(--font-cormorant-garamond), Georgia, serif;
 
   /* Typography - Logo Sizes */
   --logo-desktop: 86px;
@@ -154,7 +154,7 @@ body.new-design {
   font-size: 32px; /* Mobile: 32-36px - increased significantly */
   font-weight: 400; /* Normal weight for script font (Great Vibes) */
   font-style: normal;
-  /* Text will remain invisible until Great Vibes font loads (font-display: block prevents FOUC) */
+  /* Great Vibes uses font-display: swap, so text swaps in without blocking */
 }
 
 @media (min-width: 768px) {

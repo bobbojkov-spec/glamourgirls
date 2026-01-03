@@ -439,7 +439,7 @@ export default async function ActressPage({ params }: PageProps) {
                   <span 
                     className="block text-[var(--text-primary)]"
                     style={{ 
-                      fontFamily: 'Alex Brush, cursive', 
+                      fontFamily: 'var(--font-alex-brush), cursive', 
                       textTransform: 'none',
                       textShadow: '0 0 6px white, 0 0 12px white, 0 0 18px white',
                       fontSize: 'clamp(1.5rem, 4vw, 2rem)', /* Responsive but stable */
@@ -582,6 +582,7 @@ export default async function ActressPage({ params }: PageProps) {
                         actressName={actressName}
                         actressSlug={actressData.slug || `${actressData.id}`}
                         theirMan={actressData.theirMan}
+                      isActressPageGallery
                       />
                     </div>
                   </div>

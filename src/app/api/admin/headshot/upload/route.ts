@@ -4,6 +4,7 @@ import sharp from 'sharp';
 import { requireAdminApi } from '@/app/api/admin/_auth';
 import { createClient } from '@supabase/supabase-js';
 import pool from '@/lib/db';
+import { revalidatePath } from 'next/cache';
 
 export const runtime = 'nodejs';
 
@@ -181,6 +182,21 @@ export async function POST(request: NextRequest) {
         { error: 'Headshot uploaded to storage, but failed to update database', details: dbErr?.message || String(dbErr) },
         { status: 500 }
       );
+    }
+
+    try {
+      const [slugRows] = await pool.execute(
+        `SELECT slug FROM girls WHERE id = ? LIMIT 1`,
+        [actressId]
+      ) as any[];
+
+      const slug = Array.isArray(slugRows) && slugRows.length > 0 && slugRows[0]?.slug
+        ? slugRows[0].slug
+        : `${actressId}`;
+
+      revalidatePath(`/actress/${actressId}/${slug}`);
+    } catch (slugError) {
+      console.error('[Headshot Upload] Failed to revalidate actress path:', slugError);
     }
 
     return NextResponse.json({

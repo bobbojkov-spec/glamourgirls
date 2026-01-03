@@ -3,12 +3,30 @@ import Script from "next/script";
 import AppProviders from "@/components/providers/AppProviders";
 import "./globals.css";
 import { headers } from "next/headers";
-import { inter, sourceSans, dmSans, montserrat } from "./fonts";
+import {
+  inter,
+  sourceSans,
+  dmSans,
+  montserrat,
+  greatVibes,
+  alexBrush,
+  cormorantGaramond,
+  bebasNeue,
+  protestStrike,
+} from "./fonts";
 
 export const metadata: Metadata = {
   title: "Glamour Girls of the Silver Screen",
   description: "Dedicated to the private lives of some of the most glamorous actresses of the Thirties, Forties, Fifties, and Sixties.",
 };
+
+const vintageFontClasses = [
+  cormorantGaramond.variable,
+  protestStrike.variable,
+  bebasNeue.variable,
+  greatVibes.variable,
+  alexBrush.variable,
+].join(" ");
 
 export default async function RootLayout({
   children,
@@ -80,10 +98,10 @@ export default async function RootLayout({
   // New design pages, actress pages, explore page, checkout, download, search, cart, and front2 pages use their own layout (completely separate)
   if (isNewDesign || isActress || isExplore || isCheckout || isDownload || isSearch || isFront2 || isCart) {
     return (
-      <html 
-        lang="en" 
-        className={`new-design ${inter.variable} ${sourceSans.variable}`}
-      >
+        <html
+          lang="en"
+          className={`new-design ${inter.variable} ${sourceSans.variable} ${vintageFontClasses}`}
+        >
         <head>
           {/* Preload critical decorative fonts only */}
           <link
@@ -114,15 +132,6 @@ export default async function RootLayout({
             type="font/otf"
             crossOrigin="anonymous"
           />
-          {/* Preconnect for Google Fonts (only for decorative fonts: Great Vibes, Alex Brush) */}
-          <link rel="preconnect" href="https://fonts.googleapis.com" />
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-          {/* Display fonts (Great Vibes, Alex Brush) - decorative only */}
-          <link
-            href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Alex+Brush&display=optional"
-            rel="stylesheet"
-          />
-          {/* UI fonts (Inter, Source Sans 3) loaded via next/font - no <link> tags needed */}
         </head>
         <body className="antialiased min-h-screen" style={{ backgroundColor: 'var(--bg-page)' }}>
           {/* Google Analytics */}
@@ -146,17 +155,9 @@ export default async function RootLayout({
     );
   }
 
-  return (
-    <html lang="en" className={`${dmSans.variable} ${inter.variable}`}>
+    return (
+      <html lang="en" className={`${dmSans.variable} ${inter.variable} ${vintageFontClasses}`}>
       <head>
-        {/* Preconnect for Google Fonts (only for decorative fonts) */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Vintage Typography Fonts (decorative only) - UI font (DM Sans) loaded via next/font */}
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Protest+Strike&display=optional" 
-          rel="stylesheet" 
-        />
       </head>
       <body className="antialiased min-h-screen flex flex-col">
         {/* Google Analytics */}
