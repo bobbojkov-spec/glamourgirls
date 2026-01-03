@@ -136,8 +136,10 @@ export async function POST(request: NextRequest) {
       .toBuffer();
 
     // Upload to Supabase storage (glamourgirls_images bucket)
-    const headshotDbPath = `/${folderName}/${actressId}/headshot.jpg`;
-    const headshotStoragePath = `${folderName}/${actressId}/headshot.jpg`;
+    const timestamp = Date.now();
+    const uniqueFilename = `headshot_${actressId}_${timestamp}.jpg`;
+    const headshotDbPath = `/${folderName}/${actressId}/${uniqueFilename}`;
+    const headshotStoragePath = `${folderName}/${actressId}/${uniqueFilename}`;
     await uploadToSupabase(supabase, 'glamourgirls_images', headshotStoragePath, headshotBuffer, 'image/jpeg');
 
     // Get final dimensions
@@ -182,6 +184,19 @@ export async function POST(request: NextRequest) {
         { error: 'Headshot uploaded to storage, but failed to update database', details: dbErr?.message || String(dbErr) },
         { status: 500 }
       );
+    }
+
+    const headshotUpdatedAt = new Date().toISOString();
+
+    try {
+      await pool.execute(
+        `UPDATE girls 
+         SET headshot_path = ?, headshot_updated_at = ?
+         WHERE id = ?`,
+        [headshotDbPath, headshotUpdatedAt, actressId]
+      );
+    } catch (headshotMetaError: any) {
+      console.error('[Headshot Upload] Failed to update girls headshot metadata:', headshotMetaError);
     }
 
     try {

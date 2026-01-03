@@ -52,7 +52,7 @@ export async function fetchActressFromDb(actressId: number): Promise<Actress | n
     let actresses: any[];
     try {
       [actresses] = await pool.execute(
-        `SELECT id, nm, firstname, middlenames, familiq, godini, isnew, isnewpix, theirman, sources, slug, h1Title
+        `SELECT id, nm, firstname, middlenames, familiq, godini, isnew, isnewpix, theirman, sources, slug, h1Title, headshot_path, headshot_updated_at
          FROM girls 
          WHERE id = ? AND published = 2`,
         [actressId]
@@ -67,6 +67,9 @@ export async function fetchActressFromDb(actressId: number): Promise<Actress | n
     }
 
     const actress = actresses[0] as any;
+    const headshotUpdatedAt = actress.headshot_updated_at
+      ? new Date(actress.headshot_updated_at).toISOString()
+      : null;
 
     // Fetch biography/timeline
     let timeline: any[];
@@ -124,9 +127,11 @@ export async function fetchActressFromDb(actressId: number): Promise<Actress | n
         typeof img.path === 'string' &&
         img.path.toLowerCase().includes('headshot')
     );
-    const headshotVersion = headshotImage
-      ? `${headshotImage.sz || '0'}-${headshotImage.width || 0}-${headshotImage.height || 0}`
-      : undefined;
+    const headshotVersion = headshotUpdatedAt
+      ? headshotUpdatedAt
+      : headshotImage
+        ? `${headshotImage.sz || '0'}-${headshotImage.width || 0}-${headshotImage.height || 0}`
+        : undefined;
 
     const imageMap = new Map();
     imageList.forEach((img: any) => {

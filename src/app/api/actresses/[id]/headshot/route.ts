@@ -7,6 +7,84 @@ import { fetchFromStorage, fetchFromStorageWithClient } from '@/lib/supabase/sto
 
 export const runtime = 'nodejs';
 
+const TARGET_WIDTH = 190;
+const TARGET_HEIGHT = 245;
+
+async function streamHeadshotFromPath(actressId: number, imagePath: string): Promise<NextResponse | null> {
+  if (!imagePath) {
+    return null;
+  }
+
+  try {
+    let imageBuffer = await fetchFromStorageWithClient(imagePath);
+    if (!imageBuffer) {
+      imageBuffer = await fetchFromStorage(imagePath);
+    }
+
+    if (!imageBuffer) {
+      console.error(`[Headshot API] Actress ${actressId}: Failed to fetch headshot from storage path ${imagePath}`);
+      return null;
+    }
+
+    const normalizedPath = imagePath.toLowerCase();
+    const needsProcessing = !normalizedPath.includes('headshot');
+
+    let finalBuffer = imageBuffer;
+    let finalWidth = 0;
+    let finalHeight = 0;
+
+    if (needsProcessing) {
+      let processedImage = sharp(imageBuffer).resize(null, TARGET_HEIGHT, {
+        fit: 'inside',
+        withoutEnlargement: false,
+      });
+
+      const resizedBuffer = await processedImage.toBuffer();
+      const resizedMeta = await sharp(resizedBuffer).metadata();
+      const resizedWidth = resizedMeta.width || TARGET_WIDTH;
+
+      if (resizedWidth > TARGET_WIDTH) {
+        const cropLeft = Math.floor((resizedWidth - TARGET_WIDTH) / 2);
+        processedImage = sharp(resizedBuffer).extract({
+          left: cropLeft,
+          top: 0,
+          width: TARGET_WIDTH,
+          height: TARGET_HEIGHT,
+        });
+      } else if (resizedWidth < TARGET_WIDTH) {
+        processedImage = sharp(resizedBuffer).resize(TARGET_WIDTH, TARGET_HEIGHT, {
+          fit: 'cover',
+        });
+      }
+
+      finalBuffer = await processedImage
+        .jpeg({ quality: 90, mozjpeg: true })
+        .toBuffer();
+
+      const finalMetadata = await sharp(finalBuffer).metadata();
+      finalWidth = finalMetadata.width || TARGET_WIDTH;
+      finalHeight = finalMetadata.height || TARGET_HEIGHT;
+    } else {
+      const metadata = await sharp(imageBuffer).metadata();
+      finalWidth = metadata.width || TARGET_WIDTH;
+      finalHeight = metadata.height || TARGET_HEIGHT;
+    }
+
+    const headers: HeadersInit = {
+      'Content-Type': 'image/jpeg',
+      'Content-Disposition': 'inline',
+      'Cache-Control': 'no-store',
+      'X-Image-Width': finalWidth.toString(),
+      'X-Image-Height': finalHeight.toString(),
+    };
+
+    return new NextResponse(new Uint8Array(finalBuffer), { headers });
+  } catch (error) {
+    console.error(`[Headshot API] Actress ${actressId}: Error streaming headshot from ${imagePath}:`, error);
+    return null;
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -17,6 +95,30 @@ export async function GET(
 
     if (isNaN(actressId)) {
       return NextResponse.json({ error: 'Invalid actress ID' }, { status: 400 });
+    }
+
+    let headshotPath: string | null = null;
+    try {
+      const [headshotRows] = await pool.execute(
+        `SELECT headshot_path
+         FROM girls
+         WHERE id = ?
+         LIMIT 1`,
+        [actressId]
+      ) as any[];
+
+      if (Array.isArray(headshotRows) && headshotRows.length > 0) {
+        headshotPath = headshotRows[0]?.headshot_path || null;
+      }
+    } catch (metadataError) {
+      console.error(`[Headshot API] Actress ${actressId}: Failed to fetch headshot metadata:`, metadataError);
+    }
+
+    if (headshotPath) {
+      const headshotResponse = await streamHeadshotFromPath(actressId, headshotPath);
+      if (headshotResponse) {
+        return headshotResponse;
+      }
     }
 
     // First, check if there's a headshot.jpg in the database images table
@@ -108,7 +210,7 @@ export async function GET(
         if (imageBuffer) {
           console.log(`[Headshot API] Actress ${actressId}: Successfully fetched from storage (${imageBuffer.length} bytes)`);
           // Check if this is already processed (headshot.jpg) or needs processing
-          const needsProcessing = !headshotImage.path.toLowerCase().includes('headshot.jpg');
+          const needsProcessing = !headshotImage.path.toLowerCase().includes('headshot');
           
           let finalBuffer = imageBuffer;
           let finalWidth = headshotImage.width;

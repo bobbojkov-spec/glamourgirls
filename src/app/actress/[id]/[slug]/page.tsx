@@ -50,45 +50,6 @@ const formatYearRange = (birth?: number | null, death?: number | null) => {
   return death ? `– ${death}` : '';
 };
 
-const selectFeaturedImage = (actress: Actress): FeaturedImage | null => {
-  const hqImage = actress.images?.hq?.[0];
-  if (hqImage) {
-    const galleryMatch = actress.images?.gallery?.find(
-      (img) => Math.abs(Number(img.id) - Number(hqImage.id)) <= 1
-    );
-
-    // Always use gallery image ID when available to ensure consistency with cart
-    // This prevents duplicate items when the same image is added from featured photos vs gallery
-    const imageId = galleryMatch ? Number(galleryMatch.id) : Number(hqImage.id);
-
-    return {
-      id: imageId,
-      displayUrl: normalizeImageUrl(galleryMatch?.url || hqImage.url),
-      downloadUrl: normalizeImageUrl(hqImage.url),
-      width: hqImage.width,
-      height: hqImage.height,
-      price: 9.9, // HQ images have a price
-    };
-  }
-
-  const galleryImage = actress.images?.gallery?.[0];
-  if (galleryImage) {
-    // Check if there's an HQ version for this gallery image
-    const hqForGallery = findHQForGallery(Number(galleryImage.id), actress.images?.hq || []);
-    
-    return {
-      id: Number(galleryImage.id),
-      displayUrl: normalizeImageUrl(galleryImage.url),
-      downloadUrl: normalizeImageUrl(galleryImage.url),
-      width: galleryImage.width,
-      height: galleryImage.height,
-      price: hqForGallery ? 9.9 : undefined, // Only has price if HQ is available
-    };
-  }
-
-  return null;
-};
-
 const findHQForGallery = (galleryId: number, hqImages: NonNullable<Actress['images']>['hq'] = []) => {
   return (
     hqImages.find((hq) => Number(hq.id) === galleryId - 1) ||
@@ -226,7 +187,6 @@ export default async function ActressPage({ params }: PageProps) {
   }
 
   const heroYears = formatYearRange(actressData.birthYear, actressData.deathYear);
-  const featuredImage = selectFeaturedImage(actressData);
   
   // Helper function to check if image meets HQ requirements (minimum 1200px on long side)
   const isHQImage = (width?: number, height?: number): boolean => {
@@ -240,76 +200,24 @@ export default async function ActressPage({ params }: PageProps) {
     if (!size || size === 0) return undefined;
     return parseFloat((size / (1024 * 1024)).toFixed(2));
   };
+
+const selectFeaturedImages = (actress: Actress): FeaturedImage[] => {
+  const hqImages = (actress.images?.hq || [])
+    .filter((img) => isHQImage(img.width, img.height))
+    .sort((a, b) => Number(b.id) - Number(a.id));
+
+  return hqImages.slice(0, 4).map((img) => ({
+    id: Number(img.id),
+    displayUrl: normalizeImageUrl(img.url),
+    downloadUrl: normalizeImageUrl(img.url),
+    width: img.width,
+    height: img.height,
+    price: 9.9,
+    fileSizeMB: getFileSizeMB(img.size),
+  }));
+};
   
-  // Get up to 4 featured images (2 or 4, always even number for desktop layout)
-  // CRITICAL: Only include HQ images (minimum 1000px on long side)
-  const featuredImages: FeaturedImage[] = [];
-  if (featuredImage && isHQImage(featuredImage.width, featuredImage.height)) {
-    // Get file size from HQ image if available
-    // featuredImage.id is now always a gallery ID, so use findHQForGallery
-    const hqForFeatured = findHQForGallery(Number(featuredImage.id), actressData.images?.hq || []);
-    const fileSizeMB = getFileSizeMB(hqForFeatured?.size);
-    featuredImages.push({
-      ...featuredImage,
-      fileSizeMB,
-    });
-  }
-  
-  // Try to get additional featured images (up to 3 more for max 4 total)
-  const hqImages = actressData.images?.hq || [];
-  const allGalleryImages = actressData.images?.gallery || [];
-  
-  // Get up to 3 more images (for total of 4)
-  for (let i = 1; i < 4 && featuredImages.length < 4; i++) {
-    if (hqImages.length > i) {
-      const hqImg = hqImages[i];
-      // Only include if it meets HQ requirements
-      if (isHQImage(hqImg.width, hqImg.height)) {
-        const galleryMatch = allGalleryImages.find(
-          (img) => Math.abs(Number(img.id) - Number(hqImg.id)) <= 1
-        );
-        if (galleryMatch || hqImg) {
-          const fileSizeMB = getFileSizeMB(hqImg.size);
-          // Always use gallery image ID when available to ensure consistency with cart
-          const imageId = galleryMatch ? Number(galleryMatch.id) : Number(hqImg.id);
-          featuredImages.push({
-            id: imageId,
-            displayUrl: normalizeImageUrl(galleryMatch?.url || hqImg.url),
-            downloadUrl: normalizeImageUrl(hqImg.url),
-            width: hqImg.width,
-            height: hqImg.height,
-            price: 9.9,
-            fileSizeMB,
-          });
-        }
-      }
-    } else if (allGalleryImages.length > i) {
-      // Check if gallery image has HQ version that meets requirements
-      const galleryImg = allGalleryImages[i];
-      const hqForGallery = findHQForGallery(Number(galleryImg.id), hqImages);
-      if (hqForGallery && isHQImage(hqForGallery.width, hqForGallery.height)) {
-        const fileSizeBytes = hqForGallery.size || galleryImg.size || 0;
-        const fileSizeMB = fileSizeBytes > 0 ? parseFloat((fileSizeBytes / (1024 * 1024)).toFixed(2)) : undefined;
-        featuredImages.push({
-          id: Number(galleryImg.id),
-          displayUrl: normalizeImageUrl(galleryImg.url),
-          downloadUrl: normalizeImageUrl(galleryImg.url),
-          width: galleryImg.width,
-          height: galleryImg.height,
-          price: 9.9,
-          fileSizeMB,
-        });
-      }
-    }
-  }
-  
-  // Limit photos based on breakpoint requirements:
-  // Mobile: max 2 (1 row of 2) - show exactly 2
-  // Tablet: max 3 (1 row of 3) - hide 4th via CSS
-  // Desktop: max 4 (2 rows of 2, must be even) - hide 3rd if we have 3
-  if (featuredImages.length > 4) {
-    featuredImages.splice(4);
-  }
+  const featuredImages: FeaturedImage[] = selectFeaturedImages(actressData);
   const relatedActresses = actressData.relatedActresses || [];
   const galleryImages = (actressData.images?.gallery || []).filter((img) => !!img?.url);
   const galleryGridImages: GalleryImage[] = galleryImages.map((galleryImg) => {
